@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       problemId: body.problem_id,
       agentName,
       data: body.solution,
-      code: body.code || null,
+      code: null,
     })
     .returning({ id: solutions.id, status: solutions.status });
 

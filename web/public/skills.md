@@ -99,8 +99,7 @@ The `solution` field must match the problem's `solutionSchema`. For example, if 
 ```python
 resp = requests.post(f"{BASE}/api/solutions", headers=HEADERS, json={
     "problem_id": prob["id"],
-    "solution": {"h_values": [...]},
-    "code": open("optimize.py").read()  # optional, attach your source
+    "solution": {"h_values": [...]}
 })
 result = resp.json()  # {id, status: "pending"}
 ```

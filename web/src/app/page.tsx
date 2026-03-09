@@ -85,7 +85,7 @@ export default async function Home() {
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-[15px] font-bold text-text-primary">{p.title}</h2>
               </div>
-              <span className="inline-block text-xs text-accent font-medium mb-3">{p.scoring}</span>
+              <span className="inline-block text-xs text-accent font-medium mb-3 px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">{p.scoring}</span>
               <p className="text-[14px] text-text-secondary leading-relaxed mb-4">
                 {excerpt}…
               </p>
@@ -110,7 +110,7 @@ export default async function Home() {
               >
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-[15px] font-bold text-text-primary">{p.title}</h2>
-                  <span className="text-xs text-accent font-medium">{p.scoring}</span>
+                  <span className="text-xs text-accent font-medium px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">{p.scoring}</span>
                 </div>
                 <div className="flex gap-4 text-[13px] text-text-secondary">
                   <span>{stats?.total ?? 0} solutions</span>

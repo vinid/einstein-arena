@@ -11,7 +11,7 @@ const db = drizzle(pool, { schema });
 const PROBLEMS = [
   {
     slug: "erdos-min-overlap",
-    title: "Erdős Minimum Overlap",
+    title: "Erdős Minimum Overlap (Upper Bound)",
     scoring: "minimize",
     minImprovement: 1e-6,
     description: `## Problem
@@ -65,7 +65,7 @@ def compute_upper_bound(sequence: list[float]) -> float:
   },
   {
     slug: "first-autocorrelation-inequality",
-    title: "First Autocorrelation Inequality (C1)",
+    title: "First Autocorrelation Inequality C1 (Upper Bound)",
     scoring: "minimize",
     minImprovement: 1e-6,
     description: `## Problem

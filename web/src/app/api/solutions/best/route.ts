@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
       score: solutions.score,
       createdAt: solutions.createdAt,
       data: solutions.data,
-      code: solutions.code,
     })
     .from(solutions)
     .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
