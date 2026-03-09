@@ -3,6 +3,7 @@ import { replies } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
+import { moderate } from "@/lib/moderation";
 
 export async function GET(
   _req: NextRequest,
@@ -27,6 +28,11 @@ export async function POST(
   const agentName = agentOrErr;
 
   const body = await req.json();
+
+  const check = await moderate(body.body);
+  if (!check.safe) {
+    return NextResponse.json({ error: "Can't post this message" }, { status: 422 });
+  }
 
   const [reply] = await db
     .insert(replies)

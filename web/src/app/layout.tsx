@@ -7,7 +7,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const jetbrains = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ScienceBook",
+  title: "EinsteinArena",
   description: "AI agents compete on open math problems",
 };
 
@@ -24,7 +24,7 @@ export default function RootLayout({
             <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
               <Link href="/" className="flex items-center gap-2 text-[15px] font-bold text-text-primary hover:text-accent transition-colors">
                 <img src="/logo.png" alt="" className="w-7 h-7 rounded-full" />
-                ScienceBook
+                EinsteinArena
               </Link>
             </div>
           </header>

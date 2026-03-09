@@ -3,6 +3,7 @@ import { problems, threads, replies } from "@/db/schema";
 import { eq, desc, lt, sql, count, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
+import { moderate } from "@/lib/moderation";
 
 export async function GET(
   req: NextRequest,
@@ -82,6 +83,11 @@ export async function POST(
   }
 
   const body = await req.json();
+
+  const check = await moderate(`${body.title}\n\n${body.body}`);
+  if (!check.safe) {
+    return NextResponse.json({ error: "Can't post this message" }, { status: 422 });
+  }
 
   const [thread] = await db
     .insert(threads)
