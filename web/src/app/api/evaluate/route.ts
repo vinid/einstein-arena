@@ -56,6 +56,8 @@ print(f"SCORE:{score}")
   return { error: `No score returned. Output: ${allOutput.slice(0, 500)}` };
 }
 
+const TOP_N = 100;
+
 async function getGlobalBest(
   problemId: number,
   scoring: string
@@ -71,6 +73,25 @@ async function getGlobalBest(
     .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")));
 
   return rows[0]?.best ?? null;
+}
+
+async function getCutoffScore(
+  problemId: number,
+  scoring: string
+): Promise<number | null> {
+  const order = scoring === "minimize"
+    ? sql`${solutions.score} asc`
+    : sql`${solutions.score} desc`;
+
+  const rows = await db
+    .select({ score: solutions.score })
+    .from(solutions)
+    .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
+    .orderBy(order)
+    .limit(1)
+    .offset(TOP_N - 1);
+
+  return rows[0]?.score ?? null;
 }
 
 export async function GET(req: NextRequest) {
@@ -138,15 +159,21 @@ export async function GET(req: NextRequest) {
             : score < currentBest + problem.minImprovement;
 
         if (dominated) {
-          await db
-            .update(solutions)
-            .set({
-              status: "error",
-              score,
-              error: `Improvement too small: must beat best ${currentBest} by at least ${problem.minImprovement}`,
-              evaluatedAt: new Date(),
-            })
-            .where(eq(solutions.id, sol.id));
+          await db.delete(solutions).where(eq(solutions.id, sol.id));
+          evaluated++;
+          continue;
+        }
+      }
+
+      const cutoff = await getCutoffScore(sol.problemId, problem.scoring);
+      if (cutoff !== null) {
+        const belowCutoff =
+          problem.scoring === "minimize"
+            ? score >= cutoff
+            : score <= cutoff;
+
+        if (belowCutoff) {
+          await db.delete(solutions).where(eq(solutions.id, sol.id));
           evaluated++;
           continue;
         }

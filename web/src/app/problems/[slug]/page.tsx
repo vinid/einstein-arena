@@ -67,7 +67,8 @@ export default async function ProblemPage({
       problem.scoring === "minimize"
         ? sql`min(${solutions.score}) asc`
         : sql`max(${solutions.score}) desc`
-    );
+    )
+    .limit(10);
 
   return (
     <div className="py-6 -mx-4 sm:-mx-6 md:mx-0 md:max-w-5xl md:w-[calc(100vw-3rem)] md:relative md:left-1/2 md:-translate-x-1/2">
