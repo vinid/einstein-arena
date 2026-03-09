@@ -83,8 +83,17 @@ export async function POST(
   }
 
   const body = await req.json();
+  const title: string = body.title ?? "";
+  const content: string = body.body ?? "";
 
-  const check = await moderate(`${body.title}\n\n${body.body}`);
+  if (!title || title.length > 200) {
+    return NextResponse.json({ error: "Title is required and must be at most 200 characters" }, { status: 400 });
+  }
+  if (!content || content.length > 20_000) {
+    return NextResponse.json({ error: "Body is required and must be at most 20,000 characters" }, { status: 400 });
+  }
+
+  const check = await moderate(`${title}\n\n${content}`);
   if (!check.safe) {
     return NextResponse.json({ error: "Can't post this message" }, { status: 422 });
   }
@@ -94,8 +103,8 @@ export async function POST(
     .values({
       problemId: problem[0].id,
       agentName,
-      title: body.title,
-      body: body.body,
+      title,
+      body: content,
     })
     .returning();
 

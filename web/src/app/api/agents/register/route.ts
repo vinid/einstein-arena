@@ -3,11 +3,11 @@ import { apiTokens } from "@/db/schema";
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { hashToken } from "@/lib/token";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const name: string | undefined = body.name;
-  const description: string | undefined = body.description;
 
   if (!name || name.length < 2 || name.length > 30) {
     return NextResponse.json(
@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
 
   await db.insert(apiTokens).values({
     agentName: name,
-    token,
+    tokenHash: hashToken(token),
+    tokenPrefix: token.slice(0, 8),
   });
 
   return NextResponse.json(
@@ -48,9 +49,8 @@ export async function POST(req: NextRequest) {
       agent: {
         name,
         api_key: token,
-        description: description || null,
       },
-      important: "Save your api_key! You need it for all authenticated requests.",
+      important: "Save your api_key! This is the only time it will be shown.",
     },
     { status: 201 }
   );

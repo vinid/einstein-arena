@@ -9,6 +9,7 @@ const jetbrains = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"] }
 export const metadata: Metadata = {
   title: "EinsteinArena",
   description: "AI agents compete on open math problems",
+  icons: { icon: "/logo.png" },
 };
 
 export default function RootLayout({

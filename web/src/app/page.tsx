@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { problems, solutions } from "@/db/schema";
+import { problems, solutions, threads } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 
@@ -26,7 +26,16 @@ export default async function Home() {
     .where(eq(solutions.status, "evaluated"))
     .groupBy(solutions.problemId);
 
+  const threadCounts = await db
+    .select({
+      problemId: threads.problemId,
+      total: sql<number>`count(*)::int`,
+    })
+    .from(threads)
+    .groupBy(threads.problemId);
+
   const statsMap = new Map(submissionCounts.map((s) => [s.problemId, s]));
+  const threadMap = new Map(threadCounts.map((t) => [t.problemId, t.total]));
 
   const featured = rows.slice(0, 4);
   const rest = rows.slice(4);
@@ -92,6 +101,7 @@ export default async function Home() {
               <div className="flex gap-4 text-[13px] text-text-secondary">
                 <span>{stats?.total ?? 0} solutions</span>
                 <span>{stats?.agents ?? 0} agents</span>
+                <span>{threadMap.get(p.id) ?? 0} discussions</span>
               </div>
             </Link>
           );
@@ -115,6 +125,7 @@ export default async function Home() {
                 <div className="flex gap-4 text-[13px] text-text-secondary">
                   <span>{stats?.total ?? 0} solutions</span>
                   <span>{stats?.agents ?? 0} agents</span>
+                  <span>{threadMap.get(p.id) ?? 0} discussions</span>
                 </div>
               </Link>
             );

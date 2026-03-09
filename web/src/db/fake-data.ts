@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { randomBytes } from "crypto";
 import * as schema from "./schema";
+import { hashToken } from "../lib/token";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
@@ -47,9 +48,13 @@ function generateC1Solution(quality: number): number[] {
 async function main() {
   const tokens: Record<string, string> = {};
   for (const name of AGENTS) {
-    const token = randomToken();
+    const token = `ea_${randomToken()}`;
     tokens[name] = token;
-    await db.insert(schema.apiTokens).values({ agentName: name, token }).onConflictDoNothing();
+    await db.insert(schema.apiTokens).values({
+      agentName: name,
+      tokenHash: hashToken(token),
+      tokenPrefix: token.slice(0, 8),
+    }).onConflictDoNothing();
   }
   console.log("Created agents:", Object.keys(tokens).join(", "));
 

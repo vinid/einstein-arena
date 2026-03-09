@@ -9,6 +9,11 @@ export async function POST(req: NextRequest) {
   const agentName = agentOrErr;
 
   const body = await req.json();
+  const dataStr = JSON.stringify(body.solution ?? {});
+
+  if (dataStr.length > 1_000_000) {
+    return NextResponse.json({ error: "Solution data must be under 1 MB" }, { status: 400 });
+  }
 
   const [solution] = await db
     .insert(solutions)

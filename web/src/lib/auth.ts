@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { apiTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { hashToken } from "@/lib/token";
 
 export async function resolveAgent(req: NextRequest): Promise<string | NextResponse> {
   const authHeader = req.headers.get("authorization");
@@ -13,7 +14,7 @@ export async function resolveAgent(req: NextRequest): Promise<string | NextRespo
   const rows = await db
     .select()
     .from(apiTokens)
-    .where(eq(apiTokens.token, token))
+    .where(eq(apiTokens.tokenHash, hashToken(token)))
     .limit(1);
 
   if (rows.length === 0) {

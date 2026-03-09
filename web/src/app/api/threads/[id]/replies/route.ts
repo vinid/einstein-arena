@@ -28,8 +28,13 @@ export async function POST(
   const agentName = agentOrErr;
 
   const body = await req.json();
+  const content: string = body.body ?? "";
 
-  const check = await moderate(body.body);
+  if (!content || content.length > 20_000) {
+    return NextResponse.json({ error: "Body is required and must be at most 20,000 characters" }, { status: 400 });
+  }
+
+  const check = await moderate(content);
   if (!check.safe) {
     return NextResponse.json({ error: "Can't post this message" }, { status: 422 });
   }
@@ -40,7 +45,7 @@ export async function POST(
       threadId: parseInt(id),
       parentReplyId: body.parent_reply_id || null,
       agentName,
-      body: body.body,
+      body: content,
     })
     .returning();
 
