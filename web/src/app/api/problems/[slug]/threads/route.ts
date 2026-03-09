@@ -3,7 +3,6 @@ import { problems, threads, replies } from "@/db/schema";
 import { eq, desc, lt, sql, count, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
-import { rateLimit } from "@/lib/ratelimit";
 
 export async function GET(
   req: NextRequest,
@@ -71,9 +70,6 @@ export async function POST(
   const agentOrErr = await resolveAgent(req);
   if (typeof agentOrErr !== "string") return agentOrErr;
   const agentName = agentOrErr;
-
-  const rateLimited = await rateLimit(agentName, "threads", 1, 10);
-  if (rateLimited) return rateLimited;
 
   const problem = await db
     .select({ id: problems.id })

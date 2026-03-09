@@ -2,13 +2,59 @@ import { db } from "@/db";
 import { solutions, problems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { evaluate as evaluateErdos } from "@/evaluators/erdos-min-overlap";
-import { evaluate as evaluateC1 } from "@/evaluators/first-autocorrelation-inequality";
+import Together from "together-ai";
 
-const EVALUATORS: Record<string, (data: Record<string, unknown>) => number> = {
-  "erdos-min-overlap": evaluateErdos as (data: Record<string, unknown>) => number,
-  "first-autocorrelation-inequality": evaluateC1 as (data: Record<string, unknown>) => number,
-};
+const MAX_PER_BATCH = 5;
+
+function getTogether() {
+  return new Together({ apiKey: process.env.TOGETHER_API_KEY });
+}
+
+async function runVerifier(
+  verifierCode: string,
+  solutionData: Record<string, unknown>
+): Promise<{ score?: number; error?: string }> {
+  const dataJson = JSON.stringify(solutionData);
+
+  const code = `${verifierCode}
+
+import json
+data = json.loads('''${dataJson}''')
+score = evaluate(data)
+print(f"SCORE:{score}")
+`;
+
+  const response = await getTogether().codeInterpreter.execute({
+    code,
+    language: "python",
+  });
+
+  const outputs = response.data?.outputs || [];
+  const responseErrors = (response as unknown as { errors?: unknown }).errors;
+
+  if (responseErrors) {
+    return { error: typeof responseErrors === "string" ? responseErrors : JSON.stringify(responseErrors) };
+  }
+
+  for (const output of outputs) {
+    if (output.type === "stderr" && output.data) {
+      const stderr = String(output.data);
+      if (stderr.includes("Error") || stderr.includes("raise")) {
+        const lastLine = stderr.trim().split("\n").pop() || stderr;
+        return { error: lastLine };
+      }
+    }
+    if (output.type === "stdout" && typeof output.data === "string") {
+      const match = output.data.match(/SCORE:([\d.eE+-]+)/);
+      if (match) {
+        return { score: parseFloat(match[1]) };
+      }
+    }
+  }
+
+  const allOutput = outputs.map((o) => `${o.type}: ${o.data}`).join("\n");
+  return { error: `No score returned. Output: ${allOutput.slice(0, 500)}` };
+}
 
 async function getGlobalBest(
   problemId: number,
@@ -36,11 +82,12 @@ export async function GET(req: NextRequest) {
   const pending = await db
     .select()
     .from(solutions)
-    .where(eq(solutions.status, "pending"));
+    .where(eq(solutions.status, "pending"))
+    .limit(MAX_PER_BATCH);
 
   const problemCache: Record<
     number,
-    { slug: string; scoring: string; minImprovement: number }
+    { slug: string; scoring: string; minImprovement: number; verifier: string }
   > = {};
 
   let evaluated = 0;
@@ -53,6 +100,7 @@ export async function GET(req: NextRequest) {
           slug: problems.slug,
           scoring: problems.scoring,
           minImprovement: problems.minImprovement,
+          verifier: problems.verifier,
         })
         .from(problems)
         .where(eq(problems.id, sol.problemId))
@@ -61,21 +109,26 @@ export async function GET(req: NextRequest) {
       problemCache[sol.problemId] = problem;
     }
 
-    const evaluator = EVALUATORS[problem.slug];
-    if (!evaluator) {
-      await db
-        .update(solutions)
-        .set({
-          status: "error",
-          error: `No evaluator for problem ${problem.slug}`,
-          evaluatedAt: new Date(),
-        })
-        .where(eq(solutions.id, sol.id));
-      continue;
-    }
-
     try {
-      const score = evaluator(sol.data as Record<string, unknown>);
+      const result = await runVerifier(
+        problem.verifier,
+        sol.data as Record<string, unknown>
+      );
+
+      if (result.error) {
+        await db
+          .update(solutions)
+          .set({
+            status: "error",
+            error: result.error,
+            evaluatedAt: new Date(),
+          })
+          .where(eq(solutions.id, sol.id));
+        evaluated++;
+        continue;
+      }
+
+      const score = result.score!;
 
       const currentBest = await getGlobalBest(sol.problemId, problem.scoring);
       if (currentBest !== null) {
@@ -107,7 +160,6 @@ export async function GET(req: NextRequest) {
           evaluatedAt: new Date(),
         })
         .where(eq(solutions.id, sol.id));
-
 
       evaluated++;
     } catch (e: unknown) {

@@ -43,7 +43,7 @@ def _normalize_sum_constraint(sequence_array: np.ndarray) -> np.ndarray:
         sequence_array = sequence_array * (target_sum / current_sum)
     return sequence_array
 
-def verify_sequence(sequence: list[float]):
+def compute_upper_bound(sequence: list[float]) -> float:
     sequence_array = np.array(sequence, dtype=np.float64)
     if np.isnan(sequence_array).any():
         raise AssertionError("The sequence contains NaN values.")
@@ -52,16 +52,11 @@ def verify_sequence(sequence: list[float]):
     sequence_array = _normalize_sum_constraint(sequence_array)
     if np.any(sequence_array < 0) or np.any(sequence_array > 1):
         raise AssertionError("After normalization, all values in the sequence must be between 0 and 1.")
-
-def compute_upper_bound(sequence: list[float]) -> float:
-    sequence_array = np.array(sequence, dtype=np.float64)
-    if np.isnan(sequence_array).any():
-        raise AssertionError("The sequence contains NaN values.")
-    sequence_array = _normalize_sum_constraint(sequence_array)
-    if np.any(sequence_array < 0) or np.any(sequence_array > 1):
-        raise AssertionError("After normalization, all values in the sequence must be between 0 and 1.")
     convolution_values = np.correlate(sequence_array, 1 - sequence_array, mode="full")
-    return np.max(convolution_values) / len(sequence) * 2`,
+    return np.max(convolution_values) / len(sequence) * 2
+
+def evaluate(data: dict) -> float:
+    return compute_upper_bound(data["h_values"])`,
   },
   {
     slug: "first-autocorrelation-inequality",
@@ -88,16 +83,20 @@ Lower $C_1$ is better. Submit \`f_values\` — an array of non-negative floats r
     },
     verifier: `import numpy as np
 
-def verify_and_compute(f_values: list[float], n_points: int) -> float:
+def verify_and_compute(f_values: list[float]) -> float:
     f = np.array(f_values, dtype=np.float64)
     if np.any(f < 0):
         raise ValueError("All f_values must be non-negative.")
     if np.sum(f) == 0:
         raise ValueError("The integral of f must be non-trivially positive.")
+    n_points = len(f_values)
     dx = 0.5 / n_points
     autoconv = np.convolve(f, f, mode="full") * dx
     integral_sq = (np.sum(f) * dx) ** 2
-    return float(np.max(autoconv) / integral_sq)`,
+    return float(np.max(autoconv) / integral_sq)
+
+def evaluate(data: dict) -> float:
+    return verify_and_compute(data["f_values"])`,
   },
 ];
 
