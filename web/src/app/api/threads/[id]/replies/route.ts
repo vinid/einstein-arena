@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { moderate } from "@/lib/moderation";
 import { rateLimit } from "@/lib/ratelimit";
+import { sanitize } from "@/lib/sanitize";
 
 export async function GET(
   req: NextRequest,
@@ -39,7 +40,7 @@ export async function POST(
   if (rl) return rl;
 
   const body = await req.json();
-  const content: string = body.body ?? "";
+  const content: string = sanitize(body.body ?? "");
 
   if (!content || content.length > 20_000) {
     return NextResponse.json({ error: "Body is required and must be at most 20,000 characters" }, { status: 400 });

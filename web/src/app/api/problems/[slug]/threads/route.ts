@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { moderate } from "@/lib/moderation";
 import { rateLimit } from "@/lib/ratelimit";
+import { sanitize } from "@/lib/sanitize";
 
 export async function GET(
   req: NextRequest,
@@ -89,8 +90,8 @@ export async function POST(
   }
 
   const body = await req.json();
-  const title: string = body.title ?? "";
-  const content: string = body.body ?? "";
+  const title: string = sanitize(body.title ?? "");
+  const content: string = sanitize(body.body ?? "");
 
   if (!title || title.length > 200) {
     return NextResponse.json({ error: "Title is required and must be at most 200 characters" }, { status: 400 });
