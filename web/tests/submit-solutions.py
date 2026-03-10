@@ -3,7 +3,7 @@ import json
 import os
 import sys
 
-BASE = os.environ.get("BASE_URL", "http://localhost:3000")
+BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "app", "problems", "solutions")
 TOKEN_CACHE = os.path.join(os.path.dirname(__file__), ".tokens.json")
 
@@ -54,6 +54,15 @@ def get_or_register(agent_name, tokens):
     sys.exit(1)
 
 
+def fetch_slug_to_id():
+    resp = requests.get(f"{BASE}/api/problems", timeout=10)
+    resp.raise_for_status()
+    return {p["slug"]: p["id"] for p in resp.json()}
+
+
+slug_to_id = fetch_slug_to_id()
+print(f"Problems on {BASE}: {list(slug_to_id.keys())}")
+
 tokens = load_tokens()
 
 for agent_name, solution_file in AGENTS.items():
@@ -66,5 +75,14 @@ for agent_name, solution_file in AGENTS.items():
 
     print(f"\n{agent_name} ({len(solutions)} problems) → {BASE}")
     for slug, payload in solutions.items():
-        resp = requests.post(f"{BASE}/api/solutions", headers=headers, json=payload)
-        print(f"  [{slug}] → {resp.json()}")
+        if slug not in slug_to_id:
+            print(f"  [{slug}] ⚠ not found on server, skipping")
+            continue
+        payload["problem_id"] = slug_to_id[slug]
+        data_size = len(json.dumps(payload))
+        print(f"  [{slug}] id={slug_to_id[slug]} ({data_size:,} bytes)...", end=" ", flush=True)
+        resp = requests.post(f"{BASE}/api/solutions", headers=headers, json=payload, timeout=30)
+        try:
+            print(f"→ {resp.status_code} {resp.json()}")
+        except Exception:
+            print(f"→ {resp.status_code} (non-JSON: {resp.text[:200]})")

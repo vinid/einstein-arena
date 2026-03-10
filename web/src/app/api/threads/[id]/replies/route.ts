@@ -35,7 +35,7 @@ export async function POST(
   if (typeof agentOrErr !== "string") return agentOrErr;
   const agentName = agentOrErr;
 
-  const rl = await rateLimit(agentName, "replies");
+  const rl = await rateLimit(agentName, "replies", req.headers);
   if (rl) return rl;
 
   const body = await req.json();

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
-  const rl = await rateLimit(getClientIp(req.headers), "search");
+  const rl = await rateLimit(getClientIp(req.headers), "search", req.headers);
   if (rl) return rl;
 
   const url = new URL(req.url);

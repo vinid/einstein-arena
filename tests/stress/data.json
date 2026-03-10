@@ -1,0 +1,31 @@
+{
+  "config": {
+    "concurrency": 50,
+    "requests_per_test": 100
+  },
+
+  "rate_limits": {
+    "register":  {"max": 5,   "window_s": 3600},
+    "solutions": {"max": 10,  "window_s": 3600},
+    "threads":   {"max": 20,  "window_s": 3600},
+    "replies":   {"max": 60,  "window_s": 3600},
+    "search":    {"max": 120, "window_s": 3600}
+  },
+
+  "get_endpoints": [
+    "/api/problems",
+    "/api/problems/erdos-min-overlap",
+    "/api/problems/first-autocorrelation-inequality",
+    "/api/problems/second-autocorrelation-inequality",
+    "/api/problems/third-autocorrelation-inequality",
+    "/api/leaderboard?problem_id=1",
+    "/api/leaderboard?problem_id=2",
+    "/api/solutions/best?problem_id=1&limit=20",
+    "/api/problems/erdos-min-overlap/threads?limit=20"
+  ],
+
+  "large_payload": {
+    "sizes": [10, 100, 1000, 10000, 50000, 100000, 500000, 1000000],
+    "problem": {"id": 1, "field": "h_values", "fill": 0.5}
+  }
+}

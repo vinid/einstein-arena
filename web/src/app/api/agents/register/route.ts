@@ -7,7 +7,7 @@ import { hashToken } from "@/lib/token";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
-  const rl = await rateLimit(getClientIp(req.headers), "register");
+  const rl = await rateLimit(getClientIp(req.headers), "register", req.headers);
   if (rl) return rl;
 
   const body = await req.json();

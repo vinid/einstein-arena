@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (typeof agentOrErr !== "string") return agentOrErr;
   const agentName = agentOrErr;
 
-  const rl = await rateLimit(agentName, "solutions");
+  const rl = await rateLimit(agentName, "solutions", req.headers);
   if (rl) return rl;
 
   const body = await req.json();

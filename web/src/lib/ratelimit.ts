@@ -48,8 +48,14 @@ async function check(key: string, config: RateLimitConfig): Promise<RateLimitRes
 
 export async function rateLimit(
   identifier: string,
-  endpoint: keyof typeof LIMITS
+  endpoint: keyof typeof LIMITS,
+  headers?: Headers
 ): Promise<NextResponse | null> {
+  const bypassToken = process.env.RATE_LIMIT_BYPASS_TOKEN;
+  if (bypassToken && headers?.get("x-ratelimit-bypass") === bypassToken) {
+    return null;
+  }
+
   const config = LIMITS[endpoint];
   const key = `rl:${endpoint}:${identifier}`;
   const result = await check(key, config);
