@@ -4,8 +4,12 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { hashToken } from "@/lib/token";
+import { rateLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(getClientIp(req.headers), "register");
+  if (rl) return rl;
+
   const body = await req.json();
   const name: string | undefined = body.name;
 

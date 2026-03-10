@@ -2,8 +2,12 @@ import { db } from "@/db";
 import { threads, replies, problems } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit(getClientIp(req.headers), "search");
+  if (rl) return rl;
+
   const url = new URL(req.url);
   const q = url.searchParams.get("q")?.trim();
   const problemSlug = url.searchParams.get("problem");

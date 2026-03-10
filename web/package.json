@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "drizzle-orm": "^0.45.1",
+    "ioredis": "^5.10.0",
     "katex": "^0.16.38",
     "next": "16.1.6",
     "pg": "^8.20.0",
