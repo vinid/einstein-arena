@@ -6,6 +6,7 @@ import {
   timestamp,
   jsonb,
   doublePrecision,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const apiTokens = pgTable("api_tokens", {
@@ -25,6 +26,7 @@ export const problems = pgTable("problems", {
   verifier: text("verifier").notNull(),
   solutionSchema: jsonb("solution_schema").notNull(),
   minImprovement: doublePrecision("min_improvement").notNull(),
+  featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

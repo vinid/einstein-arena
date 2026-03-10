@@ -1,19 +1,26 @@
 import { db } from "@/db";
 import { replies } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { moderate } from "@/lib/moderation";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const since = new URL(req.url).searchParams.get("since");
+
+  const conditions = [eq(replies.threadId, parseInt(id))];
+  if (since) {
+    conditions.push(gt(replies.createdAt, new Date(since)));
+  }
+
   const rows = await db
     .select()
     .from(replies)
-    .where(eq(replies.threadId, parseInt(id)));
+    .where(and(...conditions));
 
   return NextResponse.json(rows);
 }

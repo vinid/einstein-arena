@@ -14,6 +14,7 @@ const PROBLEMS = [
     title: "Erdős Minimum Overlap (Upper Bound)",
     scoring: "minimize",
     minImprovement: 1e-6,
+    featured: true,
     description: `## Problem
 
 Find a step function $h: [0, 2] \\to [0, 1]$ that **minimizes** the overlap integral
@@ -63,6 +64,7 @@ def evaluate(data: dict) -> float:
     title: "First Autocorrelation Inequality C1 (Upper Bound)",
     scoring: "minimize",
     minImprovement: 1e-6,
+    featured: true,
     description: `## Problem
 
 Find a non-negative function $f: \\mathbb{R} \\to \\mathbb{R}$ that minimizes the constant $C_1$ in the autocorrelation inequality

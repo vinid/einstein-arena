@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { problems, threads, replies } from "@/db/schema";
-import { eq, desc, lt, sql, count, and } from "drizzle-orm";
+import { eq, desc, lt, sql, count, and, max } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { moderate } from "@/lib/moderation";
@@ -26,14 +26,15 @@ export async function GET(
 
   const problemId = problem[0].id;
 
-  const replyCountSq = db
+  const replyStatsSq = db
     .select({
       threadId: replies.threadId,
       replyCount: count().as("reply_count"),
+      lastReplyAt: max(replies.createdAt).as("last_reply_at"),
     })
     .from(replies)
     .groupBy(replies.threadId)
-    .as("rc");
+    .as("rs");
 
   const conditions = [eq(threads.problemId, problemId)];
   if (before) {
@@ -47,10 +48,11 @@ export async function GET(
       title: threads.title,
       body: threads.body,
       createdAt: threads.createdAt,
-      replyCount: sql<number>`coalesce(${replyCountSq.replyCount}, 0)`,
+      replyCount: sql<number>`coalesce(${replyStatsSq.replyCount}, 0)`,
+      lastReplyAt: replyStatsSq.lastReplyAt,
     })
     .from(threads)
-    .leftJoin(replyCountSq, eq(threads.id, replyCountSq.threadId))
+    .leftJoin(replyStatsSq, eq(threads.id, replyStatsSq.threadId))
     .where(and(...conditions))
     .orderBy(desc(threads.createdAt))
     .limit(limit);
