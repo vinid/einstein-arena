@@ -4,7 +4,7 @@
       {
         "method": "POST",
         "path": "/api/solutions",
-        "payload": {"problem_id": 1, "solution": {"h_values": [0.5]}}
+        "payload": {"problem_id": 1, "solution": {"values": [0.5]}}
       },
       {
         "method": "POST",
@@ -50,9 +50,9 @@
       "problem_id=1&limit=1 UNION SELECT * FROM agents--"
     ],
     "nosql_payloads": [
-      {"problem_id": {"$gt": 0}, "solution": {"h_values": [0.5]}},
-      {"problem_id": {"$ne": null}, "solution": {"h_values": [0.5]}},
-      {"problem_id": 1, "solution": {"h_values": {"$gt": ""}}},
+      {"problem_id": {"$gt": 0}, "solution": {"values": [0.5]}},
+      {"problem_id": {"$ne": null}, "solution": {"values": [0.5]}},
+      {"problem_id": 1, "solution": {"values": {"$gt": ""}}},
       {"problem_id": 1, "solution": {"$where": "sleep(5000)"}}
     ],
     "command_injection": [
@@ -109,30 +109,30 @@
       null
     ],
     "wrong_type_payloads": [
-      {"label": "string_problem_id", "payload": {"problem_id": "one", "solution": {"h_values": [0.5]}}},
-      {"label": "null_problem_id", "payload": {"problem_id": null, "solution": {"h_values": [0.5]}}},
-      {"label": "negative_problem_id", "payload": {"problem_id": -1, "solution": {"h_values": [0.5]}}},
-      {"label": "zero_problem_id", "payload": {"problem_id": 0, "solution": {"h_values": [0.5]}}},
-      {"label": "huge_problem_id", "payload": {"problem_id": 99999, "solution": {"h_values": [0.5]}}},
-      {"label": "float_problem_id", "payload": {"problem_id": 1.5, "solution": {"h_values": [0.5]}}},
-      {"label": "bool_problem_id", "payload": {"problem_id": true, "solution": {"h_values": [0.5]}}},
+      {"label": "string_problem_id", "payload": {"problem_id": "one", "solution": {"values": [0.5]}}},
+      {"label": "null_problem_id", "payload": {"problem_id": null, "solution": {"values": [0.5]}}},
+      {"label": "negative_problem_id", "payload": {"problem_id": -1, "solution": {"values": [0.5]}}},
+      {"label": "zero_problem_id", "payload": {"problem_id": 0, "solution": {"values": [0.5]}}},
+      {"label": "huge_problem_id", "payload": {"problem_id": 99999, "solution": {"values": [0.5]}}},
+      {"label": "float_problem_id", "payload": {"problem_id": 1.5, "solution": {"values": [0.5]}}},
+      {"label": "bool_problem_id", "payload": {"problem_id": true, "solution": {"values": [0.5]}}},
       {"label": "null_solution", "payload": {"problem_id": 1, "solution": null}},
       {"label": "string_solution", "payload": {"problem_id": 1, "solution": "string"}},
-      {"label": "string_h_values", "payload": {"problem_id": 1, "solution": {"h_values": "not an array"}}},
-      {"label": "null_h_values", "payload": {"problem_id": 1, "solution": {"h_values": null}}},
-      {"label": "empty_h_values", "payload": {"problem_id": 1, "solution": {"h_values": []}}},
-      {"label": "string_array", "payload": {"problem_id": 1, "solution": {"h_values": ["a", "b", "c"]}}},
-      {"label": "null_array", "payload": {"problem_id": 1, "solution": {"h_values": [null, null]}}},
+      {"label": "string_values", "payload": {"problem_id": 1, "solution": {"values": "not an array"}}},
+      {"label": "null_values", "payload": {"problem_id": 1, "solution": {"values": null}}},
+      {"label": "empty_values", "payload": {"problem_id": 1, "solution": {"values": []}}},
+      {"label": "string_array", "payload": {"problem_id": 1, "solution": {"values": ["a", "b", "c"]}}},
+      {"label": "null_array", "payload": {"problem_id": 1, "solution": {"values": [null, null]}}},
       {"label": "empty_solution_obj", "payload": {"problem_id": 1, "solution": {}}},
       {"label": "missing_solution", "payload": {"problem_id": 1}},
-      {"label": "missing_problem_id", "payload": {"solution": {"h_values": [0.5]}}},
+      {"label": "missing_problem_id", "payload": {"solution": {"values": [0.5]}}},
       {"label": "empty_object", "payload": {}}
     ],
     "raw_edge_payloads": [
-      {"label": "infinity", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [Infinity]}}"},
-      {"label": "nan", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [NaN]}}"},
-      {"label": "huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [1e308]}}"},
-      {"label": "neg_huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"h_values\": [-1e308]}}"}
+      {"label": "infinity", "raw": "{\"problem_id\": 1, \"solution\": {\"values\": [Infinity]}}"},
+      {"label": "nan", "raw": "{\"problem_id\": 1, \"solution\": {\"values\": [NaN]}}"},
+      {"label": "huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"values\": [1e308]}}"},
+      {"label": "neg_huge_float", "raw": "{\"problem_id\": 1, \"solution\": {\"values\": [-1e308]}}"}
     ],
     "http_methods": ["PUT", "DELETE", "PATCH", "OPTIONS", "HEAD", "TRACE"],
     "method_endpoints": ["/api/problems", "/api/solutions"]
@@ -208,24 +208,24 @@
 
   "prototype_pollution": {
     "solution_payloads": [
-      {"problem_id": 1, "solution": {"h_values": [0.5]}, "__proto__": {"admin": true}},
-      {"problem_id": 1, "solution": {"h_values": [0.5]}, "constructor": {"prototype": {"admin": true}}},
-      {"problem_id": 1, "solution": {"h_values": [0.5], "__proto__": {"isAdmin": true}}},
-      {"problem_id": 1, "solution": {"h_values": [0.5]}, "prototype": {"role": "admin"}}
+      {"problem_id": 1, "solution": {"values": [0.5]}, "__proto__": {"admin": true}},
+      {"problem_id": 1, "solution": {"values": [0.5]}, "constructor": {"prototype": {"admin": true}}},
+      {"problem_id": 1, "solution": {"values": [0.5], "__proto__": {"isAdmin": true}}},
+      {"problem_id": 1, "solution": {"values": [0.5]}, "prototype": {"role": "admin"}}
     ],
     "registration_payloads": [
       {"name": "ProtoTest", "description": "test", "__proto__": {"role": "admin", "isAdmin": true}},
       {"name": "ProtoTest2", "description": "test", "constructor": {"prototype": {"admin": true}}}
     ],
     "json_edge_cases": [
-      {"problem_id": 1, "solution": {"h_values": [0.5]}, "__duplicate_problem_id": 2},
-      {"problem_id": 1, "solution": {"h_values": [1e-324]}},
-      {"problem_id": 1, "solution": {"h_values": [1.7976931348623157e+308]}},
-      {"problem_id": 1, "solution": {"h_values": [-0.0]}}
+      {"problem_id": 1, "solution": {"values": [0.5]}, "__duplicate_problem_id": 2},
+      {"problem_id": 1, "solution": {"values": [1e-324]}},
+      {"problem_id": 1, "solution": {"values": [1.7976931348623157e+308]}},
+      {"problem_id": 1, "solution": {"values": [-0.0]}}
     ],
     "duplicate_key_raw": [
-      "{\"problem_id\":1,\"solution\":{\"h_values\":[0.5]},\"problem_id\":2}",
-      "{\"problem_id\":1,\"solution\":{\"h_values\":[0.5]},\"solution\":{\"h_values\":[999]}}"
+      "{\"problem_id\":1,\"solution\":{\"values\":[0.5]},\"problem_id\":2}",
+      "{\"problem_id\":1,\"solution\":{\"values\":[0.5]},\"solution\":{\"values\":[999]}}"
     ]
   },
 
@@ -245,9 +245,9 @@
       "http://localhost:4000"
     ],
     "payloads": [
-      {"problem_id": 1, "solution": {"h_values": ["http://169.254.169.254/latest/meta-data/"]}},
-      {"problem_id": 1, "solution": {"h_values": ["http://localhost:5432"]}},
-      {"problem_id": 1, "solution": {"h_values": ["http://localhost:6379"]}},
+      {"problem_id": 1, "solution": {"values": ["http://169.254.169.254/latest/meta-data/"]}},
+      {"problem_id": 1, "solution": {"values": ["http://localhost:5432"]}},
+      {"problem_id": 1, "solution": {"values": ["http://localhost:6379"]}},
       {"problem_id": 1, "solution": {"url": "http://169.254.169.254/latest/meta-data/"}},
       {"problem_id": 1, "solution": {"callback_url": "http://evil.com/steal"}}
     ]

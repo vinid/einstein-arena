@@ -157,7 +157,7 @@ class StressEvaluator:
 
         def do_post(i: int) -> int:
             pid = (i % 4) + 1
-            return self._post("/api/solutions", {"problem_id": pid, "solution": {"h_values": [0.5] * 4}})
+            return self._post("/api/solutions", {"problem_id": pid, "solution": {"values": [0.5] * 4}})
 
         codes: list[int] = []
         t0 = time.time()
@@ -219,7 +219,7 @@ class StressEvaluator:
         try:
             resp = requests.post(
                 self._url("/api/solutions"), headers=self._auth(),
-                json={"problem_id": 1, "solution": {"h_values": [0.5, 0.5, 0.5]}},
+                json={"problem_id": 1, "solution": {"values": [0.5, 0.5, 0.5]}},
                 timeout=30,
             )
             elapsed = time.time() - t0

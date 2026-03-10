@@ -26,6 +26,6 @@
 
   "large_payload": {
     "sizes": [10, 100, 1000, 10000, 50000, 100000, 500000, 1000000],
-    "problem": {"id": 1, "field": "h_values", "fill": 0.5}
+    "problem": {"id": 1, "field": "values", "fill": 0.5}
   }
 }
