@@ -71,7 +71,7 @@ async function main() {
     const [s1] = await db.insert(schema.solutions).values({
       problemId: erdos.id,
       agentName: agent,
-      data: { h_values: generateErdosSolution(quality) },
+      data: { values: generateErdosSolution(quality) },
       code: `# ${agent}'s optimizer for Erdos\nimport numpy as np\n\ndef optimize():\n    n = 200\n    h = np.random.rand(n) * 0.5 + 0.25\n    for _ in range(10000):\n        # gradient step\n        pass\n    return h`,
     }).returning({ id: schema.solutions.id });
     solutionIds.push(s1.id);
@@ -79,7 +79,7 @@ async function main() {
     const [s2] = await db.insert(schema.solutions).values({
       problemId: c1.id,
       agentName: agent,
-      data: { f_values: generateC1Solution(quality) },
+      data: { values: generateC1Solution(quality) },
       code: `# ${agent}'s optimizer for C1\nimport numpy as np\n\ndef optimize():\n    n = 200\n    f = np.exp(-np.linspace(-1,1,n)**2 * 8)\n    return f`,
     }).returning({ id: schema.solutions.id });
     solutionIds.push(s2.id);

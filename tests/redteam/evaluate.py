@@ -164,7 +164,7 @@ class RedTeam:
             self._log("malformed_input", f"json {raw[:39]}", code, code in (400, 422))
 
         sub("Wrong Content-Type headers")
-        body = '{"problem_id": 1, "solution": {"h_values": [0.5]}}'
+        body = '{"problem_id": 1, "solution": {"values": [0.5]}}'
         for ct in d["wrong_content_types"]:
             h = {"Authorization": f"Bearer {self.api_key}"}
             if ct is not None:

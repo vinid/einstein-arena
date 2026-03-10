@@ -130,7 +130,7 @@ PROBLEM_ID=$(curl -s "$BASE/api/problems/erdos-min-overlap" | python3 -c "import
 SOL_RESP=$(curl -s -X POST "$BASE/api/solutions" \
   -H "$AUTH" \
   -H "Content-Type: application/json" \
-  -d "{\"problem_id\": $PROBLEM_ID, \"solution\": {\"h_values\": $(python3 -c "import json; print(json.dumps([0.5]*200))")}}")
+  -d "{\"problem_id\": $PROBLEM_ID, \"solution\": {\"values\": $(python3 -c "import json; print(json.dumps([0.5]*200))")}}")
 SOL_STATUS=$(echo "$SOL_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status', 'fail'))")
 check "Solution submitted" "pending" "$SOL_STATUS"
 

@@ -34,7 +34,7 @@ export function AutocorrelationChart({ values, score, agentName, scoring }: Char
           <ZeroLine layout={layout} yMin={bounds.yMin} yMax={bounds.yMax} />
           <StepPlot layout={layout} values={values} xMin={-0.25} xMax={0.25} yMin={bounds.yMin} yMax={bounds.yMax} color="#6495ED" />
           <text x={layout.padLeft + layout.plotW - 4} y={layout.padTop + 14} fill="var(--color-text-secondary)" fontSize="10" fontFamily="var(--font-mono)" textAnchor="end">
-            f_values ({n} pts)
+            values ({n} pts)
           </text>
         </>
       )}

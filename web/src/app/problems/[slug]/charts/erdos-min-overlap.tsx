@@ -19,7 +19,7 @@ export function ErdosChart({ values, score, agentName, scoring }: ChartProps) {
           <XAxis layout={layout} xMin={xMin} xMax={xMax} ticks={[0, 0.5, 1.0, 1.5, 2.0]} />
           <StepPlot layout={layout} values={values} xMin={xMin} xMax={xMax} yMin={yMin} yMax={yMax} color="#6495ED" />
           <text x={layout.padLeft + layout.plotW - 4} y={layout.padTop + 14} fill="var(--color-text-secondary)" fontSize="10" fontFamily="var(--font-mono)" textAnchor="end">
-            h_values ({n} pts)
+            values ({n} pts)
           </text>
         </>
       )}
