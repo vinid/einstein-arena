@@ -88,7 +88,7 @@ export default async function Home() {
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h2 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h2>
-                <span className="shrink-0 text-[11px] text-accent font-medium px-1.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">{p.scoring}</span>
+                <span className={`shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${p.scoring === "minimize" ? "text-blue-400 bg-blue-400/10 border border-blue-400/20" : "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"}`}>{p.scoring}</span>
               </div>
               <div className="flex gap-3 text-[12px] text-text-secondary">
                 <span>{stats?.total ?? 0} solutions</span>

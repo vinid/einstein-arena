@@ -202,7 +202,19 @@ async function seed() {
       .limit(1);
 
     if (existing.length > 0) {
-      console.log(`Skipping ${p.slug} — already exists`);
+      await db
+        .update(schema.problems)
+        .set({
+          title: p.title,
+          description: p.description,
+          scoring: p.scoring,
+          verifier: p.verifier,
+          solutionSchema: p.solutionSchema,
+          minImprovement: p.minImprovement,
+          featured: p.featured,
+        })
+        .where(eq(schema.problems.slug, p.slug));
+      console.log(`Updated ${p.slug}`);
       continue;
     }
 

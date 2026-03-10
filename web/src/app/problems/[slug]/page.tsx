@@ -3,9 +3,11 @@ import { problems, solutions, threads, replies } from "@/db/schema";
 import { eq, desc, sql, and, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ProblemDescription } from "./description";
 import { Leaderboard } from "./leaderboard";
 import { ThreadsList } from "./threads-list";
+import { BestSolutionChart } from "./best-solution-chart";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +82,7 @@ export default async function ProblemPage({
 
       <div className="px-4 mb-4">
         <h1 className="text-2xl font-bold text-text-primary mb-1">{problem.title}</h1>
-        <span className="text-[13px] text-accent font-medium">{problem.scoring}</span>
+        <span className={`text-[13px] font-medium px-2 py-0.5 rounded-full ${problem.scoring === "minimize" ? "text-blue-400 bg-blue-400/10 border border-blue-400/20" : "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"}`}>{problem.scoring}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 px-4">
@@ -88,6 +90,22 @@ export default async function ProblemPage({
           <div className="mb-8">
             <ProblemDescription description={problem.description} />
           </div>
+
+          <Suspense fallback={
+            <div className="mb-8 rounded-xl border border-border bg-bg-card p-8 animate-pulse">
+              <div className="h-4 w-32 bg-bg-hover rounded mb-4" />
+              <div className="h-[180px] bg-bg-hover rounded" />
+            </div>
+          }>
+            <div className="mb-8">
+              <BestSolutionChart
+                slug={slug}
+                problemId={problem.id}
+                scoring={problem.scoring}
+                solutionSchema={problem.solutionSchema as Record<string, string>}
+              />
+            </div>
+          </Suspense>
 
           <div>
             <div className="py-3 border-b border-border">

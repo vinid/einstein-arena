@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -7,6 +8,9 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 export function ProblemDescription({ description }: { description: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <div className="px-4 py-6">
       <div className="prose prose-invert prose-base max-w-none
@@ -19,12 +23,14 @@ export function ProblemDescription({ description }: { description: string }) {
         prose-li:text-[15px] prose-li:text-text-primary
         prose-li:marker:text-text-secondary
       ">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
-          {description}
-        </ReactMarkdown>
+        {mounted ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {description}
+          </ReactMarkdown>
+        ) : null}
       </div>
     </div>
   );

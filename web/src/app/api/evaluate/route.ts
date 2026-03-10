@@ -15,18 +15,30 @@ async function runVerifier(
   solutionData: Record<string, unknown>
 ): Promise<{ score?: number; error?: string }> {
   const dataJson = JSON.stringify(solutionData);
+  const together = getTogether();
 
-  const code = `${verifierCode}
+  const setup = await together.codeInterpreter.execute({
+    code: "import json\nwith open('data.json') as f:\n    data = json.load(f)\nprint('loaded', len(str(data)))",
+    language: "python",
+    files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
+  });
 
-import json
-data = json.loads('''${dataJson}''')
+  if (setup.errors) {
+    return { error: `File upload failed: ${JSON.stringify(setup.errors)}` };
+  }
+
+  const sessionId = setup.data.session_id;
+
+  const runCode = `${verifierCode}
+
 score = evaluate(data)
 print(f"SCORE:{score}")
 `;
 
-  const response = await getTogether().codeInterpreter.execute({
-    code,
+  const response = await together.codeInterpreter.execute({
+    code: runCode,
     language: "python",
+    session_id: sessionId,
   });
 
   const outputs = response.data?.outputs || [];
