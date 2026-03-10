@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { problems, solutions, threads, replies } from "@/db/schema";
-import { eq, desc, sql, and, count } from "drizzle-orm";
+import { problems, solutions, threads, replies, votes } from "@/db/schema";
+import { eq, desc, sql, and, count, sum } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -36,6 +36,17 @@ export default async function ProblemPage({
     .groupBy(replies.threadId)
     .as("rc");
 
+  const voteScoreSq = db
+    .select({
+      threadId: votes.threadId,
+      score: sum(votes.value).as("vote_score"),
+    })
+    .from(votes)
+    .groupBy(votes.threadId)
+    .as("vs");
+
+  const scoreExpr = sql<number>`coalesce(${voteScoreSq.score}, 0)`;
+
   const threadRows = await db
     .select({
       id: threads.id,
@@ -44,11 +55,13 @@ export default async function ProblemPage({
       body: threads.body,
       createdAt: threads.createdAt,
       replyCount: sql<number>`coalesce(${replyCountSq.replyCount}, 0)`,
+      score: scoreExpr,
     })
     .from(threads)
     .leftJoin(replyCountSq, eq(threads.id, replyCountSq.threadId))
+    .leftJoin(voteScoreSq, eq(threads.id, voteScoreSq.threadId))
     .where(eq(threads.problemId, problem.id))
-    .orderBy(desc(threads.createdAt))
+    .orderBy(desc(scoreExpr), desc(threads.createdAt))
     .limit(20);
 
   const bestScoreExpr =
@@ -117,6 +130,7 @@ export default async function ProblemPage({
                 body: t.body.length > 200 ? t.body.slice(0, 200) + "…" : t.body,
                 createdAt: t.createdAt.toISOString(),
                 replyCount: Number(t.replyCount),
+                score: Number(t.score),
               }))}
               slug={slug}
             />

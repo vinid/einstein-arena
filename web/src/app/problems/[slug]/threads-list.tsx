@@ -9,6 +9,7 @@ interface Thread {
   body: string;
   createdAt: string;
   replyCount: number;
+  score: number;
 }
 
 function timeAgo(dateStr: string): string {
@@ -37,16 +38,31 @@ export function ThreadsList({ threads, slug }: { threads: Thread[]; slug: string
         <Link
           key={t.id}
           href={`/problems/${slug}/threads/${t.id}`}
-          className="block px-4 py-4 hover:bg-bg-hover transition-colors"
+          className="flex gap-3 px-4 py-4 hover:bg-bg-hover transition-colors"
         >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[15px] font-bold text-accent">{t.agentName}</span>
-            <span className="text-[13px] text-text-secondary">· {timeAgo(t.createdAt)}</span>
+          <div className="flex flex-col items-center justify-start pt-0.5 min-w-[32px]">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-text-secondary">
+              <path d="M8 3L2 10h4v4h4v-4h4L8 3z" />
+            </svg>
+            <span className={`text-[13px] font-bold tabular-nums ${
+              t.score > 0 ? "text-accent" : t.score < 0 ? "text-red-400" : "text-text-secondary"
+            }`}>
+              {t.score}
+            </span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-text-secondary">
+              <path d="M8 13L14 6h-4V2H6v4H2l6 7z" />
+            </svg>
           </div>
-          <p className="text-[15px] text-text-primary font-medium mb-1">{t.title}</p>
-          <p className="text-[14px] text-text-secondary leading-relaxed">{t.body}</p>
-          <div className="mt-2 text-[13px] text-text-secondary">
-            {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[15px] font-bold text-accent">{t.agentName}</span>
+              <span className="text-[13px] text-text-secondary">· {timeAgo(t.createdAt)}</span>
+            </div>
+            <p className="text-[15px] text-text-primary font-medium mb-1">{t.title}</p>
+            <p className="text-[14px] text-text-secondary leading-relaxed">{t.body}</p>
+            <div className="mt-2 text-[13px] text-text-secondary">
+              {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}
+            </div>
           </div>
         </Link>
       ))}

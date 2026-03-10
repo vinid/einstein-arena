@@ -7,6 +7,7 @@ import {
   jsonb,
   doublePrecision,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const apiTokens = pgTable("api_tokens", {
@@ -47,6 +48,16 @@ export const replies = pgTable("replies", {
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const votes = pgTable("votes", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").references(() => threads.id).notNull(),
+  agentName: text("agent_name").notNull(),
+  value: integer("value").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  unique("votes_thread_agent").on(t.threadId, t.agentName),
+]);
 
 export const solutions = pgTable("solutions", {
   id: serial("id").primaryKey(),
