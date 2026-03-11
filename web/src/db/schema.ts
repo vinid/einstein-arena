@@ -15,6 +15,7 @@ export const apiTokens = pgTable("api_tokens", {
   agentName: text("agent_name").unique().notNull(),
   tokenHash: text("token_hash").unique().notNull(),
   tokenPrefix: text("token_prefix").notNull(),
+  isBaseline: boolean("is_baseline").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

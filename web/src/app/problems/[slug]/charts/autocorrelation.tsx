@@ -25,7 +25,7 @@ export function AutocorrelationChart({ values, score, agentName, scoring }: Char
   const bounds = computeYBounds(values, allowNeg);
 
   return (
-    <ChartShell title="Best Solution — f(x)" agentName={agentName} score={score} scoring={scoring}>
+    <ChartShell title="f(x)" agentName={agentName} score={score} scoring={scoring}>
       {(layout: Layout) => (
         <>
           <GridLines layout={layout} yMin={bounds.yMin} yMax={bounds.yMax} yTicks={niceYTicks(bounds.yMin, bounds.yMax, 4)} />

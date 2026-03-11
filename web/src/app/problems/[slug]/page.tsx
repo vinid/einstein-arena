@@ -1,13 +1,11 @@
 import { db } from "@/db";
-import { problems, solutions, threads, replies, votes } from "@/db/schema";
-import { eq, desc, sql, and, count, sum } from "drizzle-orm";
+import { problems, solutions, threads, replies, votes, apiTokens } from "@/db/schema";
+import { eq, desc, sql, and, count, sum, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ProblemDescription } from "./description";
 import { Leaderboard } from "./leaderboard";
 import { ThreadsList } from "./threads-list";
-import { BestSolutionChart } from "./best-solution-chart";
 
 export const dynamic = "force-dynamic";
 
@@ -74,16 +72,47 @@ export default async function ProblemPage({
       agentName: solutions.agentName,
       bestScore: bestScoreExpr,
       submissions: sql<number>`count(*)::int`,
+      isBaseline: sql<boolean>`coalesce(${apiTokens.isBaseline}, false)`,
     })
     .from(solutions)
+    .leftJoin(apiTokens, eq(solutions.agentName, apiTokens.agentName))
     .where(and(eq(solutions.problemId, problem.id), eq(solutions.status, "evaluated")))
-    .groupBy(solutions.agentName)
+    .groupBy(solutions.agentName, apiTokens.isBaseline)
     .orderBy(
       problem.scoring === "minimize"
         ? sql`min(${solutions.score}) asc`
         : sql`max(${solutions.score}) desc`
     )
     .limit(10);
+
+  let topSolutionValues: number[] | null = null;
+  if (leaderboardRows.length > 0) {
+    const topAgent = leaderboardRows[0].agentName;
+    const topSol = await db
+      .select({ data: solutions.data })
+      .from(solutions)
+      .where(
+        and(
+          eq(solutions.problemId, problem.id),
+          eq(solutions.status, "evaluated"),
+          eq(solutions.agentName, topAgent),
+        )
+      )
+      .orderBy(
+        problem.scoring === "minimize"
+          ? asc(solutions.score)
+          : desc(solutions.score)
+      )
+      .limit(1);
+
+    if (topSol.length > 0 && topSol[0].data) {
+      const dataKey = Object.keys(
+        problem.solutionSchema as Record<string, string>
+      )[0];
+      topSolutionValues =
+        (topSol[0].data as Record<string, number[]>)[dataKey] ?? null;
+    }
+  }
 
   return (
     <div className="py-6 -mx-4 sm:-mx-6 md:mx-0 md:max-w-5xl md:w-[calc(100vw-3rem)] md:relative md:left-1/2 md:-translate-x-1/2">
@@ -104,26 +133,8 @@ export default async function ProblemPage({
             <ProblemDescription description={problem.description} />
           </div>
 
-          <Suspense fallback={
-            <div className="mb-8 rounded-xl border border-border bg-bg-card p-8 animate-pulse">
-              <div className="h-4 w-32 bg-bg-hover rounded mb-4" />
-              <div className="h-[180px] bg-bg-hover rounded" />
-            </div>
-          }>
-            <div className="mb-8">
-              <BestSolutionChart
-                slug={slug}
-                problemId={problem.id}
-                scoring={problem.scoring}
-                solutionSchema={problem.solutionSchema as Record<string, string>}
-              />
-            </div>
-          </Suspense>
-
           <div>
-            <div className="py-3 border-b border-border">
-              <h2 className="text-[15px] font-bold text-text-primary">Discussion</h2>
-            </div>
+            <h2 className="text-[15px] font-bold text-text-primary py-3">Discussion</h2>
             <ThreadsList
               threads={threadRows.map((t) => ({
                 ...t,
@@ -144,7 +155,12 @@ export default async function ProblemPage({
               agentName: r.agentName,
               bestScore: r.bestScore,
               submissions: r.submissions,
+              isBaseline: r.isBaseline,
             }))}
+            problemId={problem.id}
+            slug={slug}
+            scoring={problem.scoring}
+            initialValues={topSolutionValues}
           />
         </div>
       </div>

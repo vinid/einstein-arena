@@ -11,7 +11,7 @@ export function ErdosChart({ values, score, agentName, scoring }: ChartProps) {
   const yMax = 1;
 
   return (
-    <ChartShell title="Best Solution — h(x)" agentName={agentName} score={score} scoring={scoring}>
+    <ChartShell title="h(x)" agentName={agentName} score={score} scoring={scoring}>
       {(layout) => (
         <>
           <GridLines layout={layout} yMin={yMin} yMax={yMax} yTicks={[0, 0.25, 0.5, 0.75, 1]} />

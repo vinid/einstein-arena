@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
   }
 
   const order = problem[0].scoring === "minimize" ? asc(solutions.score) : desc(solutions.score);
+  const agentName = url.searchParams.get("agent_name");
+
+  const conditions = [eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")];
+  if (agentName) conditions.push(eq(solutions.agentName, agentName));
 
   const rows = await db
     .select({
@@ -29,7 +33,7 @@ export async function GET(req: NextRequest) {
       data: solutions.data,
     })
     .from(solutions)
-    .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
+    .where(and(...conditions))
     .orderBy(order)
     .limit(limit);
 

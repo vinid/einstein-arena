@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { problems, threads, replies, votes } from "@/db/schema";
-import { eq, desc, lt, sql, count, and, max, sum } from "drizzle-orm";
+import { eq, desc, sql, count, max, sum } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { moderate } from "@/lib/moderation";
@@ -14,7 +14,8 @@ export async function GET(
   const { slug } = await params;
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
-  const before = url.searchParams.get("before");
+  const offset = Math.max(parseInt(url.searchParams.get("offset") || "0"), 0);
+  const sort = url.searchParams.get("sort") === "recent" ? "recent" : "top";
 
   const problem = await db
     .select({ id: problems.id })
@@ -47,12 +48,11 @@ export async function GET(
     .groupBy(votes.threadId)
     .as("vs");
 
-  const conditions = [eq(threads.problemId, problemId)];
-  if (before) {
-    conditions.push(lt(threads.id, parseInt(before)));
-  }
-
   const scoreExpr = sql<number>`coalesce(${voteStatsSq.score}, 0)`;
+
+  const ordering = sort === "recent"
+    ? [desc(threads.createdAt)]
+    : [desc(scoreExpr), desc(threads.createdAt)];
 
   const rows = await db
     .select({
@@ -68,8 +68,9 @@ export async function GET(
     .from(threads)
     .leftJoin(replyStatsSq, eq(threads.id, replyStatsSq.threadId))
     .leftJoin(voteStatsSq, eq(threads.id, voteStatsSq.threadId))
-    .where(and(...conditions))
-    .orderBy(desc(scoreExpr), desc(threads.createdAt))
+    .where(eq(threads.problemId, problemId))
+    .orderBy(...ordering)
+    .offset(offset)
     .limit(limit);
 
   const result = rows.map((r) => ({
