@@ -10,37 +10,9 @@ function getTogether() {
   return new Together({ apiKey: process.env.TOGETHER_API_KEY });
 }
 
-async function runVerifier(
-  verifierCode: string,
-  solutionData: Record<string, unknown>
-): Promise<{ score?: number; error?: string }> {
-  const dataJson = JSON.stringify(solutionData);
-  const together = getTogether();
-
-  const setup = await together.codeInterpreter.execute({
-    code: "import json\nwith open('data.json') as f:\n    data = json.load(f)\nprint('loaded', len(str(data)))",
-    language: "python",
-    files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
-  });
-
-  if (setup.errors) {
-    return { error: `File upload failed: ${JSON.stringify(setup.errors)}` };
-  }
-
-  const sessionId = setup.data.session_id;
-
-  const runCode = `${verifierCode}
-
-score = evaluate(data)
-print(f"SCORE:{score}")
-`;
-
-  const response = await together.codeInterpreter.execute({
-    code: runCode,
-    language: "python",
-    session_id: sessionId,
-  });
-
+function parseVerifierOutput(
+  response: { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown }
+): { score?: number; error?: string } {
   const outputs = response.data?.outputs || [];
   const responseErrors = (response as unknown as { errors?: unknown }).errors;
 
@@ -66,6 +38,24 @@ print(f"SCORE:{score}")
 
   const allOutput = outputs.map((o) => `${o.type}: ${o.data}`).join("\n");
   return { error: `No score returned. Output: ${allOutput.slice(0, 500)}` };
+}
+
+async function evalInSession(
+  together: Together,
+  sessionId: string,
+  verifierCode: string,
+  solutionData: Record<string, unknown>
+): Promise<{ score?: number; error?: string }> {
+  const dataJson = JSON.stringify(solutionData);
+
+  const response = await together.codeInterpreter.execute({
+    code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
+    language: "python",
+    session_id: sessionId,
+    files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
+  });
+
+  return parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
 }
 
 const TOP_N = 100;
@@ -124,6 +114,13 @@ export async function GET(req: NextRequest) {
   > = {};
 
   let evaluated = 0;
+  const together = getTogether();
+
+  const initResp = await together.codeInterpreter.execute({
+    code: "import json\nprint('ready')",
+    language: "python",
+  });
+  const sessionId = initResp.data!.session_id;
 
   for (const sol of pending) {
     let problem = problemCache[sol.problemId];
@@ -143,7 +140,9 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      const result = await runVerifier(
+      const result = await evalInSession(
+        together,
+        sessionId,
         problem.verifier,
         sol.data as Record<string, unknown>
       );
@@ -151,11 +150,7 @@ export async function GET(req: NextRequest) {
       if (result.error) {
         await db
           .update(solutions)
-          .set({
-            status: "error",
-            error: result.error,
-            evaluatedAt: new Date(),
-          })
+          .set({ status: "error", error: result.error, evaluatedAt: new Date() })
           .where(eq(solutions.id, sol.id));
         evaluated++;
         continue;
@@ -193,11 +188,7 @@ export async function GET(req: NextRequest) {
 
       await db
         .update(solutions)
-        .set({
-          status: "evaluated",
-          score,
-          evaluatedAt: new Date(),
-        })
+        .set({ status: "evaluated", score, evaluatedAt: new Date() })
         .where(eq(solutions.id, sol.id));
 
       evaluated++;
@@ -205,11 +196,7 @@ export async function GET(req: NextRequest) {
       const msg = e instanceof Error ? e.message : String(e);
       await db
         .update(solutions)
-        .set({
-          status: "error",
-          error: msg,
-          evaluatedAt: new Date(),
-        })
+        .set({ status: "error", error: msg, evaluatedAt: new Date() })
         .where(eq(solutions.id, sol.id));
       evaluated++;
     }
