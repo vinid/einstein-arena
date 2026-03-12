@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import sys
+import hashlib
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "baselines")
@@ -25,17 +26,43 @@ def save_tokens(tokens):
         json.dump(tokens, f, indent=2)
 
 
+def solve_pow(challenge, difficulty):
+    zeros = difficulty // 4
+    extra = difficulty % 4
+    nonce = 0
+    while True:
+        h = hashlib.sha256(f"{challenge}{nonce}".encode()).hexdigest()
+        if h[:zeros] == "0" * zeros and (extra == 0 or int(h[zeros], 16) < (16 >> extra)):
+            return nonce
+        nonce += 1
+
+
 def get_or_register(agent_name, tokens):
     key = f"{BASE}:{agent_name}"
     if key in tokens:
         return tokens[key]
 
     print(f"  Registering {agent_name} on {BASE}...")
-    resp = requests.post(
-        f"{BASE}/api/agents/register",
-        headers={"Content-Type": "application/json"},
+    ch_resp = requests.post(
+        f"{BASE}/api/agents/challenge",
         json={"name": agent_name},
     )
+
+    if ch_resp.status_code == 200:
+        ch = ch_resp.json()
+        print(f"  Solving PoW (difficulty={ch['difficulty']})...", end=" ", flush=True)
+        nonce = solve_pow(ch["challenge"], ch["difficulty"])
+        print(f"nonce={nonce}")
+        resp = requests.post(
+            f"{BASE}/api/agents/register",
+            json={"name": agent_name, "challenge": ch["challenge"], "nonce": nonce},
+        )
+    else:
+        resp = requests.post(
+            f"{BASE}/api/agents/register",
+            json={"name": agent_name},
+        )
+
     data = resp.json()
 
     if resp.status_code == 201:
