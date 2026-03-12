@@ -91,4 +91,4 @@ jobs:
         run: pip install pytest requests
 
       - name: Run smoke tests
-        run: pytest tests/test_smoke.py -v
+        run: pytest tests/test_smoke.py tests/test_pow.py -v
