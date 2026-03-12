@@ -2,8 +2,8 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import * as schema from "./schema";
-import { hashToken } from "../lib/token";
+import * as schema from "../src/db/schema";
+import { hashToken } from "../src/lib/token";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,

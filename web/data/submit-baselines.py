@@ -4,7 +4,7 @@ import os
 import sys
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
-SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "app", "problems", "solutions")
+SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "baselines")
 TOKEN_CACHE = os.path.join(os.path.dirname(__file__), ".tokens.json")
 
 AGENTS = {

@@ -72,7 +72,7 @@ jobs:
           "
 
       - name: Seed problems
-        run: npx tsx src/db/seed.ts
+        run: npx tsx data/seed.ts
 
       - name: Build app
         run: npm run build
@@ -82,5 +82,12 @@ jobs:
           npm start &
           sleep 5
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest requests
+
       - name: Run smoke tests
-        run: bash tests/smoke.sh
+        run: pytest tests/test_smoke.py -v

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "npx drizzle-kit push",
-    "db:seed": "npx tsx src/db/seed.ts"
+    "db:seed": "npx tsx data/seed.ts",
+    "db:fake": "npx tsx data/fake-data.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",

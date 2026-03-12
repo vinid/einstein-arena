@@ -60,6 +60,10 @@ async function evalInSession(
 
 const TOP_N = 100;
 
+function isBetter(newScore: number, oldScore: number, scoring: string): boolean {
+  return scoring === "minimize" ? newScore < oldScore : newScore > oldScore;
+}
+
 async function getGlobalBest(
   problemId: number,
   scoring: string
@@ -77,23 +81,53 @@ async function getGlobalBest(
   return rows[0]?.best ?? null;
 }
 
-async function getCutoffScore(
+async function getAgentBest(
   problemId: number,
+  agentName: string,
   scoring: string
-): Promise<number | null> {
+): Promise<{ id: number; score: number } | null> {
   const order = scoring === "minimize"
     ? sql`${solutions.score} asc`
     : sql`${solutions.score} desc`;
 
   const rows = await db
-    .select({ score: solutions.score })
+    .select({ id: solutions.id, score: solutions.score })
+    .from(solutions)
+    .where(and(
+      eq(solutions.problemId, problemId),
+      eq(solutions.agentName, agentName),
+      eq(solutions.status, "evaluated"),
+    ))
+    .orderBy(order)
+    .limit(1);
+
+  if (!rows.length || rows[0].score === null) return null;
+  return { id: rows[0].id, score: rows[0].score! };
+}
+
+async function pruneWorstAgent(problemId: number, scoring: string) {
+  const order = scoring === "minimize"
+    ? sql`${solutions.score} desc`
+    : sql`${solutions.score} asc`;
+
+  const worst = await db
+    .select({ id: solutions.id })
     .from(solutions)
     .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
     .orderBy(order)
-    .limit(1)
-    .offset(TOP_N - 1);
+    .limit(1);
 
-  return rows[0]?.score ?? null;
+  if (worst.length) {
+    await db.delete(solutions).where(eq(solutions.id, worst[0].id));
+  }
+}
+
+async function countEvaluated(problemId: number): Promise<number> {
+  const rows = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(solutions)
+    .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")));
+  return rows[0]?.n ?? 0;
 }
 
 export async function GET(req: NextRequest) {
@@ -158,38 +192,41 @@ export async function GET(req: NextRequest) {
 
       const score = result.score!;
 
-      const currentBest = await getGlobalBest(sol.problemId, problem.scoring);
-      if (currentBest !== null) {
-        const dominated =
-          problem.scoring === "minimize"
-            ? score > currentBest - problem.minImprovement
-            : score < currentBest + problem.minImprovement;
+      const globalBest = await getGlobalBest(sol.problemId, problem.scoring);
+      const wouldBeFirst = globalBest === null || isBetter(score, globalBest, problem.scoring);
 
-        if (dominated) {
+      if (wouldBeFirst && globalBest !== null) {
+        const clearance = problem.scoring === "minimize"
+          ? globalBest - score
+          : score - globalBest;
+        if (clearance < problem.minImprovement) {
           await db.delete(solutions).where(eq(solutions.id, sol.id));
           evaluated++;
           continue;
         }
       }
 
-      const cutoff = await getCutoffScore(sol.problemId, problem.scoring);
-      if (cutoff !== null) {
-        const belowCutoff =
-          problem.scoring === "minimize"
-            ? score >= cutoff
-            : score <= cutoff;
+      const agentBest = await getAgentBest(sol.problemId, sol.agentName, problem.scoring);
 
-        if (belowCutoff) {
-          await db.delete(solutions).where(eq(solutions.id, sol.id));
-          evaluated++;
-          continue;
-        }
+      if (!wouldBeFirst && agentBest && !isBetter(score, agentBest.score, problem.scoring)) {
+        await db.delete(solutions).where(eq(solutions.id, sol.id));
+        evaluated++;
+        continue;
       }
 
       await db
         .update(solutions)
         .set({ status: "evaluated", score, evaluatedAt: new Date() })
         .where(eq(solutions.id, sol.id));
+
+      if (agentBest) {
+        await db.delete(solutions).where(eq(solutions.id, agentBest.id));
+      }
+
+      const total = await countEvaluated(sol.problemId);
+      if (total > TOP_N) {
+        await pruneWorstAgent(sol.problemId, problem.scoring);
+      }
 
       evaluated++;
     } catch (e: unknown) {

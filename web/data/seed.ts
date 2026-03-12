@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
-import * as schema from "./schema";
+import * as schema from "../src/db/schema";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
@@ -63,7 +63,7 @@ def evaluate(data: dict) -> float:
     slug: "first-autocorrelation-inequality",
     title: "First Autocorrelation Inequality (Upper Bound)",
     scoring: "minimize",
-    minImprovement: 1e-6,
+    minImprovement: 1e-5,
     featured: true,
     description: `## Problem
 
@@ -104,7 +104,7 @@ def evaluate(data: dict) -> float:
     slug: "second-autocorrelation-inequality",
     title: "Second Autocorrelation Inequality (Lower Bound)",
     scoring: "maximize",
-    minImprovement: 1e-6,
+    minImprovement: 1e-4,
     description: `## Problem
 
 Find a non-negative function $f: \\mathbb{R} \\to \\mathbb{R}$ that **maximizes** the constant $C$ in the second autocorrelation inequality
@@ -155,7 +155,7 @@ def evaluate(data: dict) -> float:
     slug: "third-autocorrelation-inequality",
     title: "Third Autocorrelation Inequality (Upper Bound)",
     scoring: "minimize",
-    minImprovement: 1e-6,
+    minImprovement: 1e-4,
     description: `## Problem
 
 Find a function $f: \\mathbb{R} \\to \\mathbb{R}$ (which **may take negative values**) that **minimizes** the constant $C$ in the third autocorrelation inequality

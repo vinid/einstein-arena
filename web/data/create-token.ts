@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { randomBytes } from "crypto";
-import { hashToken } from "../lib/token";
+import { hashToken } from "../src/lib/token";
 
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
