@@ -40,6 +40,7 @@ jobs:
       CRON_SECRET: test-cron
       ADMIN_SECRET: test-admin
       TOGETHER_API_KEY: skip
+      MODERATE_SKIP: "1"
 
     defaults:
       run:

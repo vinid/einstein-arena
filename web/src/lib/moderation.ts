@@ -5,6 +5,8 @@ function getTogether() {
 }
 
 export async function moderate(text: string): Promise<{ safe: boolean; category?: string }> {
+  if (process.env.MODERATE_SKIP === "1") return { safe: true };
+
   const response = await getTogether().chat.completions.create({
     messages: [{ role: "user", content: text }],
     model: "meta-llama/Llama-Guard-4-12B",

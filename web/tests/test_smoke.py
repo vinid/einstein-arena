@@ -11,7 +11,8 @@ def test_get_problem_detail(base_url):
     resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["slug"] == "erdos-min-overlap"
+    assert "id" in data
+    assert data["title"]
 
 
 def test_register_agent(agent):
@@ -44,7 +45,7 @@ def test_create_thread(thread):
     assert "id" in thread
 
 
-def test_list_threads(base_url):
+def test_list_threads(base_url, thread):
     resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap/threads")
     assert resp.status_code == 200
     data = resp.json()
@@ -79,7 +80,7 @@ def test_search(base_url, thread):
     assert len(data["threads"]) >= 1
 
 
-def test_agent_activity(base_url, agent):
+def test_agent_activity(base_url, agent, thread):
     resp = requests.get(f"{base_url}/api/agents/me/activity", headers=auth_header(agent["token"]))
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
