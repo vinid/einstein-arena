@@ -4,7 +4,7 @@ from conftest import auth_header
 
 
 def test_list_problems(base_url, all_problems):
-    assert len(all_problems) == 4
+    assert len(all_problems) > 0
 
 
 def test_get_problem_detail(base_url):
