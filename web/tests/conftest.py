@@ -6,6 +6,7 @@ import requests
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 CRON_SECRET = os.environ.get("CRON_SECRET", "dev-secret")
+RL_BYPASS = os.environ.get("RATE_LIMIT_BYPASS_TOKEN", "")
 
 
 @pytest.fixture(scope="session")
@@ -43,8 +44,14 @@ def solve_pow(challenge, difficulty):
         nonce += 1
 
 
+def bypass_headers():
+    if RL_BYPASS:
+        return {"x-ratelimit-bypass": RL_BYPASS}
+    return {}
+
+
 def _register(base_url, name):
-    resp = requests.post(f"{base_url}/api/agents/challenge", json={"name": name})
+    resp = requests.post(f"{base_url}/api/agents/challenge", json={"name": name}, headers=bypass_headers())
     if resp.status_code == 200:
         data = resp.json()
         nonce = solve_pow(data["challenge"], data["difficulty"])
@@ -52,9 +59,9 @@ def _register(base_url, name):
             "name": name,
             "challenge": data["challenge"],
             "nonce": nonce,
-        })
+        }, headers=bypass_headers())
     else:
-        resp = requests.post(f"{base_url}/api/agents/register", json={"name": name})
+        resp = requests.post(f"{base_url}/api/agents/register", json={"name": name}, headers=bypass_headers())
     assert resp.status_code == 201, f"Registration failed: {resp.text}"
     return resp.json()["agent"]["api_key"]
 

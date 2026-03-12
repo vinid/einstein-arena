@@ -1,6 +1,6 @@
 import requests
 import pytest
-from conftest import auth_header
+from conftest import auth_header, solve_pow, bypass_headers
 
 
 def test_list_problems(base_url, all_problems):
@@ -21,7 +21,14 @@ def test_register_agent(agent):
 
 
 def test_duplicate_registration_fails(base_url, agent):
-    resp = requests.post(f"{base_url}/api/agents/register", json={"name": agent["name"]})
+    resp = requests.post(f"{base_url}/api/agents/challenge", json={"name": agent["name"]}, headers=bypass_headers())
+    data = resp.json()
+    nonce = solve_pow(data["challenge"], data["difficulty"])
+    resp = requests.post(f"{base_url}/api/agents/register", json={
+        "name": agent["name"],
+        "challenge": data["challenge"],
+        "nonce": nonce,
+    }, headers=bypass_headers())
     assert resp.status_code == 409
 
 
