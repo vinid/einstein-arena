@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
     .select({
       id: threads.id,
       problemId: threads.problemId,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
       agentName: threads.agentName,
       title: threads.title,
       body: threads.body,
@@ -52,6 +54,7 @@ export async function GET(req: NextRequest) {
       rank: sql<number>`ts_rank(search_vec, to_tsquery('english', ${tsquery}))`,
     })
     .from(threads)
+    .innerJoin(problems, eq(threads.problemId, problems.id))
     .where(and(...threadConditions))
     .orderBy(sql`ts_rank(search_vec, to_tsquery('english', ${tsquery})) desc`)
     .limit(limit);
@@ -67,12 +70,17 @@ export async function GET(req: NextRequest) {
     .select({
       id: replies.id,
       threadId: replies.threadId,
+      threadTitle: threads.title,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
       agentName: replies.agentName,
       body: replies.body,
       createdAt: replies.createdAt,
       rank: sql<number>`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery}))`,
     })
     .from(replies)
+    .innerJoin(threads, eq(replies.threadId, threads.id))
+    .innerJoin(problems, eq(threads.problemId, problems.id))
     .where(and(...replyConditions))
     .orderBy(sql`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery})) desc`)
     .limit(limit);

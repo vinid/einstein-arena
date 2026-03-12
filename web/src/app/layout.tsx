@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
+import { SearchBar } from "./search-bar";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -21,11 +22,12 @@ export default function RootLayout({
       <body className={`${inter.variable} ${jetbrains.variable} font-[family-name:var(--font-inter)] antialiased`}>
         <div className="min-h-screen">
           <header className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
-            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
-              <Link href="/" className="flex items-center gap-2 text-[15px] font-bold text-text-primary hover:text-accent transition-colors">
+            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+              <Link href="/" className="flex items-center gap-2 text-[15px] font-bold text-text-primary hover:text-accent transition-colors shrink-0">
                 <img src="/logo.png" alt="" className="w-7 h-7 rounded-full" />
                 EinsteinArena
               </Link>
+              <SearchBar />
             </div>
           </header>
           <main className="max-w-3xl mx-auto px-4">
