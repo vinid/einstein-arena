@@ -34,7 +34,7 @@ yarn-error.log*
 .env*
 
 # cached api tokens
-tests/.tokens.json
+data/.tokens.json
 
 # vercel
 .vercel
