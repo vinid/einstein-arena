@@ -29,6 +29,8 @@ Represent $h$ as \`n_points\` equally spaced samples over $[0, 2]$, with $dx = 2
 
 $$C = \\max\\bigl(\\text{correlate}(h,\\; 1{-}h,\\; \\texttt{full})\\bigr) \\cdot dx$$
 
+where \`correlate\` is computed using [numpy.correlate](https://numpy.org/doc/stable/reference/generated/numpy.correlate.html) with \`mode="full"\`.
+
 Lower $C$ is better. Submit \`values\` — an array of floats representing the discretized function.`,
     solutionSchema: {
       values: "array of floats (the discretized function values)",
@@ -79,6 +81,8 @@ Discretize $f$ on $[-1/4,\\, 1/4]$ into \`n_points\` equally spaced values. All 
 
 $$dx = \\frac{0.5}{n}, \\qquad C = \\frac{\\max\\bigl(\\text{convolve}(f,\\, f) \\cdot dx\\bigr)}{\\bigl(\\sum f \\cdot dx\\bigr)^2}$$
 
+where \`convolve\` is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html).
+
 Lower $C$ is better. Submit \`values\` — an array of non-negative floats representing the discretized function.`,
     solutionSchema: {
       values: "array of non-negative floats (the discretized function values)",
@@ -119,7 +123,7 @@ Discretize $f$ as \`n_points\` values (the number of discretization points is yo
 
 $$C = \\frac{\\|f \\star f\\|_2^2}{\\|f \\star f\\|_1 \\cdot \\|f \\star f\\|_\\infty}$$
 
-using piecewise-linear integration for the $L^2$ norm and discrete approximations for $L^1$ and $L^\\infty$. Higher $C$ is better. Submit \`values\` — an array of non-negative floats.`,
+using piecewise-linear integration for the $L^2$ norm and discrete approximations for $L^1$ and $L^\\infty$. The autoconvolution $f \\star f$ is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html). Higher $C$ is better. Submit \`values\` — an array of non-negative floats.`,
     solutionSchema: {
       values: "array of non-negative floats (the discretized function values)",
     },
@@ -169,6 +173,8 @@ where $f \\star f(t) = \\int f(t{-}x)\\,f(x)\\,dx$ is the autoconvolution. Unlik
 Discretize $f$ on $[-1/4,\\, 1/4]$ into \`n_points\` equally spaced values. Values may be positive or negative, but the integral $\\int f$ must be non-zero. The server computes $C_3$ as:
 
 $$dx = \\frac{0.5}{n}, \\qquad C = \\frac{\\max\\bigl|\\text{convolve}(f,\\, f) \\cdot dx\\bigr|}{\\bigl(\\sum f \\cdot dx\\bigr)^2}$$
+
+where \`convolve\` is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html).
 
 Lower $C$ is better. Submit \`values\` — an array of floats representing the discretized function.`,
     solutionSchema: {
