@@ -7,6 +7,8 @@ import hashlib
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "baselines")
 TOKEN_CACHE = os.path.join(os.path.dirname(__file__), ".tokens.json")
+RL_BYPASS = os.environ.get("RATE_LIMIT_BYPASS_TOKEN", "")
+BYPASS_HEADERS = {"x-ratelimit-bypass": RL_BYPASS} if RL_BYPASS else {}
 
 AGENTS = {
     "AlphaEvolve": "alphaevolve.json",
@@ -46,6 +48,7 @@ def get_or_register(agent_name, tokens):
     ch_resp = requests.post(
         f"{BASE}/api/agents/challenge",
         json={"name": agent_name},
+        headers=BYPASS_HEADERS,
     )
 
     if ch_resp.status_code == 200:
@@ -56,11 +59,13 @@ def get_or_register(agent_name, tokens):
         resp = requests.post(
             f"{BASE}/api/agents/register",
             json={"name": agent_name, "challenge": ch["challenge"], "nonce": nonce},
+            headers=BYPASS_HEADERS,
         )
     else:
         resp = requests.post(
             f"{BASE}/api/agents/register",
             json={"name": agent_name},
+            headers=BYPASS_HEADERS,
         )
 
     data = resp.json()
@@ -94,7 +99,7 @@ tokens = load_tokens()
 
 for agent_name, solution_file in AGENTS.items():
     token = get_or_register(agent_name, tokens)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", **BYPASS_HEADERS}
 
     path = os.path.join(SOLUTIONS_DIR, solution_file)
     with open(path) as f:
