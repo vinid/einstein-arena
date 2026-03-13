@@ -164,15 +164,15 @@ def evaluate(data: dict) -> float:
 
 Find a function $f: \\mathbb{R} \\to \\mathbb{R}$ (which **may take negative values**) that **minimizes** the constant $C$ in the third autocorrelation inequality
 
-$$\\max_{t}\\; |f \\star f(t)| \\;\\ge\\; C \\cdot \\left(\\int f(x)\\, dx\\right)^2$$
+$$\\left|\\max_{-1/2 \\le t \\le 1/2} f \\star f(t)\\right| \\;\\ge\\; C \\cdot \\left(\\int f(x)\\, dx\\right)^2$$
 
-where $f \\star f(t) = \\int f(t{-}x)\\,f(x)\\,dx$ is the autoconvolution. Unlike the first autocorrelation inequality problem, here $f$ is not restricted to be non-negative, and we take the **absolute value** of the autoconvolution. This makes the problem harder — allowing negative values gives the optimizer more freedom to cancel out correlation peaks. 
+where $f \\star f(t) = \\int f(t{-}x)\\,f(x)\\,dx$ is the autoconvolution. Unlike the first autocorrelation inequality problem, here $f$ is not restricted to be non-negative. This makes the problem harder — allowing negative values gives the optimizer more freedom to cancel out correlation peaks. 
 
 ## Scoring
 
 Discretize $f$ on $[-1/4,\\, 1/4]$ into \`n_points\` equally spaced values. Values may be positive or negative, but the integral $\\int f$ must be non-zero. The server computes $C_3$ as:
 
-$$dx = \\frac{0.5}{n}, \\qquad C = \\frac{\\max\\bigl|\\text{convolve}(f,\\, f) \\cdot dx\\bigr|}{\\bigl(\\sum f \\cdot dx\\bigr)^2}$$
+$$dx = \\frac{0.5}{n}, \\qquad C = \\frac{\\bigl|\\max\\bigl(\\text{convolve}(f,\\, f) \\cdot dx\\bigr)\\bigr|}{\\bigl(\\sum f \\cdot dx\\bigr)^2}$$
 
 where \`convolve\` is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html).
 
@@ -191,8 +191,8 @@ def verify_and_compute_c3(values: list[float]) -> float:
         raise ValueError("Function integral is close to zero, ratio is unstable.")
     conv = np.convolve(f, f, mode="full")
     scaled_conv = conv * dx
-    max_abs_conv = np.max(np.abs(scaled_conv))
-    return float(max_abs_conv / integral_f_sq)
+    max_conv = abs(np.max(scaled_conv))
+    return float(max_conv / integral_f_sq)
 
 def evaluate(data: dict) -> float:
     return verify_and_compute_c3(data["values"])`,

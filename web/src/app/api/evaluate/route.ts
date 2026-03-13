@@ -2,60 +2,52 @@ import { db } from "@/db";
 import { solutions, problems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import Together from "together-ai";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { writeFile, unlink } from "fs/promises";
+import { tmpdir } from "os";
+import { join } from "path";
 
 const MAX_PER_BATCH = 5;
+const execFileAsync = promisify(execFile);
 
-function getTogether() {
-  return new Together({ apiKey: process.env.TOGETHER_API_KEY });
-}
-
-function parseVerifierOutput(
-  response: { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown }
-): { score?: number; error?: string } {
-  const outputs = response.data?.outputs || [];
-  const responseErrors = (response as unknown as { errors?: unknown }).errors;
-
-  if (responseErrors) {
-    return { error: typeof responseErrors === "string" ? responseErrors : JSON.stringify(responseErrors) };
-  }
-
-  for (const output of outputs) {
-    if (output.type === "stderr" && output.data) {
-      const stderr = String(output.data);
-      if (stderr.includes("Error") || stderr.includes("raise")) {
-        const lastLine = stderr.trim().split("\n").pop() || stderr;
-        return { error: lastLine };
-      }
-    }
-    if (output.type === "stdout" && typeof output.data === "string") {
-      const match = output.data.match(/SCORE:([\d.eE+-]+)/);
-      if (match) {
-        return { score: parseFloat(match[1]) };
-      }
-    }
-  }
-
-  const allOutput = outputs.map((o) => `${o.type}: ${o.data}`).join("\n");
-  return { error: `No score returned. Output: ${allOutput.slice(0, 500)}` };
-}
-
-async function evalInSession(
-  together: Together,
-  sessionId: string,
+async function evalLocally(
   verifierCode: string,
   solutionData: Record<string, unknown>
 ): Promise<{ score?: number; error?: string }> {
-  const dataJson = JSON.stringify(solutionData);
+  const tmpDir = tmpdir();
+  const dataPath = join(tmpDir, `eval_data_${Date.now()}.json`);
+  const scriptPath = join(tmpDir, `eval_script_${Date.now()}.py`);
 
-  const response = await together.codeInterpreter.execute({
-    code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
-    language: "python",
-    session_id: sessionId,
-    files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
-  });
+  const script = `import json\n${verifierCode}\nwith open('${dataPath}') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`;
 
-  return parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
+  try {
+    await writeFile(dataPath, JSON.stringify(solutionData));
+    await writeFile(scriptPath, script);
+
+    const { stdout, stderr } = await execFileAsync("python3", [scriptPath], { timeout: 60000 });
+
+    if (stderr) {
+      const lines = stderr.trim().split("\n");
+      const errLines = lines.filter(l => l.includes("Error") || l.includes("raise") || l.includes("ValueError") || l.includes("AssertionError"));
+      if (errLines.length > 0) {
+        return { error: errLines[errLines.length - 1] };
+      }
+    }
+
+    const match = stdout.match(/SCORE:([\d.eE+-]+)/);
+    if (match) {
+      return { score: parseFloat(match[1]) };
+    }
+
+    return { error: `No score in output: ${stdout.slice(0, 200)}` };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg.slice(0, 500) };
+  } finally {
+    await unlink(dataPath).catch(() => {});
+    await unlink(scriptPath).catch(() => {});
+  }
 }
 
 const TOP_N = 100;
@@ -148,13 +140,6 @@ export async function GET(req: NextRequest) {
   > = {};
 
   let evaluated = 0;
-  const together = getTogether();
-
-  const initResp = await together.codeInterpreter.execute({
-    code: "import json\nprint('ready')",
-    language: "python",
-  });
-  const sessionId = initResp.data!.session_id;
 
   for (const sol of pending) {
     let problem = problemCache[sol.problemId];
@@ -174,9 +159,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      const result = await evalInSession(
-        together,
-        sessionId,
+      const result = await evalLocally(
         problem.verifier,
         sol.data as Record<string, unknown>
       );

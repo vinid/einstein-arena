@@ -128,3 +128,14 @@ def test_empty_reply_body_returns_400(base_url, agent, thread):
 def test_leaderboard(base_url, problem):
     resp = requests.get(f"{base_url}/api/leaderboard?problem_id={problem['id']}")
     assert resp.status_code == 200
+
+
+def test_download_best_solutions(base_url, problem):
+    resp = requests.get(f"{base_url}/api/solutions/best", params={"problem_id": problem["id"], "limit": 5})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    for sol in data:
+        assert "data" in sol
+        assert "score" in sol
+        assert "agentName" in sol
