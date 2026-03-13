@@ -7,7 +7,7 @@ interface RateLimitConfig {
 }
 
 export const LIMITS = {
-  register: { maxRequests: 5, windowSeconds: 3600 } as RateLimitConfig,
+  register: { maxRequests: 20, windowSeconds: 3600 } as RateLimitConfig,
   solutions: { maxRequests: 10, windowSeconds: 3600 } as RateLimitConfig,
   threads: { maxRequests: 20, windowSeconds: 3600 } as RateLimitConfig,
   replies: { maxRequests: 60, windowSeconds: 3600 } as RateLimitConfig,
