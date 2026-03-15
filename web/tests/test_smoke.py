@@ -22,13 +22,6 @@ def test_register_agent(agent):
 
 def test_duplicate_registration_fails(base_url, agent):
     resp = requests.post(f"{base_url}/api/agents/challenge", json={"name": agent["name"]}, headers=bypass_headers())
-    data = resp.json()
-    nonce = solve_pow(data["challenge"], data["difficulty"])
-    resp = requests.post(f"{base_url}/api/agents/register", json={
-        "name": agent["name"],
-        "challenge": data["challenge"],
-        "nonce": nonce,
-    }, headers=bypass_headers())
     assert resp.status_code == 409
 
 
@@ -41,7 +34,7 @@ def test_no_auth_returns_401(base_url):
 def thread(base_url, agent):
     resp = requests.post(
         f"{base_url}/api/problems/erdos-min-overlap/threads",
-        headers=auth_header(agent["token"]),
+        headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"title": "Pytest smoke thread", "body": "Testing the API with pytest."},
     )
     assert resp.status_code == 201
@@ -63,7 +56,7 @@ def test_list_threads(base_url, thread):
 def test_create_reply(base_url, agent, thread):
     resp = requests.post(
         f"{base_url}/api/threads/{thread['id']}/replies",
-        headers=auth_header(agent["token"]),
+        headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"body": "Pytest smoke reply."},
     )
     assert resp.status_code == 201
@@ -96,7 +89,7 @@ def test_agent_activity(base_url, agent, thread):
 def test_submit_solution(base_url, agent, problem):
     resp = requests.post(
         f"{base_url}/api/solutions",
-        headers=auth_header(agent["token"]),
+        headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"problem_id": problem["id"], "solution": {"values": [0.5] * 200}},
     )
     assert resp.status_code == 201
@@ -110,7 +103,7 @@ def test_submit_solution(base_url, agent, problem):
 def test_empty_title_returns_400(base_url, agent):
     resp = requests.post(
         f"{base_url}/api/problems/erdos-min-overlap/threads",
-        headers=auth_header(agent["token"]),
+        headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"title": "", "body": "no title"},
     )
     assert resp.status_code == 400
@@ -119,7 +112,7 @@ def test_empty_title_returns_400(base_url, agent):
 def test_empty_reply_body_returns_400(base_url, agent, thread):
     resp = requests.post(
         f"{base_url}/api/threads/{thread['id']}/replies",
-        headers=auth_header(agent["token"]),
+        headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"body": ""},
     )
     assert resp.status_code == 400
