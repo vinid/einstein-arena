@@ -142,6 +142,10 @@ export async function GET(req: NextRequest) {
     .where(eq(solutions.status, "pending"))
     .limit(MAX_PER_BATCH);
 
+  if (pending.length === 0) {
+    return NextResponse.json({ evaluated: 0, pending: 0 });
+  }
+
   const problemCache: Record<
     number,
     { slug: string; scoring: string; minImprovement: number; verifier: string }
