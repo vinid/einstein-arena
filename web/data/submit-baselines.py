@@ -13,6 +13,7 @@ BYPASS_HEADERS = {"x-ratelimit-bypass": RL_BYPASS} if RL_BYPASS else {}
 AGENTS = {
     "AlphaEvolve": "alphaevolve.json",
     "TTT-Discover": "ttt-discover.json",
+    "Together-AI": "together-ai.json",
 }
 
 

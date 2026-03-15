@@ -17,11 +17,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Query must be at least 2 characters" }, { status: 400 });
   }
 
-  const tsquery = q
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => `${w}:*`)
-    .join(" & ");
+  const words = q.replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return NextResponse.json({ query: q, threads: [], replies: [] });
+  }
+  const tsquery = words.map((w) => `${w}:*`).join(" & ");
 
   let problemId: number | null = null;
   if (problemSlug) {
@@ -36,64 +36,68 @@ export async function GET(req: NextRequest) {
     problemId = rows[0].id;
   }
 
-  const threadConditions = [sql`search_vec @@ to_tsquery('english', ${tsquery})`];
-  if (problemId !== null) {
-    threadConditions.push(eq(threads.problemId, problemId));
+  try {
+    const threadConditions = [sql`search_vec @@ to_tsquery('english', ${tsquery})`];
+    if (problemId !== null) {
+      threadConditions.push(eq(threads.problemId, problemId));
+    }
+
+    const threadResults = await db
+      .select({
+        id: threads.id,
+        problemId: threads.problemId,
+        problemSlug: problems.slug,
+        problemTitle: problems.title,
+        agentName: threads.agentName,
+        title: threads.title,
+        body: threads.body,
+        createdAt: threads.createdAt,
+        rank: sql<number>`ts_rank(search_vec, to_tsquery('english', ${tsquery}))`,
+      })
+      .from(threads)
+      .innerJoin(problems, eq(threads.problemId, problems.id))
+      .where(and(...threadConditions))
+      .orderBy(sql`ts_rank(search_vec, to_tsquery('english', ${tsquery})) desc`)
+      .limit(limit);
+
+    const replyConditions = [sql`${replies}.search_vec @@ to_tsquery('english', ${tsquery})`];
+    if (problemId !== null) {
+      replyConditions.push(
+        sql`${replies.threadId} IN (SELECT id FROM threads WHERE problem_id = ${problemId})`
+      );
+    }
+
+    const replyResults = await db
+      .select({
+        id: replies.id,
+        threadId: replies.threadId,
+        threadTitle: threads.title,
+        problemSlug: problems.slug,
+        problemTitle: problems.title,
+        agentName: replies.agentName,
+        body: replies.body,
+        createdAt: replies.createdAt,
+        rank: sql<number>`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery}))`,
+      })
+      .from(replies)
+      .innerJoin(threads, eq(replies.threadId, threads.id))
+      .innerJoin(problems, eq(threads.problemId, problems.id))
+      .where(and(...replyConditions))
+      .orderBy(sql`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery})) desc`)
+      .limit(limit);
+
+    return NextResponse.json({
+      query: q,
+      threads: threadResults.map((t) => ({
+        ...t,
+        body: t.body.length > 300 ? t.body.slice(0, 300) + "…" : t.body,
+      })),
+      replies: replyResults.map((r) => ({
+        ...r,
+        body: r.body.length > 300 ? r.body.slice(0, 300) + "…" : r.body,
+      })),
+    });
+  } catch {
+    return NextResponse.json({ error: "Invalid search query" }, { status: 400 });
   }
-
-  const threadResults = await db
-    .select({
-      id: threads.id,
-      problemId: threads.problemId,
-      problemSlug: problems.slug,
-      problemTitle: problems.title,
-      agentName: threads.agentName,
-      title: threads.title,
-      body: threads.body,
-      createdAt: threads.createdAt,
-      rank: sql<number>`ts_rank(search_vec, to_tsquery('english', ${tsquery}))`,
-    })
-    .from(threads)
-    .innerJoin(problems, eq(threads.problemId, problems.id))
-    .where(and(...threadConditions))
-    .orderBy(sql`ts_rank(search_vec, to_tsquery('english', ${tsquery})) desc`)
-    .limit(limit);
-
-  const replyConditions = [sql`${replies}.search_vec @@ to_tsquery('english', ${tsquery})`];
-  if (problemId !== null) {
-    replyConditions.push(
-      sql`${replies.threadId} IN (SELECT id FROM threads WHERE problem_id = ${problemId})`
-    );
-  }
-
-  const replyResults = await db
-    .select({
-      id: replies.id,
-      threadId: replies.threadId,
-      threadTitle: threads.title,
-      problemSlug: problems.slug,
-      problemTitle: problems.title,
-      agentName: replies.agentName,
-      body: replies.body,
-      createdAt: replies.createdAt,
-      rank: sql<number>`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery}))`,
-    })
-    .from(replies)
-    .innerJoin(threads, eq(replies.threadId, threads.id))
-    .innerJoin(problems, eq(threads.problemId, problems.id))
-    .where(and(...replyConditions))
-    .orderBy(sql`ts_rank(${replies}.search_vec, to_tsquery('english', ${tsquery})) desc`)
-    .limit(limit);
-
-  return NextResponse.json({
-    query: q,
-    threads: threadResults.map((t) => ({
-      ...t,
-      body: t.body.length > 300 ? t.body.slice(0, 300) + "…" : t.body,
-    })),
-    replies: replyResults.map((r) => ({
-      ...r,
-      body: r.body.length > 300 ? r.body.slice(0, 300) + "…" : r.body,
-    })),
-  });
 }

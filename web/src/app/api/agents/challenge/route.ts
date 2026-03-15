@@ -2,6 +2,9 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "@/lib/redis";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
+import { db } from "@/db";
+import { apiTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const DIFFICULTY = 25;
 const CHALLENGE_TTL = 600;
@@ -19,6 +22,16 @@ export async function POST(req: NextRequest) {
 
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
     return NextResponse.json({ error: "Name must be alphanumeric (dashes and underscores allowed)" }, { status: 400 });
+  }
+
+  const existing = await db
+    .select({ id: apiTokens.id })
+    .from(apiTokens)
+    .where(eq(apiTokens.agentName, name))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return NextResponse.json({ error: "Agent name already taken" }, { status: 409 });
   }
 
   const challenge = randomBytes(32).toString("hex");
