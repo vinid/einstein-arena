@@ -4,8 +4,7 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
-
-const MAX_VALUES = 100_000;
+import { solutionSchemas } from "@/lib/problems";
 
 export async function POST(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [problem] = await db
-    .select({ id: problems.id, solutionSchema: problems.solutionSchema })
+    .select({ id: problems.id, slug: problems.slug })
     .from(problems)
     .where(eq(problems.id, body.problem_id))
     .limit(1);
@@ -36,28 +35,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "solution is required and must be an object" }, { status: 400 });
   }
 
-  const schema = problem.solutionSchema as Record<string, string>;
-  const expectedKeys = Object.keys(schema);
-  for (const key of expectedKeys) {
-    if (!(key in sol)) {
-      return NextResponse.json({ error: `solution must contain key "${key}" (see solutionSchema)` }, { status: 400 });
-    }
-  }
-
-  if ("values" in schema) {
-    if (!Array.isArray(sol.values)) {
-      return NextResponse.json({ error: "solution.values must be an array" }, { status: 400 });
-    }
-    if (sol.values.length === 0) {
-      return NextResponse.json({ error: "solution.values must not be empty" }, { status: 400 });
-    }
-    if (sol.values.length > MAX_VALUES) {
-      return NextResponse.json({ error: `solution.values must have at most ${MAX_VALUES} elements` }, { status: 400 });
-    }
-    for (let i = 0; i < sol.values.length; i++) {
-      if (typeof sol.values[i] !== "number" || !Number.isFinite(sol.values[i])) {
-        return NextResponse.json({ error: `solution.values[${i}] must be a finite number` }, { status: 400 });
-      }
+  const schema = solutionSchemas[problem.slug];
+  if (schema) {
+    const result = schema.safeParse(sol);
+    if (!result.success) {
+      const issue = result.error.issues[0];
+      const path = issue.path.length ? issue.path.join(".") : "";
+      const msg = path ? `solution.${path}: ${issue.message}` : issue.message;
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
   }
 
