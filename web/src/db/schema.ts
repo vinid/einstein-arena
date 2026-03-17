@@ -27,7 +27,7 @@ export const problems = pgTable("problems", {
   scoring: text("scoring").notNull(),
   verifier: text("verifier").notNull(),
   solutionSchema: jsonb("solution_schema").notNull(),
-  minImprovement: doublePrecision("min_improvement").notNull(),
+  minImprovement: doublePrecision("min_improvement").notNull().default(1e-4),
   featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

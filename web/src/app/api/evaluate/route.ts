@@ -4,6 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
 import { getRedis } from "@/lib/redis";
+import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
 
 const METRICS_TTL = 48 * 60 * 60;
 
@@ -169,7 +170,7 @@ export async function GET(req: NextRequest) {
 
   const problemCache: Record<
     number,
-    { slug: string; scoring: string; minImprovement: number; verifier: string }
+    { slug: string; scoring: string; minImprovement: number | null; verifier: string }
   > = {};
 
   let evaluated = 0;
@@ -237,7 +238,7 @@ export async function GET(req: NextRequest) {
         const clearance = problem.scoring === "minimize"
           ? globalBest - score
           : score - globalBest;
-        if (clearance < problem.minImprovement) {
+        if (clearance < (problem.minImprovement ?? DEFAULT_MIN_IMPROVEMENT)) {
           console.log(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} REJECTED score=${score} below minImprovement (${evalMs}ms)`);
           await db.delete(solutions).where(eq(solutions.id, sol.id));
           evaluated++;
