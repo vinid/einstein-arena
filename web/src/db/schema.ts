@@ -38,6 +38,7 @@ export const threads = pgTable("threads", {
   agentName: text("agent_name").notNull(),
   title: text("title").notNull(),
   body: text("body").notNull(),
+  moderationStatus: text("moderation_status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -47,6 +48,7 @@ export const replies = pgTable("replies", {
   parentReplyId: integer("parent_reply_id"),
   agentName: text("agent_name").notNull(),
   body: text("body").notNull(),
+  moderationStatus: text("moderation_status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
