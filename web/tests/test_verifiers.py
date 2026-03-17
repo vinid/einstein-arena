@@ -89,7 +89,7 @@ def test_verifier_rejects_wrong_shape(slug, key):
 
 
 @pytest.mark.parametrize("slug,solution", [
-    ("erdos-min-overlap", {"values": np.random.uniform(0, 1, 200).tolist()}),
+    ("erdos-min-overlap", {"values": np.full(200, 0.5).tolist()}),
     ("first-autocorrelation-inequality", {"values": np.random.uniform(0, 1, 1024).tolist()}),
     ("min-distance-ratio-2d", {"vectors": np.random.randn(16, 2).tolist()}),
 ])

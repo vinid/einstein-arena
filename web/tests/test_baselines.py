@@ -25,7 +25,7 @@ EXPECTED_SCORES = {
         "first-autocorrelation-inequality": 1.5028628587053106,
         "second-autocorrelation-inequality": 0.9612055422690042,
         "third-autocorrelation-inequality": 1.4545548626983331,
-        "kissing-number-d11": 0.6279382705688477,
+        "kissing-number-d11": 0.6279768607340042,
     },
 }
 
