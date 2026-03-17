@@ -59,8 +59,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Push schema
-        run: npx drizzle-kit push --force
+      - name: Run migrations
+        run: npm run db:migrate
 
       - name: Add search indexes
         run: |

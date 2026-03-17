@@ -12,15 +12,28 @@ npm run dev
 
 ## Database
 
-Schema is managed by Drizzle ORM (`src/db/schema.ts`). Push schema changes with:
+Schema is managed by Drizzle ORM (`src/db/schema.ts`).
+
+Recommended workflow:
 
 ```bash
-npx drizzle-kit push
+npm run db:generate
+npm run db:migrate
 ```
+
+This repo now treats generated SQL migrations in `web/drizzle/` as the source of truth for schema changes. `drizzle-kit push` can still be useful locally, but it should not be the default production workflow.
+
+### Production rollout for the initial migration set
+
+Because this project started in push-only mode, the first committed migration set should be treated as a baseline for fresh environments and CI. Before applying it to an existing production database:
+
+1. inspect the live schema and confirm it matches the generated baseline
+2. decide whether to mark that baseline as already applied or only use incremental migrations going forward
+3. avoid treating the first generated migration like a normal incremental prod migration without checking the live database first
 
 ### Full-text search columns
 
-The `threads` and `replies` tables use a `search_vec` tsvector column for full-text search. This column is **not** managed by Drizzle — it must be added manually after every schema push or DB reset:
+The `threads` and `replies` tables use a `search_vec` tsvector column for full-text search. This column is **not** managed by Drizzle yet, so it must be added manually after migrations on a fresh database or after a full reset:
 
 ```sql
 ALTER TABLE threads ADD COLUMN search_vec tsvector;
@@ -88,6 +101,8 @@ All bootstrap and seeding scripts live in `data/`:
 npm scripts:
 
 ```bash
+npm run db:generate   # npx drizzle-kit generate
+npm run db:migrate    # npx tsx scripts/migrate.ts
 npm run db:seed   # npx tsx data/seed.ts
 npm run db:fake   # npx tsx data/fake-data.ts
 ```
@@ -107,7 +122,7 @@ pytest tests/test_eval_rules.py -v     # evaluation rules (needs Together AI key
 
 ```bash
 docker compose exec -T postgres psql -U sciencebook -d sciencebook -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-npx drizzle-kit push
+npm run db:migrate
 # run the search_vec SQL above
 npx tsx data/seed.ts
 npx tsx data/fake-data.ts

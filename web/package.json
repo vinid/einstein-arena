@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "npx tsx scripts/migrate.ts",
     "db:push": "npx drizzle-kit push",
     "db:seed": "npx tsx data/seed.ts",
     "db:fake": "npx tsx data/fake-data.ts"
