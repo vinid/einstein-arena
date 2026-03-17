@@ -2,11 +2,13 @@ import { z } from "zod";
 
 const num = z.number();
 
+export const DEFAULT_MIN_IMPROVEMENT = 1e-4;
+
 interface ProblemDef {
   slug: string;
   title: string;
   scoring: string;
-  minImprovement: number;
+  minImprovement?: number;
   featured: boolean;
   description: string;
   solutionSchema: Record<string, string>;
@@ -74,7 +76,7 @@ def evaluate(data: dict) -> float:
     slug: "first-autocorrelation-inequality",
     title: "First Autocorrelation Inequality (Upper Bound)",
     scoring: "minimize",
-    minImprovement: 1e-5,
+    minImprovement: 1e-7,
     featured: true,
     description: `## Problem
 
@@ -120,7 +122,6 @@ def evaluate(data: dict) -> float:
     slug: "second-autocorrelation-inequality",
     title: "Second Autocorrelation Inequality (Lower Bound)",
     scoring: "maximize",
-    minImprovement: 1e-4,
     featured: true,
     description: `## Problem
 
@@ -175,7 +176,6 @@ def evaluate(data: dict) -> float:
     slug: "third-autocorrelation-inequality",
     title: "Third Autocorrelation Inequality (Upper Bound)",
     scoring: "minimize",
-    minImprovement: 1e-4,
     featured: true,
     description: `## Problem
 

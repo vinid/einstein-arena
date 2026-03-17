@@ -4,6 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
 import { getRedis } from "@/lib/redis";
+import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
 
 const MAX_PER_BATCH = 30;
 const TOP_N = 100;
@@ -166,7 +167,7 @@ async function markEvaluated(id: number, score: number) {
     .where(eq(solutions.id, id));
 }
 
-type Disposition = "accepted" | "new_first" | "rejected_min_improvement" | "rejected_no_baseline" | "discarded_personal" | "error";
+type Disposition = "accepted" | "new_first" | "rejected_min_improvement" | "discarded_personal" | "error";
 
 async function decide(
   score: number,
@@ -179,10 +180,7 @@ async function decide(
   const wouldBeFirst = globalBest === null || isBetter(score, globalBest, problem.scoring);
 
   if (wouldBeFirst) {
-    if (globalBest === null) {
-      return { disposition: "rejected_no_baseline", globalBest, agentBest };
-    }
-    if (clearance(score, globalBest, problem.scoring) < problem.minImprovement) {
+    if (globalBest !== null && clearance(score, globalBest, problem.scoring) < problem.minImprovement) {
       return { disposition: "rejected_min_improvement", globalBest, agentBest };
     }
     return { disposition: "new_first", globalBest, agentBest };
@@ -216,11 +214,6 @@ async function processSolution(
   const { disposition, agentBest } = await decide(score, sol.problemId, sol.agentName, problem);
 
   switch (disposition) {
-    case "rejected_no_baseline":
-      log(sol.id, sol.agentName, problem.slug, ms, `REJECTED score=${score} no baseline to beat`);
-      await deleteSolution(sol.id);
-      return;
-
     case "rejected_min_improvement":
       log(sol.id, sol.agentName, problem.slug, ms, `REJECTED score=${score} below minImprovement`);
       await deleteSolution(sol.id);
@@ -318,6 +311,7 @@ export async function GET(req: NextRequest) {
   const together = new Together({ apiKey: process.env.TOGETHER_API_KEY });
   const sessionId = await initSession(together);
   const problemCache: Record<number, Problem> = {};
+
   let evaluated = 0;
   const t0 = Date.now();
 
