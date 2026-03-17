@@ -6,7 +6,7 @@ import { getRedis } from "@/lib/redis";
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
-  if (key !== process.env.CRON_SECRET) {
+  if (key !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
