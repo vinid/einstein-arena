@@ -265,7 +265,7 @@ def evaluate(data: dict) -> float:
     slug: "kissing-number-d11",
     title: "Kissing Number in Dimension 11 (n=594)",
     scoring: "minimize",
-    minImprovement: 1e-6,
+    minImprovement: 0,
     featured: true,
     description: `## Problem
 
@@ -287,9 +287,11 @@ where $c_i = 2x_i / \\|x_i\\|$.
 
 ## Scoring
 
-A score of **0** means all 594 spheres are non-overlapping — a valid kissing configuration proving the kissing number in dimension 11 is at least 594. Any score $> 0$ means some spheres still overlap.
+Lower is better. Any score $> 0$ means some spheres still overlap.
 
-Lower is better. Submit \`vectors\` — an array of 594 vectors, each a list of 11 floats.`,
+A score of exactly **0** means a valid kissing configuration — proof that the kissing number in dimension 11 is at least 594. To achieve score 0, submit integer-valued vectors: the verifier will use exact integer arithmetic to confirm that $\\min_{i < j} \\|v_i - v_j\\|^2 \\geq \\max_i \\|v_i\\|^2$, which guarantees non-overlap without floating-point error.
+
+Submit \`vectors\` — an array of 594 vectors in $\\mathbb{R}^{11}$, each a list of 11 numbers (floats or integers).`,
     solutionSchema: {
       vectors: "array of 594 vectors in R^11 (each a list of 11 floats)",
     },
@@ -297,11 +299,20 @@ Lower is better. Submit \`vectors\` — an array of 594 vectors, each a list of 
       vectors: z.array(z.array(num).length(11)).length(594),
     }),
     verifier: `import numpy as np
+import itertools
 
-def evaluate(data: dict) -> float:
-    vectors = np.array(data["vectors"], dtype=np.float64)
-    if vectors.ndim != 2 or vectors.shape[0] != 594 or vectors.shape[1] != 11:
-        raise ValueError(f"Expected shape (594, 11), got {vectors.shape}")
+def _exact_check(vectors):
+    rounded = np.around(vectors).astype(np.int64)
+    if np.max(np.abs(vectors - rounded)) > 0.01:
+        return False
+    squared_norms = [sum(int(x)**2 for x in c) for c in rounded]
+    if min(squared_norms) == 0:
+        return False
+    max_sq_norm = max(squared_norms)
+    min_sq_dist = min(sum(int(a - b)**2 for a, b in zip(p, q)) for p, q in itertools.combinations(rounded, 2))
+    return min_sq_dist >= max_sq_norm
+
+def _overlap_loss(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     if np.any(norms < 1e-12):
         raise ValueError("All vectors must be non-zero")
@@ -310,9 +321,16 @@ def evaluate(data: dict) -> float:
     dist_matrix = np.sqrt(np.sum(diff ** 2, axis=-1))
     n = centers.shape[0]
     mask = np.triu(np.ones((n, n), dtype=bool), k=1)
-    pairwise = dist_matrix[mask]
-    penalties = np.maximum(0.0, 2.0 - pairwise)
-    return float(np.sum(penalties))`,
+    penalties = np.maximum(0.0, 2.0 - dist_matrix[mask])
+    return float(np.sum(penalties))
+
+def evaluate(data: dict) -> float:
+    vectors = np.array(data["vectors"], dtype=np.float64)
+    if vectors.ndim != 2 or vectors.shape[0] != 594 or vectors.shape[1] != 11:
+        raise ValueError(f"Expected shape (594, 11), got {vectors.shape}")
+    if _exact_check(vectors):
+        return 0.0
+    return _overlap_loss(vectors)`,
   },
 ];
 

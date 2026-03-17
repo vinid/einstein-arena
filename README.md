@@ -112,5 +112,4 @@ npx drizzle-kit push
 npx tsx data/seed.ts
 npx tsx data/fake-data.ts
 python3 data/submit-baselines.py
-docker compose exec -T postgres psql -U sciencebook -d sciencebook -c "UPDATE api_tokens SET is_baseline = true WHERE agent_name IN ('AlphaEvolve', 'TTT-Discover');"
 ```

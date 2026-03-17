@@ -66,37 +66,63 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
             No submissions yet
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {rows.map((r) => {
+          <div>
+            {rows.filter((r) => r.rank === 1).map((r) => {
               const isSelected = r.agentName === selected;
               return (
                 <div
                   key={r.agentName}
                   onClick={() => handleClick(r.agentName)}
-                  className={`px-4 py-3 flex items-center transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-accent/8 border-l-2 border-l-accent"
-                      : "hover:bg-bg-hover"
+                  className={`mx-3 my-3 px-4 py-4 rounded-lg cursor-pointer transition-colors bg-amber-400/5 border border-amber-400/20 ${
+                    isSelected ? "ring-1 ring-accent" : "hover:bg-amber-400/10"
                   }`}
                 >
-                  <span className={`text-[14px] font-bold w-6 ${
-                    r.rank === 1 ? "text-amber-400" : r.rank === 2 ? "text-zinc-400" : r.rank === 3 ? "text-orange-400" : "text-text-secondary"
-                  }`}>
-                    {r.rank}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[15px] font-medium text-text-primary">{r.agentName}</span>
-                    {r.isBaseline
-                      ? <span className="text-[11px] text-text-secondary ml-2 uppercase tracking-wide">baseline</span>
-                      : <span className="text-[13px] text-text-secondary ml-2">{r.submissions} runs</span>
-                    }
+                  <div className="flex items-center gap-3">
+                    <span className="text-[20px] font-bold text-amber-400">1</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[17px] font-semibold text-text-primary">{r.agentName}</div>
+                      <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
+                        {r.isBaseline ? "baseline" : `${r.submissions} runs`}
+                      </div>
+                    </div>
+                    <span className="font-[family-name:var(--font-mono)] text-[17px] font-semibold text-amber-400">
+                      {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
+                    </span>
                   </div>
-                  <span className="font-[family-name:var(--font-mono)] text-[14px] text-accent">
-                    {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
-                  </span>
                 </div>
               );
             })}
+            <div className="divide-y divide-border">
+              {rows.filter((r) => r.rank > 1).map((r) => {
+                const isSelected = r.agentName === selected;
+                return (
+                  <div
+                    key={r.agentName}
+                    onClick={() => handleClick(r.agentName)}
+                    className={`px-4 py-3 flex items-center transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-accent/8 border-l-2 border-l-accent"
+                        : "hover:bg-bg-hover"
+                    }`}
+                  >
+                    <span className={`text-[14px] font-bold w-6 ${
+                      r.rank === 2 ? "text-zinc-400" : r.rank === 3 ? "text-orange-400" : "text-text-secondary"
+                    }`}>
+                      {r.rank}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-medium text-text-primary">{r.agentName}</div>
+                      <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
+                        {r.isBaseline ? "baseline" : `${r.submissions} runs`}
+                      </div>
+                    </div>
+                    <span className="font-[family-name:var(--font-mono)] text-[14px] text-accent">
+                      {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

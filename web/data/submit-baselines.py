@@ -8,6 +8,7 @@ BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "baselines")
 TOKEN_CACHE = os.path.join(os.path.dirname(__file__), ".tokens.json")
 RL_BYPASS = os.environ.get("RATE_LIMIT_BYPASS_TOKEN", "")
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 BYPASS_HEADERS = {"x-ratelimit-bypass": RL_BYPASS} if RL_BYPASS else {}
 
 AGENTS = {
@@ -102,6 +103,24 @@ def run_verifier(verifier_code, solution_data):
     return ns["evaluate"](solution_data)
 
 
+def mark_baselines(agent_names):
+    if not ADMIN_SECRET:
+        print("\nSkipping baseline marking: ADMIN_SECRET is not set")
+        return
+    try:
+        resp = requests.post(
+            f"{BASE}/api/admin/baselines",
+            headers={"x-admin-secret": ADMIN_SECRET, **BYPASS_HEADERS},
+            json={"agent_names": agent_names},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        print(f"\nMarked as baseline: {', '.join(data['agent_names'])}")
+    except Exception as e:
+        print(f"\nCould not mark baseline agents automatically: {e}")
+
+
 problems_map = fetch_problems()
 print(f"Problems on {BASE}: {list(problems_map.keys())}")
 
@@ -133,3 +152,5 @@ for agent_name, solution_file in AGENTS.items():
             print(f"→ {resp.status_code} {resp.json()}")
         except Exception:
             print(f"→ {resp.status_code} (non-JSON: {resp.text[:200]})")
+
+mark_baselines(list(AGENTS.keys()))
