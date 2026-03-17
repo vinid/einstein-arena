@@ -52,22 +52,18 @@ def get_or_register(agent_name, tokens):
         headers=BYPASS_HEADERS,
     )
 
-    if ch_resp.status_code == 200:
-        ch = ch_resp.json()
-        print(f"  Solving PoW (difficulty={ch['difficulty']})...", end=" ", flush=True)
-        nonce = solve_pow(ch["challenge"], ch["difficulty"])
-        print(f"nonce={nonce}")
-        resp = requests.post(
-            f"{BASE}/api/agents/register",
-            json={"name": agent_name, "challenge": ch["challenge"], "nonce": nonce},
-            headers=BYPASS_HEADERS,
-        )
-    else:
-        resp = requests.post(
-            f"{BASE}/api/agents/register",
-            json={"name": agent_name},
-            headers=BYPASS_HEADERS,
-        )
+    if ch_resp.status_code != 200:
+        print(f"  Challenge failed: {ch_resp.status_code} {ch_resp.json()}")
+        sys.exit(1)
+    ch = ch_resp.json()
+    print(f"  Solving PoW (difficulty={ch['difficulty']})...", end=" ", flush=True)
+    nonce = solve_pow(ch["challenge"], ch["difficulty"])
+    print(f"nonce={nonce}")
+    resp = requests.post(
+        f"{BASE}/api/agents/register",
+        json={"name": agent_name, "challenge": ch["challenge"], "nonce": nonce},
+        headers=BYPASS_HEADERS,
+    )
 
     data = resp.json()
 
@@ -107,6 +103,8 @@ for agent_name, solution_file in AGENTS.items():
         solutions = json.load(f)
 
     print(f"\n{agent_name} ({len(solutions)} problems) → {BASE}")
+    check = requests.get(f"{BASE}/api/problems", headers=headers, timeout=10)
+    print(f"  [auth check] GET /api/problems with Authorization → {check.status_code}, redirects: {[r.status_code for r in check.history]}")
     for slug, payload in solutions.items():
         if slug not in slug_to_id:
             print(f"  [{slug}] ⚠ not found on server, skipping")

@@ -4,7 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
 
-const MAX_PER_BATCH = 5;
+const MAX_PER_BATCH = 30;
 
 function getTogether() {
   return new Together({ apiKey: process.env.TOGETHER_API_KEY });
@@ -143,8 +143,11 @@ export async function GET(req: NextRequest) {
     .limit(MAX_PER_BATCH);
 
   if (pending.length === 0) {
+    console.log("[eval] no pending solutions, skipping");
     return NextResponse.json({ evaluated: 0, pending: 0 });
   }
+
+  console.log(`[eval] starting batch: ${pending.length} pending solutions`);
 
   const problemCache: Record<
     number,
@@ -154,11 +157,13 @@ export async function GET(req: NextRequest) {
   let evaluated = 0;
   const together = getTogether();
 
+  const t0 = Date.now();
   const initResp = await together.codeInterpreter.execute({
     code: "import json\nprint('ready')",
     language: "python",
   });
   const sessionId = initResp.data!.session_id;
+  console.log(`[eval] session ${sessionId} created (${Date.now() - t0}ms)`);
 
   for (const sol of pending) {
     let problem = problemCache[sol.problemId];
@@ -177,6 +182,7 @@ export async function GET(req: NextRequest) {
       problemCache[sol.problemId] = problem;
     }
 
+    const solStart = Date.now();
     try {
       const result = await evalInSession(
         together,
@@ -184,8 +190,10 @@ export async function GET(req: NextRequest) {
         problem.verifier,
         sol.data as Record<string, unknown>
       );
+      const evalMs = Date.now() - solStart;
 
       if (result.error) {
+        console.log(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} ERROR (${evalMs}ms): ${result.error.slice(0, 200)}`);
         await db
           .update(solutions)
           .set({ status: "error", error: result.error, evaluatedAt: new Date() })
@@ -204,6 +212,7 @@ export async function GET(req: NextRequest) {
           ? globalBest - score
           : score - globalBest;
         if (clearance < problem.minImprovement) {
+          console.log(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} REJECTED score=${score} below minImprovement (${evalMs}ms)`);
           await db.delete(solutions).where(eq(solutions.id, sol.id));
           evaluated++;
           continue;
@@ -213,6 +222,7 @@ export async function GET(req: NextRequest) {
       const agentBest = await getAgentBest(sol.problemId, sol.agentName, problem.scoring);
 
       if (!wouldBeFirst && agentBest && !isBetter(score, agentBest.score, problem.scoring)) {
+        console.log(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} DISCARDED score=${score} worse than personal best=${agentBest.score} (${evalMs}ms)`);
         await db.delete(solutions).where(eq(solutions.id, sol.id));
         evaluated++;
         continue;
@@ -232,9 +242,12 @@ export async function GET(req: NextRequest) {
         await pruneWorstAgent(sol.problemId, problem.scoring);
       }
 
+      console.log(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} score=${score} ${wouldBeFirst ? "NEW #1" : "accepted"} (${evalMs}ms)`);
       evaluated++;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      const evalMs = Date.now() - solStart;
+      console.error(`[eval] sol=${sol.id} agent=${sol.agentName} problem=${problem.slug} EXCEPTION (${evalMs}ms): ${msg}`);
       await db
         .update(solutions)
         .set({ status: "error", error: msg, evaluatedAt: new Date() })
@@ -243,5 +256,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const totalMs = Date.now() - t0;
+  console.log(`[eval] batch done: ${evaluated}/${pending.length} evaluated in ${totalMs}ms (avg ${Math.round(totalMs / evaluated)}ms/sol)`);
   return NextResponse.json({ evaluated, pending: pending.length });
 }
