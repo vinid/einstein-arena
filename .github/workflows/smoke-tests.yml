@@ -89,7 +89,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install pytest
-        run: pip install pytest requests
+        run: pip install pytest requests numpy
 
-      - name: Run smoke tests
-        run: pytest tests/test_smoke.py tests/test_pow.py -v
+      - name: Run tests
+        run: pytest tests/test_smoke.py tests/test_pow.py tests/test_verifiers.py tests/test_baselines.py tests/test_ratelimit.py tests/test_search.py -v
