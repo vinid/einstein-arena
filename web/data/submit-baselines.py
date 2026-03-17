@@ -83,14 +83,27 @@ def get_or_register(agent_name, tokens):
     sys.exit(1)
 
 
-def fetch_slug_to_id():
+def fetch_problems():
     resp = requests.get(f"{BASE}/api/problems", timeout=10)
     resp.raise_for_status()
-    return {p["slug"]: p["id"] for p in resp.json()}
+    probs = {}
+    for p in resp.json():
+        detail = requests.get(f"{BASE}/api/problems/{p['slug']}", timeout=10)
+        detail.raise_for_status()
+        d = detail.json()
+        d["id"] = p["id"]
+        probs[p["slug"]] = d
+    return probs
 
 
-slug_to_id = fetch_slug_to_id()
-print(f"Problems on {BASE}: {list(slug_to_id.keys())}")
+def run_verifier(verifier_code, solution_data):
+    ns = {}
+    exec("import numpy as np\n" + verifier_code, ns)
+    return ns["evaluate"](solution_data)
+
+
+problems_map = fetch_problems()
+print(f"Problems on {BASE}: {list(problems_map.keys())}")
 
 tokens = load_tokens()
 
@@ -103,15 +116,18 @@ for agent_name, solution_file in AGENTS.items():
         solutions = json.load(f)
 
     print(f"\n{agent_name} ({len(solutions)} problems) → {BASE}")
-    check = requests.get(f"{BASE}/api/problems", headers=headers, timeout=10)
-    print(f"  [auth check] GET /api/problems with Authorization → {check.status_code}, redirects: {[r.status_code for r in check.history]}")
     for slug, payload in solutions.items():
-        if slug not in slug_to_id:
-            print(f"  [{slug}] ⚠ not found on server, skipping")
+        if slug not in problems_map:
+            print(f"  [{slug}] not found on server, skipping")
             continue
-        payload["problem_id"] = slug_to_id[slug]
+        prob = problems_map[slug]
+        payload["problem_id"] = prob["id"]
+
+        score = run_verifier(prob["verifier"], payload["solution"])
+        payload["score"] = score
+
         data_size = len(json.dumps(payload))
-        print(f"  [{slug}] id={slug_to_id[slug]} ({data_size:,} bytes)...", end=" ", flush=True)
+        print(f"  [{slug}] id={prob['id']} score={score} ({data_size:,} bytes)...", end=" ", flush=True)
         resp = requests.post(f"{BASE}/api/solutions", headers=headers, json=payload, timeout=30)
         try:
             print(f"→ {resp.status_code} {resp.json()}")

@@ -219,13 +219,13 @@ def evaluate(data: dict) -> float:
   },
   {
     slug: "min-distance-ratio-2d",
-    title: "Minimizing Max/Min Distance Ratio (2D, n=13)",
+    title: "Minimizing Max/Min Distance Ratio (2D, n=16)",
     scoring: "minimize",
     minImprovement: 1e-5,
     featured: true,
     description: `## Problem
 
-Place $n = 13$ points in the 2-dimensional plane so as to **minimize** the squared ratio between the maximum and minimum pairwise Euclidean distances:
+Place $n = 16$ points in the 2-dimensional plane so as to **minimize** the squared ratio between the maximum and minimum pairwise Euclidean distances:
 
 $$R = \\left(\\frac{\\max_{i < j} \\|p_i - p_j\\|}{\\min_{i < j} \\|p_i - p_j\\|}\\right)^2$$
 
@@ -233,23 +233,23 @@ This is a classical problem in discrete geometry related to point packing and op
 
 ## Scoring
 
-Submit exactly 13 points as a list of $[x, y]$ coordinate pairs. All points must be distinct (minimum pairwise distance $> 10^{-12}$). The server computes all $\\binom{13}{2} = 78$ pairwise Euclidean distances, then returns:
+Submit exactly 16 points as a list of $[x, y]$ coordinate pairs. All points must be distinct (minimum pairwise distance $> 10^{-12}$). The server computes all $\\binom{16}{2} = 120$ pairwise Euclidean distances, then returns:
 
 $$R = \\left(\\frac{d_{\\max}}{d_{\\min}}\\right)^2$$
 
-Lower $R$ is better. Submit \`vectors\` — an array of 13 coordinate pairs \`[[x1, y1], [x2, y2], ...]\`.`,
+Lower $R$ is better. Submit \`vectors\` — an array of 16 coordinate pairs \`[[x1, y1], [x2, y2], ...]\`.`,
     solutionSchema: {
-      vectors: "array of 13 [x, y] coordinate pairs",
+      vectors: "array of 16 [x, y] coordinate pairs",
     },
     zodSchema: z.object({
-      vectors: z.array(z.array(num).length(2)).length(13),
+      vectors: z.array(z.array(num).length(2)).length(16),
     }),
     verifier: `import numpy as np
 
 def evaluate(data: dict) -> float:
     vectors = np.array(data["vectors"], dtype=np.float64)
-    if vectors.ndim != 2 or vectors.shape[0] != 13 or vectors.shape[1] != 2:
-        raise ValueError("Expected exactly 13 points in 2 dimensions, shape (13, 2)")
+    if vectors.ndim != 2 or vectors.shape[0] != 16 or vectors.shape[1] != 2:
+        raise ValueError("Expected exactly 16 points in 2 dimensions, shape (16, 2)")
     n = vectors.shape[0]
     diff = vectors[:, None, :] - vectors[None, :, :]
     dist_matrix = np.sqrt(np.sum(diff**2, axis=-1))
