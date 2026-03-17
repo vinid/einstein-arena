@@ -3,6 +3,13 @@ import { solutions, problems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
+import { getRedis } from "@/lib/redis";
+
+const METRICS_TTL = 48 * 60 * 60;
+
+function evalHourKey() {
+  return `metrics:eval:${new Date().toISOString().slice(0, 13)}`;
+}
 
 const MAX_PER_BATCH = 30;
 
@@ -47,6 +54,7 @@ async function evalInSession(
   solutionData: Record<string, unknown>
 ): Promise<{ score?: number; error?: string }> {
   const dataJson = JSON.stringify(solutionData);
+  const execStart = Date.now();
 
   const response = await together.codeInterpreter.execute({
     code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
@@ -54,6 +62,16 @@ async function evalInSession(
     session_id: sessionId,
     files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
   });
+
+  const execMs = Date.now() - execStart;
+  const redis = getRedis();
+  const hk = evalHourKey();
+  const pipe = redis.pipeline();
+  pipe.hincrby(hk, "executions", 1);
+  pipe.hincrby(hk, "exec_latency_sum", execMs);
+  pipe.hincrby(hk, "exec_bytes", dataJson.length);
+  pipe.expire(hk, METRICS_TTL);
+  pipe.exec();
 
   return parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
 }
@@ -163,7 +181,15 @@ export async function GET(req: NextRequest) {
     language: "python",
   });
   const sessionId = initResp.data!.session_id;
-  console.log(`[eval] session ${sessionId} created (${Date.now() - t0}ms)`);
+  const sessionMs = Date.now() - t0;
+  console.log(`[eval] session ${sessionId} created (${sessionMs}ms)`);
+  const redis = getRedis();
+  const hk = evalHourKey();
+  const initPipe = redis.pipeline();
+  initPipe.hincrby(hk, "sessions", 1);
+  initPipe.hincrby(hk, "session_latency_sum", sessionMs);
+  initPipe.expire(hk, METRICS_TTL);
+  initPipe.exec();
 
   for (const sol of pending) {
     let problem = problemCache[sol.problemId];

@@ -20,9 +20,11 @@ function niceYTicks(yMin: number, yMax: number, count: number): number[] {
 }
 
 export function AutocorrelationChart({ values, score, agentName, scoring }: ChartProps) {
-  const n = values.length;
-  const allowNeg = values.some((v) => v < 0);
-  const bounds = computeYBounds(values, allowNeg);
+  if (!Array.isArray(values) || Array.isArray(values[0])) return null;
+  const vals = values as number[];
+  const n = vals.length;
+  const allowNeg = vals.some((v) => v < 0);
+  const bounds = computeYBounds(vals, allowNeg);
 
   return (
     <ChartShell title="f(x)" agentName={agentName} score={score} scoring={scoring}>
@@ -32,7 +34,7 @@ export function AutocorrelationChart({ values, score, agentName, scoring }: Char
           <YAxis layout={layout} yMin={bounds.yMin} yMax={bounds.yMax} ticks={niceYTicks(bounds.yMin, bounds.yMax, 4)} />
           <XAxis layout={layout} xMin={-0.25} xMax={0.25} ticks={[-0.25, -0.125, 0, 0.125, 0.25]} />
           <ZeroLine layout={layout} yMin={bounds.yMin} yMax={bounds.yMax} />
-          <StepPlot layout={layout} values={values} xMin={-0.25} xMax={0.25} yMin={bounds.yMin} yMax={bounds.yMax} color="#6495ED" />
+          <StepPlot layout={layout} values={vals} xMin={-0.25} xMax={0.25} yMin={bounds.yMin} yMax={bounds.yMax} color="#6495ED" />
           <text x={layout.padLeft + layout.plotW - 4} y={layout.padTop + 14} fill="var(--color-text-secondary)" fontSize="10" fontFamily="var(--font-mono)" textAnchor="end">
             values ({n} pts)
           </text>

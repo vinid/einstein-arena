@@ -41,6 +41,14 @@ interface Stats {
     errors: number;
     avgLatency: number;
   }[];
+  evaluation: {
+    hour: string;
+    sessions: number;
+    executions: number;
+    avgSessionMs: number;
+    avgExecMs: number;
+    totalBytes: number;
+  }[];
 }
 
 function TimeAgo({ date }: { date: string }) {
@@ -187,6 +195,61 @@ export default function AdminPage() {
           </table>
         </div>
       </div>
+
+      {stats.evaluation.length > 0 && (
+        <div>
+          <h2 className="text-[15px] font-bold text-text-primary mb-3">Code Interpreter (last 48h)</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+            {(() => {
+              const totals = stats.evaluation.reduce((acc, h) => ({
+                sessions: acc.sessions + h.sessions,
+                executions: acc.executions + h.executions,
+                sessionLatency: acc.sessionLatency + h.avgSessionMs * h.sessions,
+                execLatency: acc.execLatency + h.avgExecMs * h.executions,
+                bytes: acc.bytes + h.totalBytes,
+              }), { sessions: 0, executions: 0, sessionLatency: 0, execLatency: 0, bytes: 0 });
+              const cost = (totals.sessions * 0.03).toFixed(2);
+              return [
+                { label: "Sessions", value: totals.sessions, color: "text-text-primary" },
+                { label: "Executions", value: totals.executions, color: "text-text-primary" },
+                { label: "Est. cost", value: `$${cost}`, color: "text-yellow-400" },
+                { label: "Avg exec", value: totals.executions > 0 ? `${Math.round(totals.execLatency / totals.executions)}ms` : "—", color: "text-text-primary" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl border border-border bg-bg-card px-4 py-3">
+                  <div className="text-[12px] text-text-secondary">{s.label}</div>
+                  <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
+                </div>
+              ));
+            })()}
+          </div>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-bg-card text-text-secondary text-[12px]">
+                  <th className="text-left px-3 py-2">Hour</th>
+                  <th className="text-right px-3 py-2">Sessions</th>
+                  <th className="text-right px-3 py-2">Execs</th>
+                  <th className="text-right px-3 py-2">Avg sess ms</th>
+                  <th className="text-right px-3 py-2">Avg exec ms</th>
+                  <th className="text-right px-3 py-2">Data MB</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.evaluation.map((h) => (
+                  <tr key={h.hour} className="border-t border-border">
+                    <td className="px-3 py-2 text-text-primary font-mono text-[12px]">{h.hour.slice(5)}:00</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{h.sessions}</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{h.executions}</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{h.avgSessionMs}</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{h.avgExecMs}</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{(h.totalBytes / 1_000_000).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {stats.moderation.length > 0 && (
         <div>

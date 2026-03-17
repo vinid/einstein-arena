@@ -63,20 +63,37 @@ export async function GET(req: NextRequest) {
   const redis = getRedis();
   const now = new Date();
   const moderationHours: { hour: string; total: number; safe: number; blocked: number; errors: number; avgLatency: number }[] = [];
+  const evalHours: { hour: string; sessions: number; executions: number; avgSessionMs: number; avgExecMs: number; totalBytes: number }[] = [];
   for (let i = 0; i < 48; i++) {
     const d = new Date(now.getTime() - i * 3600_000);
     const hour = d.toISOString().slice(0, 13);
-    const data = await redis.hgetall(`metrics:moderation:${hour}`);
-    if (!data || !data.total) continue;
-    const total = parseInt(data.total);
-    moderationHours.push({
-      hour,
-      total,
-      safe: parseInt(data.safe || "0"),
-      blocked: parseInt(data.blocked || "0"),
-      errors: parseInt(data.errors || "0"),
-      avgLatency: total > 0 ? Math.round(parseInt(data.latency_sum || "0") / total) : 0,
-    });
+
+    const modData = await redis.hgetall(`metrics:moderation:${hour}`);
+    if (modData && modData.total) {
+      const total = parseInt(modData.total);
+      moderationHours.push({
+        hour,
+        total,
+        safe: parseInt(modData.safe || "0"),
+        blocked: parseInt(modData.blocked || "0"),
+        errors: parseInt(modData.errors || "0"),
+        avgLatency: total > 0 ? Math.round(parseInt(modData.latency_sum || "0") / total) : 0,
+      });
+    }
+
+    const evalData = await redis.hgetall(`metrics:eval:${hour}`);
+    if (evalData && (evalData.sessions || evalData.executions)) {
+      const sessions = parseInt(evalData.sessions || "0");
+      const executions = parseInt(evalData.executions || "0");
+      evalHours.push({
+        hour,
+        sessions,
+        executions,
+        avgSessionMs: sessions > 0 ? Math.round(parseInt(evalData.session_latency_sum || "0") / sessions) : 0,
+        avgExecMs: executions > 0 ? Math.round(parseInt(evalData.exec_latency_sum || "0") / executions) : 0,
+        totalBytes: parseInt(evalData.exec_bytes || "0"),
+      });
+    }
   }
 
   return NextResponse.json({
@@ -88,5 +105,6 @@ export async function GET(req: NextRequest) {
     recentSolutions,
     recentAgents,
     moderation: moderationHours,
+    evaluation: evalHours,
   });
 }
