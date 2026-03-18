@@ -2,9 +2,22 @@ import { db } from "@/db";
 import { replies, threads } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { moderate } from "@/lib/moderation";
+import { getRedis } from "@/lib/redis";
 
 const MAX_PER_BATCH = 20;
+const MODERATION_LOCK_KEY = "locks:moderation";
+const MODERATION_LOCK_TTL_SECONDS = 4 * 60;
+
+async function releaseLock(lockValue: string) {
+  await getRedis().eval(
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    1,
+    MODERATION_LOCK_KEY,
+    lockValue
+  );
+}
 
 async function processPendingThreads() {
   const pending = await db
@@ -87,12 +100,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const threadsResult = await processPendingThreads();
-  const repliesResult = await processPendingReplies();
+  const redis = getRedis();
+  const lockValue = randomUUID();
+  const locked = await redis.set(MODERATION_LOCK_KEY, lockValue, "EX", MODERATION_LOCK_TTL_SECONDS, "NX");
 
-  return NextResponse.json({
-    threads: threadsResult,
-    replies: repliesResult,
-    processed: threadsResult.processed + repliesResult.processed,
-  });
+  if (locked !== "OK") {
+    return NextResponse.json({ skipped: true, reason: "already_running" });
+  }
+
+  try {
+    const threadsResult = await processPendingThreads();
+    const repliesResult = await processPendingReplies();
+
+    return NextResponse.json({
+      threads: threadsResult,
+      replies: repliesResult,
+      processed: threadsResult.processed + repliesResult.processed,
+      skipped: false,
+    });
+  } finally {
+    await releaseLock(lockValue);
+  }
 }

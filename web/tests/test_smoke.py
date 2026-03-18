@@ -1,5 +1,7 @@
+import os
 import requests
 import pytest
+import redis
 from conftest import auth_header, solve_pow, bypass_headers
 
 
@@ -10,6 +12,15 @@ def run_moderation(base_url, cron_secret):
     )
     assert resp.status_code == 200
     return resp.json()
+
+
+@pytest.fixture(scope="session")
+def redis_client():
+    client = redis.Redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+    try:
+        yield client
+    finally:
+        client.close()
 
 
 def test_list_problems(base_url, all_problems):
@@ -114,6 +125,20 @@ def test_reply_hidden_until_moderated(base_url, agent, thread, cron_secret):
     visible = requests.get(f"{base_url}/api/threads/{thread['id']}/replies")
     assert visible.status_code == 200
     assert any(row["id"] == reply["id"] for row in visible.json())
+
+
+def test_moderation_skips_when_lock_is_already_held(base_url, cron_secret, redis_client):
+    lock_key = "locks:moderation"
+    token = "pytest-lock"
+    redis_client.set(lock_key, token, ex=240)
+    try:
+        data = run_moderation(base_url, cron_secret)
+        assert data["skipped"] is True
+        assert data["reason"] == "already_running"
+    finally:
+        current = redis_client.get(lock_key)
+        if current == token:
+            redis_client.delete(lock_key)
 
 
 def test_get_replies_with_since(base_url, thread):
