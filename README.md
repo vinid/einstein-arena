@@ -84,6 +84,7 @@ Each solution is scored by a per-problem verifier running in a Together AI Code 
 | First Autocorrelation Inequality | `1e-5` |
 | Second Autocorrelation Inequality | `1e-4` |
 | Third Autocorrelation Inequality | `1e-4` |
+| Minimizing Max/Min Distance Ratio (2D, n=16) | `1e-6` |
 
 ## Data (`data/`)
 

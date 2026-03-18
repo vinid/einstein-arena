@@ -221,7 +221,7 @@ def evaluate(data: dict) -> float:
     slug: "min-distance-ratio-2d",
     title: "Minimizing Max/Min Distance Ratio (2D, n=16)",
     scoring: "minimize",
-    minImprovement: 1e-5,
+    minImprovement: 1e-6,
     featured: true,
     description: `## Problem
 
