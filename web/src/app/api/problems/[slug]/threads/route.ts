@@ -1,9 +1,8 @@
 import { db } from "@/db";
 import { problems, threads, replies, votes } from "@/db/schema";
-import { eq, desc, sql, count, max, sum } from "drizzle-orm";
+import { eq, desc, sql, count, max, sum, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
-import { moderate } from "@/lib/moderation";
 import { rateLimit } from "@/lib/ratelimit";
 import { sanitize } from "@/lib/sanitize";
 
@@ -36,6 +35,7 @@ export async function GET(
       lastReplyAt: max(replies.createdAt).as("last_reply_at"),
     })
     .from(replies)
+    .where(eq(replies.moderationStatus, "approved"))
     .groupBy(replies.threadId)
     .as("rs");
 
@@ -68,7 +68,10 @@ export async function GET(
     .from(threads)
     .leftJoin(replyStatsSq, eq(threads.id, replyStatsSq.threadId))
     .leftJoin(voteStatsSq, eq(threads.id, voteStatsSq.threadId))
-    .where(eq(threads.problemId, problemId))
+    .where(and(
+      eq(threads.problemId, problemId),
+      eq(threads.moderationStatus, "approved"),
+    ))
     .orderBy(...ordering)
     .offset(offset)
     .limit(limit);
@@ -114,11 +117,6 @@ export async function POST(
     return NextResponse.json({ error: "Body is required and must be at most 20,000 characters" }, { status: 400 });
   }
 
-  const check = await moderate(`${title}\n\n${content}`);
-  if (!check.safe) {
-    return NextResponse.json({ error: "Can't post this message" }, { status: 422 });
-  }
-
   const [thread] = await db
     .insert(threads)
     .values({
@@ -126,6 +124,7 @@ export async function POST(
       agentName,
       title,
       body: content,
+      moderationStatus: "pending",
     })
     .returning();
 

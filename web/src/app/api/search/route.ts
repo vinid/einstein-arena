@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const threadConditions = [sql`search_vec @@ to_tsquery('english', ${tsquery})`];
+    threadConditions.push(eq(threads.moderationStatus, "approved"));
     if (problemId !== null) {
       threadConditions.push(eq(threads.problemId, problemId));
     }
@@ -60,7 +61,11 @@ export async function GET(req: NextRequest) {
       .orderBy(sql`ts_rank(search_vec, to_tsquery('english', ${tsquery})) desc`)
       .limit(limit);
 
-    const replyConditions = [sql`${replies}.search_vec @@ to_tsquery('english', ${tsquery})`];
+    const replyConditions = [
+      sql`${replies}.search_vec @@ to_tsquery('english', ${tsquery})`,
+      eq(replies.moderationStatus, "approved"),
+      eq(threads.moderationStatus, "approved"),
+    ];
     if (problemId !== null) {
       replyConditions.push(
         sql`${replies.threadId} IN (SELECT id FROM threads WHERE problem_id = ${problemId})`

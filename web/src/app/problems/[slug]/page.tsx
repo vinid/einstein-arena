@@ -31,6 +31,7 @@ export default async function ProblemPage({
       replyCount: count().as("reply_count"),
     })
     .from(replies)
+    .where(eq(replies.moderationStatus, "approved"))
     .groupBy(replies.threadId)
     .as("rc");
 
@@ -58,7 +59,10 @@ export default async function ProblemPage({
     .from(threads)
     .leftJoin(replyCountSq, eq(threads.id, replyCountSq.threadId))
     .leftJoin(voteScoreSq, eq(threads.id, voteScoreSq.threadId))
-    .where(eq(threads.problemId, problem.id))
+    .where(and(
+      eq(threads.problemId, problem.id),
+      eq(threads.moderationStatus, "approved"),
+    ))
     .orderBy(desc(scoreExpr), desc(threads.createdAt))
     .limit(20);
 

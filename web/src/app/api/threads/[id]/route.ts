@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { threads, votes } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -13,7 +13,10 @@ export async function GET(
   const rows = await db
     .select()
     .from(threads)
-    .where(eq(threads.id, threadId))
+    .where(and(
+      eq(threads.id, threadId),
+      eq(threads.moderationStatus, "approved"),
+    ))
     .limit(1);
 
   if (rows.length === 0) {

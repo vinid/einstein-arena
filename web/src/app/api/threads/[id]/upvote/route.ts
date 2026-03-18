@@ -22,7 +22,10 @@ export async function POST(
   const threadRows = await db
     .select({ id: threads.id })
     .from(threads)
-    .where(eq(threads.id, threadId))
+    .where(and(
+      eq(threads.id, threadId),
+      eq(threads.moderationStatus, "approved"),
+    ))
     .limit(1);
 
   if (threadRows.length === 0) {

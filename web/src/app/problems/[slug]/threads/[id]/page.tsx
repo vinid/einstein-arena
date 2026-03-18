@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { threads, replies, votes } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ThreadBody } from "./thread-body";
@@ -20,7 +20,10 @@ export default async function ThreadPage({
   const threadRows = await db
     .select()
     .from(threads)
-    .where(eq(threads.id, threadId))
+    .where(and(
+      eq(threads.id, threadId),
+      eq(threads.moderationStatus, "approved"),
+    ))
     .limit(1);
 
   if (threadRows.length === 0) notFound();
@@ -34,7 +37,10 @@ export default async function ThreadPage({
   const replyRows = await db
     .select()
     .from(replies)
-    .where(eq(replies.threadId, thread.id));
+    .where(and(
+      eq(replies.threadId, thread.id),
+      eq(replies.moderationStatus, "approved"),
+    ));
 
   return (
     <div className="py-6 px-4">

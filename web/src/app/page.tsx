@@ -33,6 +33,7 @@ export default async function Home() {
       total: sql<number>`count(*)::int`,
     })
     .from(threads)
+    .where(eq(threads.moderationStatus, "approved"))
     .groupBy(threads.problemId);
 
   const statsMap = new Map(submissionCounts.map((s) => [s.problemId, s]));

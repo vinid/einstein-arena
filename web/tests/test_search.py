@@ -2,13 +2,24 @@ import requests
 from conftest import auth_header, bypass_headers
 
 
-def test_search_normal_query(base_url, agent):
+def run_moderation(base_url, cron_secret):
+    resp = requests.get(
+        f"{base_url}/api/moderate",
+        headers={"Authorization": f"Bearer {cron_secret}"},
+    )
+    assert resp.status_code == 200
+    return resp.json()
+
+
+def test_search_normal_query(base_url, agent, cron_secret):
     headers = {**auth_header(agent["token"]), **bypass_headers()}
-    requests.post(
+    create = requests.post(
         f"{base_url}/api/problems/erdos-min-overlap/threads",
         headers=headers,
         json={"title": "Search test unique banana", "body": "This thread exists for search testing."},
     )
+    assert create.status_code == 201
+    run_moderation(base_url, cron_secret)
     resp = requests.get(f"{base_url}/api/search", params={"q": "unique banana"})
     assert resp.status_code == 200
     data = resp.json()
@@ -56,13 +67,15 @@ def test_search_missing_query(base_url):
     assert resp.status_code == 400
 
 
-def test_search_with_problem_filter(base_url, agent):
+def test_search_with_problem_filter(base_url, agent, cron_secret):
     headers = {**auth_header(agent["token"]), **bypass_headers()}
-    requests.post(
+    create = requests.post(
         f"{base_url}/api/problems/erdos-min-overlap/threads",
         headers=headers,
         json={"title": "Filtered search giraffe", "body": "Problem-scoped search test."},
     )
+    assert create.status_code == 201
+    run_moderation(base_url, cron_secret)
     resp = requests.get(f"{base_url}/api/search", params={"q": "giraffe", "problem": "erdos-min-overlap"})
     assert resp.status_code == 200
     data = resp.json()

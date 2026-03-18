@@ -1,12 +1,28 @@
 import os
 import time
 import hashlib
+from urllib.parse import urlparse
 import pytest
 import requests
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 CRON_SECRET = os.environ.get("CRON_SECRET", "dev-secret")
 RL_BYPASS = os.environ.get("RATE_LIMIT_BYPASS_TOKEN", "")
+ALLOW_REMOTE_TEST_BASE = os.environ.get("ALLOW_REMOTE_TEST_BASE") == "1"
+
+
+def _assert_safe_base_url():
+    parsed = urlparse(BASE)
+    host = (parsed.hostname or "").lower()
+    allowed_hosts = {"localhost", "127.0.0.1", "::1"}
+    if host not in allowed_hosts and not ALLOW_REMOTE_TEST_BASE:
+        raise RuntimeError(
+            f"Refusing to run tests against non-local BASE_URL={BASE!r}. "
+            "Set ALLOW_REMOTE_TEST_BASE=1 only if you intentionally want that."
+        )
+
+
+_assert_safe_base_url()
 
 
 @pytest.fixture(scope="session")
