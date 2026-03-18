@@ -4,6 +4,8 @@ import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "@/lib/redis";
 
+const MODERATION_TOKEN_PRICE_PER_MILLION = 0.2;
+
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   if (key !== process.env.ADMIN_SECRET) {
@@ -13,6 +15,16 @@ export async function GET(req: NextRequest) {
   const [agents] = await db.select({ count: sql<number>`count(*)::int` }).from(apiTokens);
   const [threadCount] = await db.select({ count: sql<number>`count(*)::int` }).from(threads);
   const [replyCount] = await db.select({ count: sql<number>`count(*)::int` }).from(replies);
+  const [threadModeration] = await db.select({
+    pending: sql<number>`count(*) filter (where ${threads.moderationStatus} = 'pending')::int`,
+    approved: sql<number>`count(*) filter (where ${threads.moderationStatus} = 'approved')::int`,
+    rejected: sql<number>`count(*) filter (where ${threads.moderationStatus} = 'rejected')::int`,
+  }).from(threads);
+  const [replyModeration] = await db.select({
+    pending: sql<number>`count(*) filter (where ${replies.moderationStatus} = 'pending')::int`,
+    approved: sql<number>`count(*) filter (where ${replies.moderationStatus} = 'approved')::int`,
+    rejected: sql<number>`count(*) filter (where ${replies.moderationStatus} = 'rejected')::int`,
+  }).from(replies);
 
   const solutionsByStatus = await db
     .select({ status: solutions.status, count: sql<number>`count(*)::int` })
@@ -62,25 +74,32 @@ export async function GET(req: NextRequest) {
 
   const redis = getRedis();
   const now = new Date();
-  const moderationHours: { hour: string; total: number; safe: number; blocked: number; errors: number; avgLatency: number }[] = [];
+  const moderationDays: { day: string; total: number; safe: number; blocked: number; errors: number; totalTokens: number; estimatedCost: number; avgLatency: number }[] = [];
   const evalHours: { hour: string; sessions: number; executions: number; avgSessionMs: number; avgExecMs: number; totalBytes: number }[] = [];
-  for (let i = 0; i < 48; i++) {
-    const d = new Date(now.getTime() - i * 3600_000);
-    const hour = d.toISOString().slice(0, 13);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now.getTime() - i * 24 * 3600_000);
+    const day = d.toISOString().slice(0, 10);
 
-    const modData = await redis.hgetall(`metrics:moderation:${hour}`);
-    if (modData && modData.total) {
+    const modData = await redis.hgetall(`metrics:moderation:${day}`);
+    if (modData && (modData.total || modData.total_tokens)) {
+      const totalTokens = parseInt(modData.total_tokens || "0");
       const total = parseInt(modData.total);
-      moderationHours.push({
-        hour,
+      moderationDays.push({
+        day,
         total,
         safe: parseInt(modData.safe || "0"),
         blocked: parseInt(modData.blocked || "0"),
         errors: parseInt(modData.errors || "0"),
+        totalTokens,
+        estimatedCost: (totalTokens / 1_000_000) * MODERATION_TOKEN_PRICE_PER_MILLION,
         avgLatency: total > 0 ? Math.round(parseInt(modData.latency_sum || "0") / total) : 0,
       });
     }
+  }
 
+  for (let i = 0; i < 48; i++) {
+    const d = new Date(now.getTime() - i * 3600_000);
+    const hour = d.toISOString().slice(0, 13);
     const evalData = await redis.hgetall(`metrics:eval:${hour}`);
     if (evalData && (evalData.sessions || evalData.executions)) {
       const sessions = parseInt(evalData.sessions || "0");
@@ -100,11 +119,15 @@ export async function GET(req: NextRequest) {
     agents: agents.count,
     threads: threadCount.count,
     replies: replyCount.count,
+    discussionModeration: {
+      threads: threadModeration,
+      replies: replyModeration,
+    },
     solutionsByStatus: Object.fromEntries(solutionsByStatus.map((r) => [r.status, r.count])),
     perProblem,
     recentSolutions,
     recentAgents,
-    moderation: moderationHours,
+    moderation: moderationDays,
     evaluation: evalHours,
   });
 }

@@ -1,15 +1,15 @@
 import Together from "together-ai";
 import { getRedis } from "@/lib/redis";
 
-const METRICS_TTL = 48 * 60 * 60;
+const METRICS_TTL = 8 * 24 * 60 * 60;
+const MODERATION_TOKEN_PRICE_PER_MILLION = 0.2;
 
 function getTogether() {
   return new Together({ apiKey: process.env.TOGETHER_API_KEY });
 }
 
-function hourKey() {
-  const d = new Date();
-  return `metrics:moderation:${d.toISOString().slice(0, 13)}`;
+function dayKey() {
+  return `metrics:moderation:${new Date().toISOString().slice(0, 10)}`;
 }
 
 export async function moderate(text: string): Promise<{ safe: boolean; category?: string }> {
@@ -27,30 +27,34 @@ export async function moderate(text: string): Promise<{ safe: boolean; category?
     });
 
     const output = response.choices?.[0]?.message?.content?.trim() ?? "safe";
+    const totalTokens = response.usage?.total_tokens ?? 0;
     const ms = Date.now() - t0;
 
     const redis = getRedis();
-    const key = hourKey();
+    const key = dayKey();
     const pipeline = redis.pipeline();
     pipeline.hincrby(key, "total", 1);
+    pipeline.hincrby(key, "total_tokens", totalTokens);
     pipeline.hincrby(key, output === "safe" ? "safe" : "blocked", 1);
     pipeline.hincrby(key, "latency_sum", ms);
     pipeline.expire(key, METRICS_TTL);
     pipeline.exec();
 
     if (output === "safe") {
-      console.log(`[moderation] safe (${ms}ms) "${preview}"`);
+      const estimatedCost = (totalTokens / 1_000_000) * MODERATION_TOKEN_PRICE_PER_MILLION;
+      console.log(`[moderation] safe (${ms}ms, ${totalTokens} tokens, $${estimatedCost.toFixed(6)}) "${preview}"`);
       return { safe: true };
     }
 
     const lines = output.split("\n");
     const category = lines.length > 1 ? lines[1].trim() : undefined;
-    console.log(`[moderation] BLOCKED category=${category} (${ms}ms) "${preview}"`);
+    const estimatedCost = (totalTokens / 1_000_000) * MODERATION_TOKEN_PRICE_PER_MILLION;
+    console.log(`[moderation] BLOCKED category=${category} (${ms}ms, ${totalTokens} tokens, $${estimatedCost.toFixed(6)}) "${preview}"`);
     return { safe: false, category };
   } catch (e: unknown) {
     const ms = Date.now() - t0;
     const redis = getRedis();
-    const key = hourKey();
+    const key = dayKey();
     const pipeline = redis.pipeline();
     pipeline.hincrby(key, "total", 1);
     pipeline.hincrby(key, "errors", 1);

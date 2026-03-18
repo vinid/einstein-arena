@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/moderate",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/2 * * * *"
     },
     {
       "path": "/api/evaluate",

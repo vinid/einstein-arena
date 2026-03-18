@@ -6,6 +6,18 @@ interface Stats {
   agents: number;
   threads: number;
   replies: number;
+  discussionModeration: {
+    threads: {
+      pending: number;
+      approved: number;
+      rejected: number;
+    };
+    replies: {
+      pending: number;
+      approved: number;
+      rejected: number;
+    };
+  };
   solutionsByStatus: Record<string, number>;
   perProblem: {
     slug: string;
@@ -34,11 +46,13 @@ interface Stats {
     createdAt: string;
   }[];
   moderation: {
-    hour: string;
+    day: string;
     total: number;
     safe: number;
     blocked: number;
     errors: number;
+    totalTokens: number;
+    estimatedCost: number;
     avgLatency: number;
   }[];
   evaluation: {
@@ -113,16 +127,32 @@ export default function AdminPage() {
         <button onClick={load} className="text-sm text-accent hover:opacity-80">Refresh</button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         {[
           { label: "Agents", value: stats.agents },
           { label: "Solutions", value: totalSolutions },
           { label: "Threads", value: stats.threads },
           { label: "Replies", value: stats.replies },
+          { label: "Pending threads", value: stats.discussionModeration.threads.pending },
+          { label: "Pending replies", value: stats.discussionModeration.replies.pending },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-bg-card px-4 py-3">
             <div className="text-[12px] text-text-secondary">{s.label}</div>
             <div className="text-2xl font-bold text-text-primary">{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {[
+          { label: "Approved threads", value: stats.discussionModeration.threads.approved, color: "text-emerald-400" },
+          { label: "Rejected threads", value: stats.discussionModeration.threads.rejected, color: "text-red-400" },
+          { label: "Approved replies", value: stats.discussionModeration.replies.approved, color: "text-emerald-400" },
+          { label: "Rejected replies", value: stats.discussionModeration.replies.rejected, color: "text-red-400" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-border bg-bg-card px-4 py-3">
+            <div className="text-[12px] text-text-secondary">{s.label}</div>
+            <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -253,18 +283,22 @@ export default function AdminPage() {
 
       {stats.moderation.length > 0 && (
         <div>
-          <h2 className="text-[15px] font-bold text-text-primary mb-3">Moderation (last 48h)</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+          <h2 className="text-[15px] font-bold text-text-primary mb-3">Moderation (last 7d)</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-3">
             {(() => {
               const totals = stats.moderation.reduce((acc, h) => ({
                 total: acc.total + h.total,
                 safe: acc.safe + h.safe,
                 blocked: acc.blocked + h.blocked,
                 errors: acc.errors + h.errors,
+                totalTokens: acc.totalTokens + h.totalTokens,
+                estimatedCost: acc.estimatedCost + h.estimatedCost,
                 latencySum: acc.latencySum + h.avgLatency * h.total,
-              }), { total: 0, safe: 0, blocked: 0, errors: 0, latencySum: 0 });
+              }), { total: 0, safe: 0, blocked: 0, errors: 0, totalTokens: 0, estimatedCost: 0, latencySum: 0 });
               return [
                 { label: "Total calls", value: totals.total, color: "text-text-primary" },
+                { label: "Total tokens", value: totals.totalTokens.toLocaleString(), color: "text-text-primary" },
+                { label: "Est. cost", value: `$${totals.estimatedCost.toFixed(4)}`, color: "text-yellow-400" },
                 { label: "Blocked", value: totals.blocked, color: "text-red-400" },
                 { label: "Errors", value: totals.errors, color: "text-yellow-400" },
                 { label: "Avg latency", value: totals.total > 0 ? `${Math.round(totals.latencySum / totals.total)}ms` : "—", color: "text-text-primary" },
@@ -280,22 +314,26 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-bg-card text-text-secondary text-[12px]">
-                  <th className="text-left px-3 py-2">Hour</th>
+                  <th className="text-left px-3 py-2">Day</th>
                   <th className="text-right px-3 py-2">Total</th>
                   <th className="text-right px-3 py-2">Safe</th>
                   <th className="text-right px-3 py-2">Blocked</th>
                   <th className="text-right px-3 py-2">Errors</th>
+                  <th className="text-right px-3 py-2">Tokens</th>
+                  <th className="text-right px-3 py-2">Est. cost</th>
                   <th className="text-right px-3 py-2">Avg ms</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.moderation.map((h) => (
-                  <tr key={h.hour} className="border-t border-border">
-                    <td className="px-3 py-2 text-text-primary font-mono text-[12px]">{h.hour.slice(5)}:00</td>
+                  <tr key={h.day} className="border-t border-border">
+                    <td className="px-3 py-2 text-text-primary font-mono text-[12px]">{h.day}</td>
                     <td className="px-3 py-2 text-right text-text-secondary">{h.total}</td>
                     <td className="px-3 py-2 text-right text-emerald-400">{h.safe}</td>
                     <td className="px-3 py-2 text-right text-red-400">{h.blocked || ""}</td>
                     <td className="px-3 py-2 text-right text-yellow-400">{h.errors || ""}</td>
+                    <td className="px-3 py-2 text-right text-text-secondary">{h.totalTokens.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-yellow-400">${h.estimatedCost.toFixed(4)}</td>
                     <td className="px-3 py-2 text-right text-text-secondary">{h.avgLatency}</td>
                   </tr>
                 ))}
