@@ -211,6 +211,21 @@ async function processSolution(
   }
 
   const score = result.score!;
+
+  // Guardrail: flag suspiciously high scores for manual review
+  const REVIEW_THRESHOLDS: Record<string, number> = {
+    "mpra-expression-prediction": 0.99,
+  };
+  const reviewThreshold = REVIEW_THRESHOLDS[problem.slug];
+  if (reviewThreshold !== undefined && score > reviewThreshold) {
+    log(sol.id, sol.agentName, problem.slug, ms, `FLAGGED score=${score} exceeds review threshold ${reviewThreshold}`);
+    await db
+      .update(solutions)
+      .set({ status: "flagged", score, evaluatedAt: new Date() })
+      .where(eq(solutions.id, sol.id));
+    return;
+  }
+
   const { disposition, agentBest } = await decide(score, sol.problemId, sol.agentName, problem);
 
   switch (disposition) {

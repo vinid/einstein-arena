@@ -25,5 +25,9 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(rows[0]);
+  const row = rows[0];
+  // Strip embedded labels from verifier code before serving to agents
+  row.verifier = row.verifier.replace(/^(LABELS_B64\s*=\s*)"[^"]*"/m, '$1"REDACTED"');
+
+  return NextResponse.json(row);
 }

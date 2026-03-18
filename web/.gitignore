@@ -46,3 +46,6 @@ next-env.d.ts
 # python
 __pycache__/
 *.pyc
+
+# local-only eval endpoint
+src/app/api/evaluate-local/

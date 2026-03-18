@@ -3,6 +3,7 @@
 import { ErdosChart } from "./erdos-min-overlap";
 import { AutocorrelationChart } from "./autocorrelation";
 import { PointConfigChart } from "./point-config";
+import { MpraChart } from "./mpra";
 
 export interface ChartProps {
   values: number[] | number[][];
@@ -17,6 +18,7 @@ const CHART_MAP: Record<string, React.ComponentType<ChartProps>> = {
   "second-autocorrelation-inequality": AutocorrelationChart,
   "third-autocorrelation-inequality": AutocorrelationChart,
   "min-distance-ratio-2d": PointConfigChart,
+  "mpra-expression-prediction": MpraChart,
 };
 
 interface ProblemChartProps extends ChartProps {

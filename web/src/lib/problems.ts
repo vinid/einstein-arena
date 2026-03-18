@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MPRA_TEST_LABELS_B64 } from "./mpra-labels";
 
 const num = z.number();
 
@@ -331,6 +332,78 @@ def evaluate(data: dict) -> float:
     if _exact_check(vectors):
         return 0.0
     return _overlap_loss(vectors)`,
+  },
+  {
+    slug: "mpra-expression-prediction",
+    title: "Perturbation MPRA Expression Prediction (HepG2)",
+    scoring: "maximize",
+    minImprovement: 1e-3,
+    featured: true,
+    description: `## Problem
+
+Predict gene expression levels from DNA sequences in a perturbation MPRA (Massively Parallel Reporter Assay).
+
+The dataset is **HepG2 LentiMPRA** from [Agarwal et al. 2025](https://www.nature.com/articles/s41586-024-08430-9). Each sample is a 230bp DNA sequence with a measured expression level.
+
+- **Training data:** 110,628 sequences with expression values
+- **Test data:** 12,298 sequences — **predict these**
+
+### Data Access
+
+**Training data** (with expression labels):
+
+\`\`\`python
+import pandas as pd
+
+train = pd.read_csv("https://raw.githubusercontent.com/jmiao24/Compbio_Training_Data/main/MPRA/train.tsv", sep="\\t")
+\`\`\`
+
+**Test sequences** (no labels — these are what you predict):
+
+\`\`\`python
+test = pd.read_csv("https://raw.githubusercontent.com/jmiao24/Compbio_Test_Data/main/MPRA/test/test_sequences.tsv", sep="\\t")
+\`\`\`
+
+Training data has columns: \`seq_id\`, \`seq\`, \`expression\`. Test data has columns: \`seq_id\`, \`seq\`.
+
+You may use any method — simple models, pretrained genomic foundation models, ensembles, etc. Only the final predictions on the test set are evaluated.
+
+**Important:** You may use any data for training, including external datasets and pretrained models. However, do not use the test sequences for training, fine-tuning, or any form of model selection. The test set must be used exclusively for generating final predictions.
+
+## Scoring
+
+Submit predicted expression values for all **12,298 test sequences**, in the same order as they appear in \`test_sequences.tsv\`.
+
+The server computes **global Pearson correlation** between your predictions and the ground truth:
+
+$$r = \\text{corrcoef}(\\hat{y},\\, y)[0,1]$$
+
+Higher $r$ is better. Submit \`predictions\` — an array of exactly 12,298 floats.`,
+    solutionSchema: {
+      predictions:
+        "array of 12298 floats (predicted expression levels for test sequences)",
+    },
+    zodSchema: z.object({
+      predictions: z.array(num).length(12298),
+    }),
+    verifier: `import numpy as np
+import zlib, base64
+
+LABELS_B64 = "${MPRA_TEST_LABELS_B64}"
+
+def evaluate(data: dict) -> float:
+    predictions = np.array(data["predictions"], dtype=np.float64)
+    if len(predictions) != 12298:
+        raise ValueError(f"Expected 12298 predictions, got {len(predictions)}")
+    if np.any(np.isnan(predictions)):
+        raise ValueError("Predictions contain NaN values")
+    if np.std(predictions) < 1e-12:
+        raise ValueError("Predictions are constant (zero variance)")
+    labels = np.frombuffer(zlib.decompress(base64.b64decode(LABELS_B64)), dtype=np.float32)
+    r = float(np.corrcoef(predictions, labels)[0, 1])
+    if not np.isfinite(r):
+        raise ValueError("Pearson correlation is not finite")
+    return r`,
   },
 ];
 
