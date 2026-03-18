@@ -21,9 +21,9 @@ def db_conn():
 
 @pytest.fixture()
 def moderation_agents(base_url):
-    ts = int(time.time() * 1000)
-    own_name = f"pytest-agent-own-{ts}"
-    other_name = f"pytest-agent-other-{ts}"
+    ts = str(int(time.time() * 1000))[-8:]
+    own_name = f"pa-own-{ts}"
+    other_name = f"pa-other-{ts}"
     own_token = _register(base_url, own_name)
     other_token = _register(base_url, other_name)
     data = {
