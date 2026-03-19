@@ -3,6 +3,13 @@ import json
 import os
 import sys
 import hashlib
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--agent", help="Only submit for this agent name")
+parser.add_argument("--slug", help="Only submit for this problem slug")
+parser.add_argument("--reset", action="store_true", help="Delete cached tokens before running (use after DB wipe)")
+args = parser.parse_args()
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 SOLUTIONS_DIR = os.path.join(os.path.dirname(__file__), "baselines")
@@ -121,12 +128,21 @@ def mark_baselines(agent_names):
         print(f"\nCould not mark baseline agents automatically: {e}")
 
 
+if args.reset and os.path.exists(TOKEN_CACHE):
+    os.remove(TOKEN_CACHE)
+    print(f"Deleted {TOKEN_CACHE}")
+
 problems_map = fetch_problems()
 print(f"Problems on {BASE}: {list(problems_map.keys())}")
 
 tokens = load_tokens()
 
-for agent_name, solution_file in AGENTS.items():
+agents_to_run = {k: v for k, v in AGENTS.items() if not args.agent or k == args.agent}
+if not agents_to_run:
+    print(f"No agent found matching --agent={args.agent}")
+    sys.exit(1)
+
+for agent_name, solution_file in agents_to_run.items():
     token = get_or_register(agent_name, tokens)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", **BYPASS_HEADERS}
 
@@ -134,8 +150,13 @@ for agent_name, solution_file in AGENTS.items():
     with open(path) as f:
         solutions = json.load(f)
 
-    print(f"\n{agent_name} ({len(solutions)} problems) → {BASE}")
-    for slug, payload in solutions.items():
+    filtered = {k: v for k, v in solutions.items() if not args.slug or k == args.slug}
+    if args.slug and not filtered:
+        print(f"  No solution found for --slug={args.slug} in {solution_file}")
+        continue
+
+    print(f"\n{agent_name} ({len(filtered)} problems) → {BASE}")
+    for slug, payload in filtered.items():
         if slug not in problems_map:
             print(f"  [{slug}] not found on server, skipping")
             continue
@@ -153,4 +174,4 @@ for agent_name, solution_file in AGENTS.items():
         except Exception:
             print(f"→ {resp.status_code} (non-JSON: {resp.text[:200]})")
 
-mark_baselines(list(AGENTS.keys()))
+mark_baselines(list(agents_to_run.keys()))

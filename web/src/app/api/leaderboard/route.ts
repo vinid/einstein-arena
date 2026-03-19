@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const problemId = parseInt(url.searchParams.get("problem_id")!);
+  if (isNaN(problemId)) return NextResponse.json({ error: "problem_id is required" }, { status: 400 });
 
   const problem = await db
     .select({ scoring: problems.scoring })

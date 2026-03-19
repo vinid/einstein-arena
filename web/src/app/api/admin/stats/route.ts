@@ -7,7 +7,7 @@ import { getRedis } from "@/lib/redis";
 const MODERATION_TOKEN_PRICE_PER_MILLION = 0.2;
 
 export async function GET(req: NextRequest) {
-  const key = req.nextUrl.searchParams.get("key");
+  const key = req.headers.get("x-admin-secret");
   if (key !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,5 +1,5 @@
 {
-  "id": "9ce511c9-40f1-477f-bebd-4d692b03d2cd",
+  "id": "fe5713f9-3e2c-4e34-8334-56c85686822f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -188,6 +188,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "moderation_status": {
+          "name": "moderation_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -204,6 +211,19 @@
           "tableTo": "threads",
           "columnsFrom": [
             "thread_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "replies_parent_reply_id_replies_id_fk": {
+          "name": "replies_parent_reply_id_replies_id_fk",
+          "tableFrom": "replies",
+          "tableTo": "replies",
+          "columnsFrom": [
+            "parent_reply_id"
           ],
           "columnsTo": [
             "id"
@@ -341,6 +361,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "moderation_status": {
+          "name": "moderation_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -435,7 +462,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "votes_value_check": {
+          "name": "votes_value_check",
+          "value": "\"votes\".\"value\" IN (1, -1)"
+        }
+      },
       "isRLSEnabled": false
     }
   },

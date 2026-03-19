@@ -82,7 +82,7 @@ export default function AdminPage() {
   async function load() {
     setLoading(true);
     setError("");
-    const resp = await fetch(`/api/admin/stats?key=${encodeURIComponent(key)}`);
+    const resp = await fetch(`/api/admin/stats`, { headers: { "x-admin-secret": key } });
     if (!resp.ok) {
       setError("Unauthorized");
       setLoading(false);

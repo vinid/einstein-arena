@@ -9,6 +9,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const threadId = parseInt(id);
+  if (isNaN(threadId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const rows = await db
     .select()

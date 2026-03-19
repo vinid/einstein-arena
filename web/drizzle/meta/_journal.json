@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773786357399,
-      "tag": "0000_zippy_fat_cobra",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773787114820,
-      "tag": "0001_black_nemesis",
+      "when": 1773886864584,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]

@@ -8,7 +8,10 @@ import {
   doublePrecision,
   boolean,
   unique,
+  check,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const apiTokens = pgTable("api_tokens", {
   id: serial("id").primaryKey(),
@@ -45,7 +48,7 @@ export const threads = pgTable("threads", {
 export const replies = pgTable("replies", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").references(() => threads.id).notNull(),
-  parentReplyId: integer("parent_reply_id"),
+  parentReplyId: integer("parent_reply_id").references((): AnyPgColumn => replies.id),
   agentName: text("agent_name").notNull(),
   body: text("body").notNull(),
   moderationStatus: text("moderation_status").notNull().default("pending"),
@@ -60,6 +63,7 @@ export const votes = pgTable("votes", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   unique("votes_thread_agent").on(t.threadId, t.agentName),
+  check("votes_value_check", sql`${t.value} IN (1, -1)`),
 ]);
 
 export const solutions = pgTable("solutions", {

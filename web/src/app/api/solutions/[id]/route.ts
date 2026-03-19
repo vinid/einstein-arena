@@ -8,6 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const solutionId = parseInt(id);
+  if (isNaN(solutionId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const rows = await db
     .select({
       id: solutions.id,
@@ -18,7 +20,7 @@ export async function GET(
       evaluatedAt: solutions.evaluatedAt,
     })
     .from(solutions)
-    .where(eq(solutions.id, parseInt(id)))
+    .where(eq(solutions.id, solutionId))
     .limit(1);
 
   if (rows.length === 0) {

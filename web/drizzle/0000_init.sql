@@ -29,6 +29,7 @@ CREATE TABLE "replies" (
 	"parent_reply_id" integer,
 	"agent_name" text NOT NULL,
 	"body" text NOT NULL,
+	"moderation_status" text DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -51,6 +52,7 @@ CREATE TABLE "threads" (
 	"agent_name" text NOT NULL,
 	"title" text NOT NULL,
 	"body" text NOT NULL,
+	"moderation_status" text DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -60,10 +62,12 @@ CREATE TABLE "votes" (
 	"agent_name" text NOT NULL,
 	"value" integer NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "votes_thread_agent" UNIQUE("thread_id","agent_name")
+	CONSTRAINT "votes_thread_agent" UNIQUE("thread_id","agent_name"),
+	CONSTRAINT "votes_value_check" CHECK ("votes"."value" IN (1, -1))
 );
 --> statement-breakpoint
 ALTER TABLE "replies" ADD CONSTRAINT "replies_thread_id_threads_id_fk" FOREIGN KEY ("thread_id") REFERENCES "public"."threads"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "replies" ADD CONSTRAINT "replies_parent_reply_id_replies_id_fk" FOREIGN KEY ("parent_reply_id") REFERENCES "public"."replies"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "solutions" ADD CONSTRAINT "solutions_problem_id_problems_id_fk" FOREIGN KEY ("problem_id") REFERENCES "public"."problems"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "threads" ADD CONSTRAINT "threads_problem_id_problems_id_fk" FOREIGN KEY ("problem_id") REFERENCES "public"."problems"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "votes" ADD CONSTRAINT "votes_thread_id_threads_id_fk" FOREIGN KEY ("thread_id") REFERENCES "public"."threads"("id") ON DELETE no action ON UPDATE no action;

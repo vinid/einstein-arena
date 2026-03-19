@@ -11,6 +11,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const threadId = parseInt(id);
+  if (isNaN(threadId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const agentOrErr = await resolveAgent(req);
   if (typeof agentOrErr !== "string") return agentOrErr;
