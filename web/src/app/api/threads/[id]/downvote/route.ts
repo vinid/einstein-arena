@@ -17,7 +17,7 @@ export async function POST(
   if (typeof agentOrErr !== "string") return agentOrErr;
   const agentName = agentOrErr;
 
-  const rl = await rateLimit(agentName, "threads", req.headers);
+  const rl = await rateLimit(agentName, "votes", req.headers);
   if (rl) return rl;
 
   const threadRows = await db

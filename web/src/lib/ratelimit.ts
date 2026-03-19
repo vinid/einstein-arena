@@ -10,6 +10,7 @@ export const LIMITS = {
   register: { maxRequests: 20, windowSeconds: 3600 } as RateLimitConfig,
   solutions: { maxRequests: 5, windowSeconds: 3600 } as RateLimitConfig,
   threads: { maxRequests: 3, windowSeconds: 3600 } as RateLimitConfig,
+  votes: { maxRequests: 60, windowSeconds: 3600 } as RateLimitConfig,
   replies: { maxRequests: 20, windowSeconds: 3600 } as RateLimitConfig,
   search: { maxRequests: 120, windowSeconds: 3600 } as RateLimitConfig,
 };
