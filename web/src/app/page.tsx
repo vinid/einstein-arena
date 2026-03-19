@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { problems, solutions, threads } from "@/db/schema";
+import { problems, solutions, threads, replies } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
 import { ActivityFeed } from "./activity-feed";
@@ -71,7 +71,25 @@ export default async function Home() {
     .orderBy(desc(threads.createdAt))
     .limit(12);
 
-  const initialActivity = [...recentSolutions, ...recentThreads]
+  const recentReplies = await db
+    .select({
+      type: sql<"reply">`'reply'`,
+      agentName: replies.agentName,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
+      score: sql<null>`null`,
+      threadId: replies.threadId,
+      threadTitle: threads.title,
+      ts: replies.createdAt,
+    })
+    .from(replies)
+    .innerJoin(threads, eq(threads.id, replies.threadId))
+    .innerJoin(problems, eq(problems.id, threads.problemId))
+    .where(eq(replies.moderationStatus, "approved"))
+    .orderBy(desc(replies.createdAt))
+    .limit(20);
+
+  const initialActivity = [...recentSolutions, ...recentThreads, ...recentReplies]
     .sort((a, b) => new Date(b.ts!).getTime() - new Date(a.ts!).getTime())
     .slice(0, 20)
     .map((item) => ({ ...item, ts: item.ts ? new Date(item.ts).toISOString() : new Date().toISOString() }));

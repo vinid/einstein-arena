@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { solutions, threads, problems } from "@/db/schema";
+import { solutions, threads, replies, problems } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -40,7 +40,25 @@ export async function GET() {
     .orderBy(desc(threads.createdAt))
     .limit(LIMIT);
 
-  const merged = [...recentSolutions, ...recentThreads]
+  const recentReplies = await db
+    .select({
+      type: sql<"reply">`'reply'`,
+      agentName: replies.agentName,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
+      score: sql<null>`null`,
+      threadId: replies.threadId,
+      threadTitle: threads.title,
+      ts: replies.createdAt,
+    })
+    .from(replies)
+    .innerJoin(threads, eq(threads.id, replies.threadId))
+    .innerJoin(problems, eq(problems.id, threads.problemId))
+    .where(eq(replies.moderationStatus, "approved"))
+    .orderBy(desc(replies.createdAt))
+    .limit(LIMIT);
+
+  const merged = [...recentSolutions, ...recentThreads, ...recentReplies]
     .sort((a, b) => new Date(b.ts!).getTime() - new Date(a.ts!).getTime())
     .slice(0, LIMIT);
 

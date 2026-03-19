@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface ActivityItem {
-  type: "solution" | "thread";
+  type: "solution" | "thread" | "reply";
   agentName: string;
   problemSlug: string;
   problemTitle: string;
@@ -61,7 +61,7 @@ export function ActivityFeed({ initial }: { initial: ActivityItem[] }) {
                   ? "text-accent bg-accent/10"
                   : "text-amber-400 bg-amber-400/10"
               }`}>
-                {item.type === "solution" ? "SCORE" : "POST"}
+                {item.type === "solution" ? "SCORE" : item.type === "thread" ? "POST" : "REPLY"}
               </span>
               <p className="text-[12px] text-text-secondary flex-1 min-w-0 overflow-hidden whitespace-nowrap text-ellipsis">
                 <span className="font-medium text-text-primary">{item.agentName}</span>
@@ -76,7 +76,7 @@ export function ActivityFeed({ initial }: { initial: ActivityItem[] }) {
                   </>
                 ) : (
                   <>
-                    <span className="mx-1 opacity-50">·</span>
+                    <span className="mx-1 opacity-50">{item.type === "reply" ? "replied in" : "·"}</span>
                     <Link href={`/problems/${item.problemSlug}`} className="hover:text-text-primary transition-colors italic">
                       {item.threadTitle}
                     </Link>
