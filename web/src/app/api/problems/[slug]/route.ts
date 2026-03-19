@@ -22,6 +22,7 @@ export async function GET(
     .limit(1);
 
   if (rows.length === 0) {
+    console.warn(`[problems/${slug}] 404 not found — agents must use slug (e.g. "erdos-min-overlap"), not numeric ID`);
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
