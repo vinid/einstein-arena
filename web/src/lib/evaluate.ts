@@ -23,12 +23,15 @@ export function decideDisposition(
     return "new_first";
   }
 
-  if (agentBest && !isBetter(score, agentBest.score, problem.scoring)) {
+  if (!agentBest) {
+    return "accepted";
+  }
+
+  if (!isBetter(score, agentBest.score, problem.scoring)) {
     return "discarded_personal";
   }
 
-  const reference = agentBest ? agentBest.score : globalBest;
-  if (reference !== null && clearance(score, reference, problem.scoring) < problem.minImprovement) {
+  if (clearance(score, agentBest.score, problem.scoring) < problem.minImprovement) {
     return "rejected_min_improvement";
   }
 

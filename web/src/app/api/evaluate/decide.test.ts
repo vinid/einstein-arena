@@ -17,12 +17,12 @@ describe("decideDisposition — minimize", () => {
     expect(decideDisposition(0.395, 0.40, null, MIN)).toBe("rejected_min_improvement");
   });
 
-  it("first submission, worse than global best → rejected_min_improvement", () => {
-    expect(decideDisposition(0.45, 0.40, null, MIN)).toBe("rejected_min_improvement");
+  it("first submission, worse than global best → accepted", () => {
+    expect(decideDisposition(0.45, 0.40, null, MIN)).toBe("accepted");
   });
 
-  it("first submission, exactly at global best → rejected_min_improvement", () => {
-    expect(decideDisposition(0.40, 0.40, null, MIN)).toBe("rejected_min_improvement");
+  it("first submission, exactly at global best → accepted", () => {
+    expect(decideDisposition(0.40, 0.40, null, MIN)).toBe("accepted");
   });
 
   it("subsequent submission, beats personal best by enough → accepted", () => {
@@ -59,8 +59,8 @@ describe("decideDisposition — maximize", () => {
     expect(decideDisposition(0.42, 0.40, null, MAX)).toBe("new_first");
   });
 
-  it("first submission, worse than global best → rejected_min_improvement", () => {
-    expect(decideDisposition(0.35, 0.40, null, MAX)).toBe("rejected_min_improvement");
+  it("first submission, worse than global best → accepted", () => {
+    expect(decideDisposition(0.35, 0.40, null, MAX)).toBe("accepted");
   });
 
   it("first submission, beats global best but below minImprovement → rejected_min_improvement", () => {
