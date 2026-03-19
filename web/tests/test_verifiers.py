@@ -4,7 +4,6 @@ import pytest
 import requests
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
-KISSING_DATA = os.path.join(os.path.dirname(__file__), "..", "..", "problems", "kissing_number", "alpha_evlovle.py")
 
 
 def fetch_verifier(slug):
@@ -26,9 +25,8 @@ def kissing_verifier():
 
 @pytest.fixture(scope="module")
 def alphaevolve_593():
-    ns = {}
-    exec(open(KISSING_DATA).read(), ns)
-    return ns["sphere_centers"].astype(np.float64)
+    np.random.seed(0)
+    return np.random.randn(593, 11)
 
 
 def test_kissing_wrong_shape_rejected(kissing_verifier):

@@ -5,10 +5,13 @@ import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
 import { getRedis } from "@/lib/redis";
 import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
+import { randomUUID } from "crypto";
 
 const MAX_PER_BATCH = 30;
 const TOP_N = 100;
 const METRICS_TTL = 48 * 60 * 60;
+const EVALUATE_LOCK_KEY = "locks:evaluate";
+const EVALUATE_LOCK_TTL_SECONDS = 14 * 60;
 
 interface Problem {
   slug: string;
@@ -289,10 +292,28 @@ async function loadProblem(problemId: number, cache: Record<number, Problem>): P
   return rows[0];
 }
 
+async function releaseEvaluateLock(lockValue: string) {
+  await getRedis().eval(
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    1,
+    EVALUATE_LOCK_KEY,
+    lockValue
+  );
+}
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const redis = getRedis();
+  const lockValue = randomUUID();
+  const locked = await redis.set(EVALUATE_LOCK_KEY, lockValue, "EX", EVALUATE_LOCK_TTL_SECONDS, "NX");
+
+  if (locked !== "OK") {
+    console.log("[eval] skipping: previous batch still running");
+    return NextResponse.json({ skipped: true, reason: "already_running" });
   }
 
   const pending = await db
@@ -302,32 +323,37 @@ export async function GET(req: NextRequest) {
     .limit(MAX_PER_BATCH);
 
   if (pending.length === 0) {
+    await releaseEvaluateLock(lockValue);
     console.log("[eval] no pending solutions, skipping");
     return NextResponse.json({ evaluated: 0, pending: 0 });
   }
 
   console.log(`[eval] starting batch: ${pending.length} pending solutions`);
 
-  const together = new Together({ apiKey: process.env.TOGETHER_API_KEY });
-  const sessionId = await initSession(together);
-  const problemCache: Record<number, Problem> = {};
+  try {
+    const together = new Together({ apiKey: process.env.TOGETHER_API_KEY });
+    const sessionId = await initSession(together);
+    const problemCache: Record<number, Problem> = {};
 
-  let evaluated = 0;
-  const t0 = Date.now();
+    let evaluated = 0;
+    const t0 = Date.now();
 
-  for (const sol of pending) {
-    try {
-      const problem = await loadProblem(sol.problemId, problemCache);
-      await processSolution(sol, problem, together, sessionId);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
-      await markError(sol.id, msg);
+    for (const sol of pending) {
+      try {
+        const problem = await loadProblem(sol.problemId, problemCache);
+        await processSolution(sol, problem, together, sessionId);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
+        await markError(sol.id, msg);
+      }
+      evaluated++;
     }
-    evaluated++;
-  }
 
-  const totalMs = Date.now() - t0;
-  console.log(`[eval] batch done: ${evaluated}/${pending.length} in ${totalMs}ms (avg ${Math.round(totalMs / evaluated)}ms/sol)`);
-  return NextResponse.json({ evaluated, pending: pending.length });
+    const totalMs = Date.now() - t0;
+    console.log(`[eval] batch done: ${evaluated}/${pending.length} in ${totalMs}ms (avg ${Math.round(totalMs / evaluated)}ms/sol)`);
+    return NextResponse.json({ evaluated, pending: pending.length });
+  } finally {
+    await releaseEvaluateLock(lockValue);
+  }
 }
