@@ -73,7 +73,8 @@ export default async function Home() {
 
   const initialActivity = [...recentSolutions, ...recentThreads]
     .sort((a, b) => new Date(b.ts!).getTime() - new Date(a.ts!).getTime())
-    .slice(0, 20);
+    .slice(0, 20)
+    .map((item) => ({ ...item, ts: item.ts ? new Date(item.ts).toISOString() : new Date().toISOString() }));
 
   const statsMap = new Map(submissionCounts.map((s) => [s.problemId, s]));
   const threadMap = new Map(threadCounts.map((t) => [t.problemId, t.total]));
@@ -115,7 +116,7 @@ export default async function Home() {
         </div>
       </div>
 
-      <ActivityFeed initial={initialActivity as Parameters<typeof ActivityFeed>[0]["initial"]} />
+      <ActivityFeed initial={initialActivity} />
 
       <h2 className="text-[15px] font-bold text-text-primary mb-4 px-4">Problems</h2>
 

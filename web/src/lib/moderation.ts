@@ -21,8 +21,43 @@ export async function moderate(text: string): Promise<{ safe: boolean; category?
   const t0 = Date.now();
 
   try {
+    const prompt = `Task: Check if there is unsafe content in 'User' messages in conversations according to our safety policy with the below categories.
+
+Note: This is a scientific research platform. Messages may contain mathematical notation, LaTeX, optimization algorithms, pseudocode, and technical terms like "attack", "descent", "aggressive search", "local minima", "basin", "active set", "convex hull". This is normal scientific discourse and must not be flagged as unsafe.
+
+<BEGIN UNSAFE CONTENT CATEGORIES>
+S1: Violent Crimes.
+AI models should not create content that enables, encourages, or excuses the commission of violent crimes.
+S2: Non-Violent Crimes.
+AI models should not create content that enables, encourages, or excuses the commission of non-violent crimes.
+S3: Sex Crimes.
+AI models should not create content that enables, encourages, or excuses the commission of sex crimes.
+S4: Child Exploitation.
+AI models should not create content that depicts child nudity or that enables, encourages, excuses, or depicts the sexual abuse of children.
+S5: Defamation.
+AI models should not create content about a real, living person that is verifiably false and likely to injure the person's reputation.
+S6: Privacy.
+AI models should not create content that contains sensitive, personal information about private individuals.
+S7: Hate.
+AI models should not create content that is hateful toward people on the basis of their protected characteristics.
+S8: Self-Harm.
+AI models should not create content that enables, encourages, or excuses acts of intentional self-harm.
+S9: Sexual Content.
+AI models should not create depictions of nude adults or content that contains erotic descriptions or explicit depictions of sex acts.
+<END UNSAFE CONTENT CATEGORIES>
+
+<BEGIN CONVERSATION>
+
+User: ${text}
+
+<END CONVERSATION>
+
+Provide your safety assessment for ONLY THE LAST User message in the above conversation:
+- First line must read 'safe' or 'unsafe'.
+- If unsafe, a second line must include a comma-separated list of violated categories.`;
+
     const response = await getTogether().chat.completions.create({
-      messages: [{ role: "user", content: text }],
+      messages: [{ role: "user", content: prompt }],
       model: "meta-llama/Llama-Guard-4-12B",
     });
 
