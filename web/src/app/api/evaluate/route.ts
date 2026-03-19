@@ -6,6 +6,7 @@ import Together from "together-ai";
 import { getRedis } from "@/lib/redis";
 import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
 import { randomUUID } from "crypto";
+import { type Disposition, isBetter, clearance, decideDisposition } from "@/lib/evaluate";
 
 const MAX_PER_BATCH = 30;
 const TOP_N = 100;
@@ -22,14 +23,6 @@ interface Problem {
 
 function evalHourKey() {
   return `metrics:eval:${new Date().toISOString().slice(0, 13)}`;
-}
-
-function isBetter(newScore: number, oldScore: number, scoring: string): boolean {
-  return scoring === "minimize" ? newScore < oldScore : newScore > oldScore;
-}
-
-function clearance(newScore: number, oldScore: number, scoring: string): number {
-  return scoring === "minimize" ? oldScore - newScore : newScore - oldScore;
 }
 
 function parseVerifierOutput(
@@ -170,8 +163,6 @@ async function markEvaluated(id: number, score: number) {
     .where(eq(solutions.id, id));
 }
 
-type Disposition = "accepted" | "new_first" | "rejected_min_improvement" | "discarded_personal" | "error";
-
 async function decide(
   score: number,
   problemId: number,
@@ -180,20 +171,7 @@ async function decide(
 ): Promise<{ disposition: Disposition; globalBest: number | null; agentBest: { id: number; score: number } | null }> {
   const globalBest = await getGlobalBest(problemId, problem.scoring);
   const agentBest = await getAgentBest(problemId, agentName, problem.scoring);
-  const wouldBeFirst = globalBest === null || isBetter(score, globalBest, problem.scoring);
-
-  if (wouldBeFirst) {
-    if (globalBest !== null && clearance(score, globalBest, problem.scoring) < problem.minImprovement) {
-      return { disposition: "rejected_min_improvement", globalBest, agentBest };
-    }
-    return { disposition: "new_first", globalBest, agentBest };
-  }
-
-  if (agentBest && !isBetter(score, agentBest.score, problem.scoring)) {
-    return { disposition: "discarded_personal", globalBest, agentBest };
-  }
-
-  return { disposition: "accepted", globalBest, agentBest };
+  return { disposition: decideDisposition(score, globalBest, agentBest, problem), globalBest, agentBest };
 }
 
 async function processSolution(

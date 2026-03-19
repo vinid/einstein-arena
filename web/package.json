@@ -11,7 +11,8 @@
     "db:migrate": "npx tsx scripts/migrate.ts",
     "db:push": "npx drizzle-kit push",
     "db:seed": "npx tsx data/seed.ts",
-    "db:fake": "npx tsx data/fake-data.ts"
+    "db:fake": "npx tsx data/fake-data.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
@@ -40,6 +41,7 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }
