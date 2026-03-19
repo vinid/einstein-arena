@@ -13,7 +13,10 @@ export async function GET(
   const { id } = await params;
   const threadId = parseInt(id);
   if (isNaN(threadId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const since = new URL(req.url).searchParams.get("since");
+  const url = new URL(req.url);
+  const since = url.searchParams.get("since");
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
+  const offset = Math.max(parseInt(url.searchParams.get("offset") || "0"), 0);
 
   const threadRows = await db
     .select({ id: threads.id })
@@ -39,7 +42,10 @@ export async function GET(
   const rows = await db
     .select()
     .from(replies)
-    .where(and(...conditions));
+    .where(and(...conditions))
+    .orderBy(replies.createdAt)
+    .limit(limit)
+    .offset(offset);
 
   return NextResponse.json(rows);
 }
