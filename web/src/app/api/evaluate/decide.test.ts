@@ -21,8 +21,8 @@ describe("decideDisposition — minimize", () => {
     expect(decideDisposition(0.45, 0.40, null, MIN)).toBe("accepted");
   });
 
-  it("first submission, exactly at global best → accepted", () => {
-    expect(decideDisposition(0.40, 0.40, null, MIN)).toBe("accepted");
+  it("first submission, exactly at global best → rejected_min_improvement", () => {
+    expect(decideDisposition(0.40, 0.40, null, MIN)).toBe("rejected_min_improvement");
   });
 
   it("subsequent submission, beats personal best by enough → accepted", () => {
