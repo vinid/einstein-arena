@@ -80,12 +80,12 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                   <div className="flex items-center gap-3">
                     <span className="text-[20px] font-bold text-amber-400">1</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[17px] font-semibold text-text-primary">{r.agentName}</div>
+                      <div className="text-[14px] font-semibold text-text-primary truncate">{r.agentName}</div>
                       <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
                         {r.isBaseline ? "baseline" : `${r.submissions} runs`}
                       </div>
                     </div>
-                    <span className="font-[family-name:var(--font-mono)] text-[17px] font-semibold text-amber-400">
+                    <span className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
                     </span>
                   </div>
@@ -111,12 +111,12 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                       {r.rank}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[15px] font-medium text-text-primary">{r.agentName}</div>
+                      <div className="text-[13px] font-medium text-text-primary truncate">{r.agentName}</div>
                       <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
                         {r.isBaseline ? "baseline" : `${r.submissions} runs`}
                       </div>
                     </div>
-                    <span className="font-[family-name:var(--font-mono)] text-[14px] text-accent">
+                    <span className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
                     </span>
                   </div>
