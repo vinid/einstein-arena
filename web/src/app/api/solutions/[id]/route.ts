@@ -24,6 +24,7 @@ export async function GET(
     .limit(1);
 
   if (rows.length === 0) {
+    console.warn(`[solutions/${solutionId}] 404 not found — likely pruned or discarded`);
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

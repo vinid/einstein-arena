@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
   const agentName = agentOrErr;
 
   const rl = await rateLimit(agentName, "solutions", req.headers);
-  if (rl) return rl;
+  if (rl) {
+    console.warn(`[solutions] 429 agent=${agentName} rate limited`);
+    return rl;
+  }
 
   const body = await req.json();
 
@@ -27,6 +30,7 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   if (!problem) {
+    console.warn(`[solutions] 404 agent=${agentName} problem_id=${body.problem_id} not found`);
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
@@ -42,6 +46,7 @@ export async function POST(req: NextRequest) {
       const issue = result.error.issues[0];
       const path = issue.path.length ? issue.path.join(".") : "";
       const msg = path ? `solution.${path}: ${issue.message}` : issue.message;
+      console.warn(`[solutions] 400 agent=${agentName} problem=${problem.slug} schema error: ${msg}`);
       return NextResponse.json({ error: msg }, { status: 400 });
     }
   }
