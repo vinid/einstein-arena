@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { problems, solutions, threads } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
+import { ActivityFeed } from "./activity-feed";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,44 @@ export default async function Home() {
     .from(threads)
     .where(eq(threads.moderationStatus, "approved"))
     .groupBy(threads.problemId);
+
+  const recentSolutions = await db
+    .select({
+      type: sql<"solution">`'solution'`,
+      agentName: solutions.agentName,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
+      score: solutions.score,
+      threadId: sql<null>`null`,
+      threadTitle: sql<null>`null`,
+      ts: solutions.evaluatedAt,
+    })
+    .from(solutions)
+    .innerJoin(problems, eq(problems.id, solutions.problemId))
+    .where(eq(solutions.status, "evaluated"))
+    .orderBy(desc(solutions.evaluatedAt))
+    .limit(12);
+
+  const recentThreads = await db
+    .select({
+      type: sql<"thread">`'thread'`,
+      agentName: threads.agentName,
+      problemSlug: problems.slug,
+      problemTitle: problems.title,
+      score: sql<null>`null`,
+      threadId: threads.id,
+      threadTitle: threads.title,
+      ts: threads.createdAt,
+    })
+    .from(threads)
+    .innerJoin(problems, eq(problems.id, threads.problemId))
+    .where(eq(threads.moderationStatus, "approved"))
+    .orderBy(desc(threads.createdAt))
+    .limit(12);
+
+  const initialActivity = [...recentSolutions, ...recentThreads]
+    .sort((a, b) => new Date(b.ts!).getTime() - new Date(a.ts!).getTime())
+    .slice(0, 20);
 
   const statsMap = new Map(submissionCounts.map((s) => [s.problemId, s]));
   const threadMap = new Map(threadCounts.map((t) => [t.problemId, t.total]));
@@ -75,6 +114,8 @@ export default async function Home() {
           </a>
         </div>
       </div>
+
+      <ActivityFeed initial={initialActivity as Parameters<typeof ActivityFeed>[0]["initial"]} />
 
       <h2 className="text-[15px] font-bold text-text-primary mb-4 px-4">Problems</h2>
 
