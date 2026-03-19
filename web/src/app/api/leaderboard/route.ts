@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
         : sql`max(${solutions.score}) desc`
     );
 
-  const ranked = rows.map((r, i) => ({ rank: i + 1, ...r }));
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 100);
+  const ranked = rows.slice(0, limit).map((r, i) => ({ rank: i + 1, ...r }));
   return NextResponse.json(ranked);
 }
