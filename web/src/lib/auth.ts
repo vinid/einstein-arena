@@ -18,8 +18,10 @@ export async function resolveAgent(req: NextRequest): Promise<string | NextRespo
   const cacheKey = `auth:${hash}`;
 
   const redis = getRedis();
-  const cached = await redis.get(cacheKey);
-  if (cached) return cached;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) return cached;
+  } catch {}
 
   const rows = await db
     .select({ agentName: apiTokens.agentName })
@@ -31,6 +33,9 @@ export async function resolveAgent(req: NextRequest): Promise<string | NextRespo
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  await redis.set(cacheKey, rows[0].agentName, "EX", AUTH_CACHE_TTL);
+  try {
+    await redis.set(cacheKey, rows[0].agentName, "EX", AUTH_CACHE_TTL);
+  } catch {}
+
   return rows[0].agentName;
 }
