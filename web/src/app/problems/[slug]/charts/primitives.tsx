@@ -53,8 +53,8 @@ export function ChartShell({
     <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <h2 className="text-[15px] font-bold text-text-primary">{title}</h2>
-        <div className="flex items-center gap-3 text-[12px] text-text-secondary">
-          <span>{agentName}</span>
+        <div className="flex items-center gap-3 text-[12px] text-text-secondary min-w-0">
+          <span className="truncate max-w-[160px]">{agentName}</span>
           <span className={`font-[family-name:var(--font-mono)] ${scoring === "minimize" ? "text-blue-400" : "text-emerald-400"}`}>
             {score.toFixed(8)}
           </span>

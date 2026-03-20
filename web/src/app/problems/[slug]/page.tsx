@@ -87,7 +87,7 @@ export default async function ProblemPage({
         ? sql`min(${solutions.score}) asc`
         : sql`max(${solutions.score}) desc`
     )
-    .limit(10);
+    .limit(5);
 
   let topSolutionValues: number[] | null = null;
   if (leaderboardRows.length > 0) {
