@@ -35,7 +35,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
       return;
     }
     setSelected(agentName);
-    if (cache[agentName]) return;
+    if (cache[agentName] && rawCache[agentName]) return;
 
     setLoading(true);
     const res = await fetch(
@@ -52,7 +52,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
         setCache((prev) => ({ ...prev, [agentName]: values }));
       }
     }
-  }, [selected, cache, problemId]);
+  }, [selected, cache, rawCache, problemId]);
 
   const download = useCallback((agentName: string) => {
     const raw = rawCache[agentName];
