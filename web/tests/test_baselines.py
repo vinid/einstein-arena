@@ -14,6 +14,7 @@ EXPECTED_SCORES = {
         "second-autocorrelation-inequality": 0.9610210777840541,
         "third-autocorrelation-inequality": 1.4556427953745403,
         "min-distance-ratio-2d": 12.88926611203463,
+        "prime-number-theorem": 0.9212920229340907,
     },
     "TTT-Discover": {
         "erdos-min-overlap": 0.3808753232177187,

@@ -332,6 +332,124 @@ def evaluate(data: dict) -> float:
         return 0.0
     return _overlap_loss(vectors)`,
   },
+  {
+    slug: "prime-number-theorem",
+    title: "The Prime Number Theorem",
+    scoring: "maximize",
+    minImprovement: 1e-4,
+    featured: true,
+    description: `## Problem
+
+Let $\\pi(x)$ denote the number of primes less than or equal to $x$, and define
+
+$$C^- := \\liminf_{x \\to \\infty} \\frac{\\pi(x)}{x / \\log x}, \\qquad C^+ := \\limsup_{x \\to \\infty} \\frac{\\pi(x)}{x / \\log x}$$
+
+**What are $C^-$ and $C^+$?**
+
+The answer — $C^- = C^+ = 1$ — is the Prime Number Theorem. Your task is to construct a *certificate* of this fact: a partial function $f$ defined on a finite set of positive integers that makes the constructive proof as tight as possible.
+
+## Scoring
+
+Submit a partial function $f$ as a dictionary mapping positive integer keys (as strings) to real values. The server:
+
+1. Clips all values to $[-10, 10]$
+2. Adjusts $f(1)$ so that $\\sum_k f(k)/k = 0$ (normalization)
+3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_k)$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
+4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
+
+Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.`,
+    solutionSchema: {
+      partial_function: "object mapping positive integer keys (as strings) to float values",
+    },
+    zodSchema: z.object({
+      partial_function: z.record(z.string(), z.number()),
+    }),
+    verifier: `import numpy as np
+
+NUM_SAMPLES = 10_000_000
+_TARGET_BATCH_BYTES = 40 * 1024 * 1024
+
+def evaluate(solution: dict) -> float:
+    raw = solution["partial_function"]
+    pf = {int(k): np.clip(float(v), -10, 10) for k, v in raw.items()}
+    total = sum(v / k for k, v in pf.items())
+    pf[1] = pf.get(1, 0.0) - total
+    keys = np.array(list(pf.keys()), dtype=np.float64)
+    values = np.array(list(pf.values()), dtype=np.float64)
+    upper_bound = 10.0 * float(np.max(keys))
+    batch_size = max(1, _TARGET_BATCH_BYTES // (len(keys) * 8))
+    remaining = NUM_SAMPLES
+    while remaining > 0:
+        n = min(batch_size, remaining)
+        x = np.random.uniform(1, upper_bound, size=n)
+        floors = np.floor(x[:, None] / keys[None, :])
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            x_sums = floors @ values
+        if np.any(x_sums > 1.0001):
+            return float(-np.inf)
+        remaining -= n
+    return float(-np.sum(values * np.log(keys) / keys))`,
+  },
+  {
+    slug: "sum-difference-2",
+    title: "Sum-Difference Problem II (Lower Bound)",
+    scoring: "maximize",
+    minImprovement: 1e-6,
+    featured: true,
+    description: `## Problem
+
+Let $C$ be the least constant such that
+
+$$|A - A| \\leq |A + A|^C$$
+
+for any non-empty finite set $A$ of integers, where $A + A = \\{a + b : a, b \\in A\\}$ and $A - A = \\{a - b : a, b \\in A\\}$.
+
+**Establish a lower bound for $C$ that is as strong as possible.**
+
+## Known Bounds
+
+$$\\frac{\\log(1 + \\sqrt{2})}{\\log 2} = 1.2715\\ldots \\leq C \\leq \\frac{4}{3}$$
+
+The lower bound comes from a high-dimensional simplex construction $A = \\{(x_1, \\ldots, x_N) \\in \\mathbb{Z}_+^N : \\sum_i x_i \\leq N/2\\}$. Without hints, AlphaEvolve only managed constructions around 1.21.
+
+## Scoring
+
+Submit a list of distinct integers \`elements\`. The server computes:
+
+$$S(A) = \\frac{\\log |A - A|}{\\log |A + A|}$$
+
+Higher $S(A)$ is better — it proves $C \\geq S(A)$. All elements must be integers with $|x| \\leq 2 \\times 10^9$, and the list must have at least 2 distinct elements.`,
+    solutionSchema: {
+      elements: "list of distinct integers",
+    },
+    zodSchema: z.object({
+      elements: z.array(z.number().int()).min(2).max(1_000_000),
+    }),
+    verifier: `import math
+
+def evaluate(solution: dict) -> float:
+    elements = solution["elements"]
+    if not all(isinstance(x, int) for x in elements):
+        raise ValueError("All elements must be integers.")
+    if len(elements) < 2:
+        raise ValueError("List must have at least 2 elements.")
+    if any(abs(x) > 2_000_000_000 for x in elements):
+        raise ValueError("Elements must be in [-2e9, 2e9].")
+    s = list(set(elements))
+    if len(s) < 2:
+        raise ValueError("List must have at least 2 distinct elements.")
+    a_minus_a = set()
+    a_plus_a = set()
+    for x in s:
+        for y in s:
+            a_minus_a.add(x - y)
+            a_plus_a.add(x + y)
+    lhs = len(a_minus_a)
+    rhs = len(a_plus_a)
+    if rhs <= 1:
+        raise ValueError("|A+A| must be > 1.")
+    return math.log(lhs) / math.log(rhs)`,
+  },
 ];
 
 export const solutionSchemas: Record<string, z.ZodType> = Object.fromEntries(
