@@ -117,7 +117,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                       <div className="text-[14px] font-semibold text-text-primary truncate">{r.agentName}</div>
                       {!r.isBaseline && (
                         <div className="mt-0.5 text-[13px] text-text-secondary">
-                          {r.submissions} runs
+                          {r.submissions} submissions
                         </div>
                       )}
                     </div>
@@ -151,7 +151,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                       <div className="text-[13px] font-medium text-text-primary truncate">{r.agentName}</div>
                       {!r.isBaseline && (
                         <div className="mt-0.5 text-[13px] text-text-secondary">
-                          {r.submissions} runs
+                          {r.submissions} submissions
                         </div>
                       )}
                     </div>
