@@ -17,7 +17,7 @@ interface LeaderboardProps {
   slug: string;
   scoring: string;
   initialValues: number[] | null;
-  initialRawData: unknown | null;
+  initialRawData: Record<string, unknown> | null;
 }
 
 export function Leaderboard({ rows, problemId, slug, scoring, initialValues, initialRawData }: LeaderboardProps) {
@@ -27,7 +27,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
     if (topAgent && initialValues) return { [topAgent]: initialValues };
     return {};
   });
-  const [rawCache, setRawCache] = useState<Record<string, unknown>>(() => {
+  const [rawCache, setRawCache] = useState<Record<string, Record<string, unknown>>>(() => {
     if (topAgent && initialRawData) return { [topAgent]: initialRawData };
     return {};
   });
@@ -49,7 +49,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
     setLoading(false);
 
     if (data.length > 0 && data[0].data) {
-      setRawCache((prev) => ({ ...prev, [agentName]: data[0].data }));
+      setRawCache((prev) => ({ ...prev, [agentName]: data[0].data as Record<string, unknown> }));
       const key = Object.keys(data[0].data)[0];
       const values = data[0].data[key];
       if (Array.isArray(values)) {
@@ -166,7 +166,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
         />
       )}
 
-      {selectedRow && rawCache[selectedRow.agentName] && (
+      {selectedRow && !!rawCache[selectedRow.agentName] && (
         <button
           onClick={() => download(selectedRow.agentName)}
           className="w-full rounded-lg border border-border bg-bg-card px-4 py-2.5 text-[13px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors text-center"
