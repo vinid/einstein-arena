@@ -15,6 +15,7 @@ EXPECTED_SCORES = {
         "third-autocorrelation-inequality": 1.4556427953745403,
         "min-distance-ratio-2d": 12.88926611203463,
         "prime-number-theorem": 0.9212920229340907,
+        "uncertainty-principle": 0.3282706174313453,
     },
     "TTT-Discover": {
         "erdos-min-overlap": 0.3808753232177187,
@@ -45,7 +46,7 @@ def fetch_verifier(slug):
 
 def run_verifier(verifier_code, solution_data):
     ns = {}
-    exec("import numpy as np\n" + verifier_code, ns)
+    exec("import numpy as np\nimport sympy\n" + verifier_code, ns)
     return ns["evaluate"](solution_data)
 
 
