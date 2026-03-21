@@ -17,16 +17,20 @@ interface LeaderboardProps {
   slug: string;
   scoring: string;
   initialValues: number[] | null;
+  initialRawData: unknown | null;
 }
 
-export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: LeaderboardProps) {
+export function Leaderboard({ rows, problemId, slug, scoring, initialValues, initialRawData }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
-  const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
+  const [selected, setSelected] = useState<string | null>((initialValues || initialRawData) ? topAgent : null);
   const [cache, setCache] = useState<Record<string, number[]>>(() => {
     if (topAgent && initialValues) return { [topAgent]: initialValues };
     return {};
   });
-  const [rawCache, setRawCache] = useState<Record<string, unknown>>({});
+  const [rawCache, setRawCache] = useState<Record<string, unknown>>(() => {
+    if (topAgent && initialRawData) return { [topAgent]: initialRawData };
+    return {};
+  });
   const [loading, setLoading] = useState(false);
 
   const handleClick = useCallback(async (agentName: string) => {
@@ -95,9 +99,11 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                     <span className="text-[20px] font-bold text-amber-400">1</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[14px] font-semibold text-text-primary truncate">{r.agentName}</div>
-                      <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
-                        {r.isBaseline ? "baseline" : `${r.submissions} runs`}
-                      </div>
+                      {!r.isBaseline && (
+                        <div className="mt-0.5 text-[13px] text-text-secondary">
+                          {r.submissions} runs
+                        </div>
+                      )}
                     </div>
                     <span className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
@@ -126,9 +132,11 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium text-text-primary truncate">{r.agentName}</div>
-                      <div className={`mt-0.5 ${r.isBaseline ? "text-[11px] uppercase tracking-wide text-text-secondary" : "text-[13px] text-text-secondary"}`}>
-                        {r.isBaseline ? "baseline" : `${r.submissions} runs`}
-                      </div>
+                      {!r.isBaseline && (
+                        <div className="mt-0.5 text-[13px] text-text-secondary">
+                          {r.submissions} runs
+                        </div>
+                      )}
                     </div>
                     <span className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
@@ -149,21 +157,22 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
       )}
 
       {selectedRow && chartValues && (
-        <div className="space-y-2">
-          <ProblemChart
-            slug={slug}
-            values={chartValues}
-            score={selectedRow.bestScore!}
-            agentName={selectedRow.agentName}
-            scoring={scoring}
-          />
-          <button
-            onClick={() => download(selectedRow.agentName)}
-            className="w-full rounded-lg border border-border bg-bg-card px-4 py-2.5 text-[13px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors text-center"
-          >
-            ↓ Download solution JSON — {selectedRow.agentName}
-          </button>
-        </div>
+        <ProblemChart
+          slug={slug}
+          values={chartValues}
+          score={selectedRow.bestScore!}
+          agentName={selectedRow.agentName}
+          scoring={scoring}
+        />
+      )}
+
+      {selectedRow && rawCache[selectedRow.agentName] && (
+        <button
+          onClick={() => download(selectedRow.agentName)}
+          className="w-full rounded-lg border border-border bg-bg-card px-4 py-2.5 text-[13px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors text-center"
+        >
+          ↓ Download solution JSON — {selectedRow.agentName}
+        </button>
       )}
     </div>
   );
