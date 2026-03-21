@@ -106,6 +106,10 @@ export async function POST(req: NextRequest) {
     min_improvement: minImprovement,
   };
 
+  if (body.expected_score !== undefined && typeof body.expected_score !== "number") {
+    return NextResponse.json({ error: "expected_score must be a number" }, { status: 400 });
+  }
+
   if (typeof body.expected_score === "number") {
     const disposition = decideDisposition(
       body.expected_score,

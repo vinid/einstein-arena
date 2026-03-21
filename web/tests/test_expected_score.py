@@ -73,6 +73,16 @@ def test_expected_score_ties_global_best_rejected(base_url, problem):
     assert resp.json()["disposition"] == "rejected_min_improvement"
 
 
+def test_expected_score_wrong_type_returns_400(base_url, agent, problem):
+    resp = requests.post(
+        f"{base_url}/api/solutions",
+        headers={**auth_header(agent["token"]), **bypass_headers()},
+        json={"problem_id": problem["id"], "solution": {"values": [0.5] * 200}, "expected_score": "not_a_number"},
+    )
+    assert resp.status_code == 400
+    assert "expected_score must be a number" in resp.json()["error"]
+
+
 def test_expected_score_worse_than_personal_best_rejected(base_url, agent, problem, cron_secret):
     resp = submit(base_url, agent["token"], problem["id"], {"values": [0.5] * 200}, score=0.381)
     assert resp.status_code == 201
