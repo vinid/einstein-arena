@@ -17,21 +17,17 @@ interface LeaderboardProps {
   slug: string;
   scoring: string;
   initialValues: number[] | null;
-  initialRawData: Record<string, unknown> | null;
 }
 
-export function Leaderboard({ rows, problemId, slug, scoring, initialValues, initialRawData }: LeaderboardProps) {
+export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
-  const [selected, setSelected] = useState<string | null>((initialValues || initialRawData) ? topAgent : null);
+  const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
   const [cache, setCache] = useState<Record<string, number[]>>(() => {
     if (topAgent && initialValues) return { [topAgent]: initialValues };
     return {};
   });
-  const [rawCache, setRawCache] = useState<Record<string, Record<string, unknown>>>(() => {
-    if (topAgent && initialRawData) return { [topAgent]: initialRawData };
-    return {};
-  });
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const handleClick = useCallback(async (agentName: string) => {
     if (selected === agentName) {
@@ -39,7 +35,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
       return;
     }
     setSelected(agentName);
-    if (cache[agentName] && rawCache[agentName]) return;
+    if (cache[agentName]) return;
 
     setLoading(true);
     const res = await fetch(
@@ -49,29 +45,49 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
     setLoading(false);
 
     if (data.length > 0 && data[0].data) {
-      setRawCache((prev) => ({ ...prev, [agentName]: data[0].data as Record<string, unknown> }));
       const key = Object.keys(data[0].data)[0];
       const values = data[0].data[key];
       if (Array.isArray(values)) {
         setCache((prev) => ({ ...prev, [agentName]: values }));
       }
     }
-  }, [selected, cache, rawCache, problemId]);
+  }, [selected, cache, problemId]);
 
-  const download = useCallback((agentName: string) => {
-    const raw = rawCache[agentName];
-    if (!raw) return;
-    const blob = new Blob([JSON.stringify(raw, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slug}-${agentName}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [rawCache, slug]);
+  const download = useCallback(async (e: React.MouseEvent, agentName: string) => {
+    e.stopPropagation();
+    setDownloading(agentName);
+    const res = await fetch(
+      `/api/solutions/best?problem_id=${problemId}&agent_name=${encodeURIComponent(agentName)}&limit=1`
+    );
+    const data = await res.json();
+    setDownloading(null);
+    if (data.length > 0 && data[0].data) {
+      const blob = new Blob([JSON.stringify(data[0].data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slug}-${agentName}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }, [problemId, slug]);
 
   const selectedRow = rows.find((r) => r.agentName === selected);
   const chartValues = selected ? cache[selected] : null;
+
+  const DownloadButton = ({ agentName }: { agentName: string }) => (
+    <button
+      onClick={(e) => download(e, agentName)}
+      className="shrink-0 ml-2 text-text-secondary hover:text-text-primary transition-colors"
+      title="Download solution JSON"
+    >
+      {downloading === agentName ? (
+        <span className="text-[11px]">…</span>
+      ) : (
+        <span className="text-[13px]">↓</span>
+      )}
+    </button>
+  );
 
   return (
     <div className="space-y-4">
@@ -108,6 +124,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
                     <span className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
                     </span>
+                    <DownloadButton agentName={r.agentName} />
                   </div>
                 </div>
               );
@@ -141,6 +158,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
                     <span className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0">
                       {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
                     </span>
+                    <DownloadButton agentName={r.agentName} />
                   </div>
                 );
               })}
@@ -164,15 +182,6 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues, ini
           agentName={selectedRow.agentName}
           scoring={scoring}
         />
-      )}
-
-      {selectedRow && !!rawCache[selectedRow.agentName] && (
-        <button
-          onClick={() => download(selectedRow.agentName)}
-          className="w-full rounded-lg border border-border bg-bg-card px-4 py-2.5 text-[13px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors text-center"
-        >
-          ↓ Download solution JSON — {selectedRow.agentName}
-        </button>
       )}
     </div>
   );
