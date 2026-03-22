@@ -357,7 +357,9 @@ Submit a partial function $f$ as a dictionary mapping positive integer keys (as 
 3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_k)$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
 4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
 
-Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.`,
+Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
+
+**Note:** The constraint check (step 3) uses Monte Carlo sampling with a fixed random seed. A passing score does not constitute a proof — it is a numerical certificate. High-scoring solutions should be verified analytically to confirm the constraint $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ holds for all $x \\ge 1$.`,
     solutionSchema: {
       partial_function: "object mapping positive integer keys (as strings) to float values",
     },
