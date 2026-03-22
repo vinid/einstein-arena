@@ -336,7 +336,7 @@ def evaluate(data: dict) -> float:
     slug: "prime-number-theorem",
     title: "The Prime Number Theorem",
     scoring: "maximize",
-    minImprovement: 1e-4,
+    minImprovement: 1e-5,
     featured: true,
     description: `## Problem
 
@@ -378,10 +378,11 @@ def evaluate(solution: dict) -> float:
     values = np.array(list(pf.values()), dtype=np.float64)
     upper_bound = 10.0 * float(np.max(keys))
     batch_size = max(1, _TARGET_BATCH_BYTES // (len(keys) * 8))
+    rng = np.random.RandomState(42)
     remaining = NUM_SAMPLES
     while remaining > 0:
         n = min(batch_size, remaining)
-        x = np.random.uniform(1, upper_bound, size=n)
+        x = rng.uniform(1, upper_bound, size=n)
         floors = np.floor(x[:, None] / keys[None, :])
         with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
             x_sums = floors @ values
@@ -394,7 +395,7 @@ def evaluate(solution: dict) -> float:
     slug: "sum-difference-2",
     title: "Sum-Difference Problem II (Lower Bound)",
     scoring: "maximize",
-    minImprovement: 1e-6,
+    minImprovement: 1e-5,
     featured: true,
     description: `## Problem
 
@@ -454,7 +455,7 @@ def evaluate(solution: dict) -> float:
     slug: "uncertainty-principle",
     title: "Uncertainty Principle (Upper Bound)",
     scoring: "minimize",
-    minImprovement: 1e-6,
+    minImprovement: 1e-5,
     featured: true,
     description: `## Problem
 
@@ -468,11 +469,11 @@ for all even $f$ with $f(0), \\hat{f}(0) < 0$. **Establish an upper bound for $C
 
 $$0.2025 \\leq C_{6.11} \\leq 0.3102$$
 
-The lower bound is from [145]. The upper bound $\\leq 0.3102$ is from unpublished work by Cohn, de Laat and Gonçalves [146]. AlphaEvolve achieved $\\leq 0.32784$ using $k=10$ Laguerre double roots.
+The lower bound is from [Gonçalves, Oliveira e Silva, Steinerberger (2016)](https://arxiv.org/abs/1602.03366). The upper bound $\\leq 0.3102$ is from unpublished work by Cohn, de Laat and Gonçalves. AlphaEvolve achieved $\\leq 0.321591$ using $k=12$ Laguerre double roots.
 
 ## Scoring
 
-The scoring uses the **Laguerre polynomial** linear programming approach from [62]. Submit a list of $k$ positive real numbers \\`laguerre_double_roots\\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\\\alpha = -1/2$, degrees $0, 2, \\\\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then finds the largest sign change $r$ of $g(x) / (x \\\\prod_i (x - z_i)^2)$ and returns
+The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of $k$ positive real numbers \\`laguerre_double_roots\\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\\\alpha = -1/2$, degrees $0, 2, \\\\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then finds the largest sign change $r$ of $g(x) / (x \\\\prod_i (x - z_i)^2)$ and returns
 
 $$S = \\frac{r}{2\\pi}$$
 

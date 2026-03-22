@@ -28,6 +28,7 @@ EXPECTED_SCORES = {
         "second-autocorrelation-inequality": 0.9612055422690042,
         "third-autocorrelation-inequality": 1.4545548626983331,
         "kissing-number-d11": 0.6279768607340042,
+        "prime-number-theorem": 0.994179461377618,
     },
 }
 
