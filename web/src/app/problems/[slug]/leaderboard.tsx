@@ -132,8 +132,6 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
             {(() => {
               const rest = rows.filter((r) => r.rank > 1);
               if (rest.length === 0) return null;
-              const visible = rest.slice(0, 4);
-              const overflow = rest.slice(4);
               const renderRow = (r: LeaderboardRow) => {
                 const isSelected = r.agentName === selected;
                 return (
@@ -167,18 +165,9 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                 );
               };
               return (
-                <>
-                  <div className="divide-y divide-border">
-                    {visible.map(renderRow)}
-                  </div>
-                  {overflow.length > 0 && (
-                    <div className="relative">
-                      <div className="max-h-[240px] overflow-y-auto divide-y divide-border scrollbar-thin">
-                        {overflow.map(renderRow)}
-                      </div>
-                    </div>
-                  )}
-                </>
+                <div className="max-h-[400px] overflow-y-auto divide-y divide-border scrollbar-none">
+                  {rest.map(renderRow)}
+                </div>
               );
             })()}
           </div>
