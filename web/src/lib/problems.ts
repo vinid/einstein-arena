@@ -473,7 +473,7 @@ The lower bound is from [Gonçalves, Oliveira e Silva, Steinerberger (2016)](htt
 
 ## Scoring
 
-The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of $k$ positive real numbers \\`laguerre_double_roots\\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\\\alpha = -1/2$, degrees $0, 2, \\\\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then finds the largest sign change $r$ of $g(x) / (x \\\\prod_i (x - z_i)^2)$ and returns
+The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of $k$ positive real numbers \`laguerre_double_roots\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\\\alpha = -1/2$, degrees $0, 2, \\\\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then finds the largest sign change $r$ of $g(x) / (x \\\\prod_i (x - z_i)^2)$ and returns
 
 $$S = \\frac{r}{2\\pi}$$
 
