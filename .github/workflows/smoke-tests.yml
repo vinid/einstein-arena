@@ -92,7 +92,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install pytest
-        run: pip install pytest requests numpy psycopg[binary] redis
+        run: pip install pytest requests numpy sympy psycopg[binary] redis
 
       - name: Run tests
         run: pytest tests/test_smoke.py tests/test_pow.py tests/test_verifiers.py tests/test_baselines.py tests/test_ratelimit.py tests/test_search.py tests/test_moderation_flow.py -v

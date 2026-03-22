@@ -332,6 +332,228 @@ def evaluate(data: dict) -> float:
         return 0.0
     return _overlap_loss(vectors)`,
   },
+  {
+    slug: "prime-number-theorem",
+    title: "The Prime Number Theorem",
+    scoring: "maximize",
+    minImprovement: 1e-5,
+    featured: true,
+    description: `## Problem
+
+Let $\\pi(x)$ denote the number of primes less than or equal to $x$, and define
+
+$$C^- := \\liminf_{x \\to \\infty} \\frac{\\pi(x)}{x / \\log x}, \\qquad C^+ := \\limsup_{x \\to \\infty} \\frac{\\pi(x)}{x / \\log x}$$
+
+**What are $C^-$ and $C^+$?**
+
+The answer — $C^- = C^+ = 1$ — is the Prime Number Theorem. Your task is to construct a *certificate* of this fact: a partial function $f$ defined on a finite set of positive integers that makes the constructive proof as tight as possible.
+
+## Scoring
+
+Submit a partial function $f$ as a dictionary mapping positive integer keys (as strings) to real values. The server:
+
+1. Clips all values to $[-10, 10]$
+2. Adjusts $f(1)$ so that $\\sum_k f(k)/k = 0$ (normalization)
+3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_k)$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
+4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
+
+Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
+
+**Note:** The constraint check (step 3) uses Monte Carlo sampling with a fixed random seed. A passing score does not constitute a proof — it is a numerical certificate. High-scoring solutions should be verified analytically to confirm the constraint $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ holds for all $x \\ge 1$.`,
+    solutionSchema: {
+      partial_function: "object mapping positive integer keys (as strings) to float values",
+    },
+    zodSchema: z.object({
+      partial_function: z.record(z.string(), z.number()),
+    }),
+    verifier: `import numpy as np
+
+NUM_SAMPLES = 10_000_000
+_TARGET_BATCH_BYTES = 40 * 1024 * 1024
+
+def evaluate(solution: dict) -> float:
+    raw = solution["partial_function"]
+    pf = {int(k): np.clip(float(v), -10, 10) for k, v in raw.items()}
+    total = sum(v / k for k, v in pf.items())
+    pf[1] = pf.get(1, 0.0) - total
+    keys = np.array(list(pf.keys()), dtype=np.float64)
+    values = np.array(list(pf.values()), dtype=np.float64)
+    upper_bound = 10.0 * float(np.max(keys))
+    batch_size = max(1, _TARGET_BATCH_BYTES // (len(keys) * 8))
+    rng = np.random.RandomState(42)
+    remaining = NUM_SAMPLES
+    while remaining > 0:
+        n = min(batch_size, remaining)
+        x = rng.uniform(1, upper_bound, size=n)
+        floors = np.floor(x[:, None] / keys[None, :])
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            x_sums = floors @ values
+        if np.any(x_sums > 1.0001):
+            return float(-np.inf)
+        remaining -= n
+    return float(-np.sum(values * np.log(keys) / keys))`,
+  },
+  {
+    slug: "sum-difference-2",
+    title: "Sum-Difference Problem II (Lower Bound)",
+    scoring: "maximize",
+    minImprovement: 1e-5,
+    featured: true,
+    description: `## Problem
+
+Let $C$ be the least constant such that
+
+$$|A - A| \\leq |A + A|^C$$
+
+for any non-empty finite set $A$ of integers, where $A + A = \\{a + b : a, b \\in A\\}$ and $A - A = \\{a - b : a, b \\in A\\}$.
+
+**Establish a lower bound for $C$ that is as strong as possible.**
+
+## Known Bounds
+
+$$\\frac{\\log(1 + \\sqrt{2})}{\\log 2} = 1.2715\\ldots \\leq C \\leq \\frac{4}{3}$$
+
+The lower bound comes from a high-dimensional simplex construction $A = \\{(x_1, \\ldots, x_N) \\in \\mathbb{Z}_+^N : \\sum_i x_i \\leq N/2\\}$. Without hints, AlphaEvolve only managed constructions around 1.21.
+
+## Scoring
+
+Submit a list of distinct integers \`elements\`. The server computes:
+
+$$S(A) = \\frac{\\log |A - A|}{\\log |A + A|}$$
+
+Higher $S(A)$ is better — it proves $C \\geq S(A)$. All elements must be integers with $|x| \\leq 2 \\times 10^9$, and the list must have at least 2 distinct elements.`,
+    solutionSchema: {
+      elements: "list of distinct integers",
+    },
+    zodSchema: z.object({
+      elements: z.array(z.number().int()).min(2).max(1_000_000),
+    }),
+    verifier: `import math
+
+def evaluate(solution: dict) -> float:
+    elements = solution["elements"]
+    if not all(isinstance(x, int) for x in elements):
+        raise ValueError("All elements must be integers.")
+    if len(elements) < 2:
+        raise ValueError("List must have at least 2 elements.")
+    if any(abs(x) > 2_000_000_000 for x in elements):
+        raise ValueError("Elements must be in [-2e9, 2e9].")
+    s = list(set(elements))
+    if len(s) < 2:
+        raise ValueError("List must have at least 2 distinct elements.")
+    a_minus_a = set()
+    a_plus_a = set()
+    for x in s:
+        for y in s:
+            a_minus_a.add(x - y)
+            a_plus_a.add(x + y)
+    lhs = len(a_minus_a)
+    rhs = len(a_plus_a)
+    if rhs <= 1:
+        raise ValueError("|A+A| must be > 1.")
+    return math.log(lhs) / math.log(rhs)`,
+  },
+  {
+    slug: "uncertainty-principle",
+    title: "Uncertainty Principle (Upper Bound)",
+    scoring: "minimize",
+    minImprovement: 1e-5,
+    featured: true,
+    description: `## Problem
+
+Let $C_{6.11}$ be the largest constant for which
+
+$$A(f)\\,A(\\hat{f}) \\geq C_{6.11}$$
+
+for all even $f$ with $f(0), \\hat{f}(0) < 0$. **Establish an upper bound for $C_{6.11}$ that is as strong as possible.**
+
+## Known Bounds
+
+$$0.2025 \\leq C_{6.11} \\leq 0.3102$$
+
+The lower bound is from [Gonçalves, Oliveira e Silva, Steinerberger (2016)](https://arxiv.org/abs/1602.03366). The upper bound $\\leq 0.3102$ is from unpublished work by Cohn, de Laat and Gonçalves. AlphaEvolve achieved $\\leq 0.321591$ using $k=12$ Laguerre double roots.
+
+## Scoring
+
+The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of $k$ positive real numbers \`laguerre_double_roots\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\\\alpha = -1/2$, degrees $0, 2, \\\\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then finds the largest sign change $r$ of $g(x) / (x \\\\prod_i (x - z_i)^2)$ and returns
+
+$$S = \\frac{r}{2\\pi}$$
+
+as the upper bound on $C_{6.11}$. **Lower $S$ is better.**`,
+    solutionSchema: {
+      laguerre_double_roots: "list of k positive reals (double root positions)",
+    },
+    zodSchema: z.object({
+      laguerre_double_roots: z.array(z.number().positive()).min(1).max(50),
+    }),
+    verifier: `import numpy as np
+import sympy
+
+
+def evaluate(solution: dict) -> float:
+    zs = solution["laguerre_double_roots"]
+    if len(zs) == 0:
+        raise ValueError("laguerre_double_roots must be non-empty.")
+    if len(zs) > 50:
+        raise ValueError("At most 50 roots allowed.")
+    if any(z <= 0 for z in zs):
+        raise ValueError("All roots must be positive.")
+    if any(z > 300 for z in zs):
+        raise ValueError("All roots must be <= 300.")
+
+    g_fn = _find_laguerre_combination(zs)
+    x = sympy.symbols("x")
+
+    div = sympy.prod([(x - sympy.Rational(z)) ** 2 for z in zs]) * x
+    gq_fn = sympy.exquo(g_fn, div)
+
+    real_roots = sympy.real_roots(gq_fn, x)
+    if not real_roots:
+        raise ValueError("g has no sign changes.")
+
+    gq_np = sympy.lambdify(x, gq_fn, modules="numpy")
+    largest_sign_change = 0.0
+    for root in real_roots:
+        r_val = float(root.evalf(30))
+        eps = 1e-6
+        if np.sign(gq_np(r_val - eps)) != np.sign(gq_np(r_val + eps)):
+            largest_sign_change = max(largest_sign_change, r_val)
+
+    if largest_sign_change == 0:
+        raise ValueError("No sign-changing roots found.")
+
+    return float(largest_sign_change) / (2 * np.pi)
+
+
+def _find_laguerre_combination(zs):
+    m = len(zs)
+    alpha = sympy.Rational(1, 2) - 1
+    x = sympy.symbols("x")
+    degrees = np.arange(0, 4 * m + 4, 2)
+    lps = [
+        sympy.polys.orthopolys.laguerre_poly(n=int(i), x=x, alpha=alpha, polys=False)
+        for i in degrees
+    ]
+    num_lps = len(lps)
+    num_conditions = 2 * m + 2
+
+    mat = sympy.Matrix(num_conditions, num_lps, lambda i, j: 0)
+    b = sympy.Matrix(num_conditions, 1, lambda i, j: 0)
+    b[1] = 1
+
+    for j in range(num_lps):
+        mat[0, j] = lps[j].subs(x, 0)
+        mat[1, j] = lps[j].diff(x).subs(x, 0)
+
+    for i in range(m):
+        zi = sympy.Rational(zs[i])
+        for j in range(num_lps):
+            mat[2 * i + 2, j] = lps[j].subs(x, zi)
+            mat[2 * i + 3, j] = lps[j].diff(x).subs(x, zi)
+
+    coeffs = mat.LUsolve(b)
+    return sum(coeffs[i] * lps[i] for i in range(num_lps))`,
+  },
 ];
 
 export const solutionSchemas: Record<string, z.ZodType> = Object.fromEntries(
