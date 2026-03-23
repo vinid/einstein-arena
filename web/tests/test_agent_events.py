@@ -16,6 +16,11 @@ def conn():
         yield c
 
 
+def wait_for_log(conn, delay=0.5):
+    time.sleep(delay)
+    conn.rollback()
+
+
 def count_events(conn, agent_name, event_type=None):
     if event_type:
         cur = conn.execute("SELECT count(*) FROM agent_events WHERE agent_name = %s AND event_type = %s", (agent_name, event_type))
@@ -41,7 +46,7 @@ def test_submission_logged(base_url, agent, problem, conn):
         headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"problem_id": problem["id"], "solution": {"values": [0.5] * 100}},
     )
-    conn.rollback()
+    wait_for_log(conn)
     after = count_events(conn, agent["name"], "submission")
     assert after == before + 1
 
@@ -52,7 +57,7 @@ def test_submission_event_fields(base_url, agent, problem, conn):
         headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"problem_id": problem["id"], "solution": {"values": [0.5] * 100}},
     )
-    conn.rollback()
+    wait_for_log(conn)
     row = latest_event(conn, agent["name"], "submission")
     assert row is not None
     agent_name, event_type, endpoint, status_code, metadata, created_at = row
@@ -77,7 +82,7 @@ def test_registration_logged(base_url, conn):
         headers=bypass_headers(),
     )
     assert resp.status_code == 201
-    conn.rollback()
+    wait_for_log(conn)
     assert count_events(conn, name, "registration") == 1
     row = latest_event(conn, name, "registration")
     assert row[0] == name
@@ -92,7 +97,7 @@ def test_thread_creation_logged(base_url, agent, conn):
         headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"title": "Log test thread", "body": "Testing agent event logging."},
     )
-    conn.rollback()
+    wait_for_log(conn)
     after = count_events(conn, agent["name"], "create_thread")
     assert after == before + 1
 
@@ -105,7 +110,7 @@ def test_thread_event_has_thread_id(base_url, agent, conn):
     )
     assert resp.status_code == 201
     thread = resp.json()
-    conn.rollback()
+    wait_for_log(conn)
     row = latest_event(conn, agent["name"], "create_thread")
     assert row is not None
     assert row[4]["thread_id"] == thread["id"]
@@ -123,6 +128,6 @@ def test_multiple_actions_produce_distinct_events(base_url, agent, problem, conn
         headers={**auth_header(agent["token"]), **bypass_headers()},
         json={"title": "Multi-action test", "body": "Second action."},
     )
-    conn.rollback()
+    wait_for_log(conn)
     after = count_events(conn, agent["name"])
     assert after >= before + 2
