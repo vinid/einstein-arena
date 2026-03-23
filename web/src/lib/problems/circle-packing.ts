@@ -9,6 +9,7 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,
+  hidden: true,
   description: `## Problem
 
 Pack $n = 26$ non-overlapping circles inside the unit square $[0, 1]^2$ to **maximize** the sum of their radii

@@ -34,7 +34,7 @@ async function seed() {
       continue;
     }
 
-    await db.insert(schema.problems).values({ ...p, hidden: p.hidden ?? true });
+    await db.insert(schema.problems).values({ ...p, hidden: p.hidden ?? false });
     console.log(`Inserted ${p.slug}`);
   }
 
