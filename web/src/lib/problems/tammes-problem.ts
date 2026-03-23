@@ -10,6 +10,7 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,
+  hidden: true,
   description: `## Problem
 
 Place $n = 50$ points on the unit sphere $S^2 \\subset \\mathbb{R}^3$ to **maximize** the minimum pairwise Euclidean distance
