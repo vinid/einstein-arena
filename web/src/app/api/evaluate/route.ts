@@ -35,6 +35,9 @@ function parseVerifierOutput(
 
   const outputs = response.data?.outputs || [];
   for (const output of outputs) {
+    if (output.type === "error" && output.data) {
+      return { error: `runtime_error: ${String(output.data).slice(0, 500)}` };
+    }
     if (output.type === "stderr" && output.data) {
       const stderr = String(output.data);
       if (stderr.includes("Error") || stderr.includes("raise")) {
