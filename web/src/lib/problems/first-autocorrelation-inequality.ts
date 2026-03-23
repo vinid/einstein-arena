@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "first-autocorrelation-inequality",
   title: "First Autocorrelation Inequality (Upper Bound)",
+  reference: "Problem 6.2 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
   minImprovement: 1e-7,
   featured: true,

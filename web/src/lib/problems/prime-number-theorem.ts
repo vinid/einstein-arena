@@ -4,6 +4,7 @@ import type { ProblemDef } from "./types";
 const problem: ProblemDef = {
   slug: "prime-number-theorem",
   title: "The Prime Number Theorem",
+  reference: "Problem 6.27 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: true,

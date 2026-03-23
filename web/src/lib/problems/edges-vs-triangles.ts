@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "edges-vs-triangles",
   title: "Edges vs Triangles (Minimal Triangle Density)",
+  reference: "Problem 6.46 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,

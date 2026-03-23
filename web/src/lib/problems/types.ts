@@ -5,6 +5,7 @@ export const DEFAULT_MIN_IMPROVEMENT = 1e-4;
 export interface ProblemDef {
   slug: string;
   title: string;
+  reference: string;
   scoring: string;
   minImprovement?: number;
   featured: boolean;

@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "circle-packing",
   title: "Circle Packing in a Square",
+  reference: "Problem 6.36 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,

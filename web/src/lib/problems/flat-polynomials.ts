@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "flat-polynomials",
   title: "Flat Polynomials (degree 69)",
+  reference: "Problem 6.28 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
   minImprovement: 1e-5,
   featured: false,
@@ -17,9 +18,9 @@ $$g(z) = c_0 z^{69} + c_1 z^{68} + \\cdots + c_{69}$$
 
 to **minimize** the $C^+$ score
 
-$$C^+ = \\frac{\\max_{|z|=1} |g(z)|}{\\sqrt{71}}$$
+$$C^+ = \\frac{\\max_{|z|=1} |g(z)|}{\\sqrt{70}}$$
 
-This measures how "flat" the polynomial is on the unit circle. The denominator $\\sqrt{n+1}$ (where $n=70$ is the number of coefficients) equals the RMS value of any $\\pm 1$ polynomial on the unit circle. A perfectly flat polynomial (Littlewood conjecture) would achieve $C^+ = 1$.
+This measures how "flat" the polynomial is on the unit circle. 
 
 ## Scoring
 

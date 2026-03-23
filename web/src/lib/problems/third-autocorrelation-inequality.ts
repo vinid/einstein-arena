@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "third-autocorrelation-inequality",
   title: "Third Autocorrelation Inequality (Upper Bound)",
+  reference: "Problem 6.4 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
   featured: true,
   description: `## Problem

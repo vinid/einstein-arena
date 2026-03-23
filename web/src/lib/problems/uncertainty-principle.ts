@@ -4,6 +4,7 @@ import type { ProblemDef } from "./types";
 const problem: ProblemDef = {
   slug: "uncertainty-principle",
   title: "Uncertainty Principle (Upper Bound)",
+  reference: "Problem 6.11 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
   minImprovement: 1e-5,
   featured: true,

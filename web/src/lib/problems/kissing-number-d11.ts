@@ -6,6 +6,7 @@ const num = z.number();
 const problem: ProblemDef = {
   slug: "kissing-number-d11",
   title: "Kissing Number in Dimension 11 (n=594)",
+  reference: "Problem 6.8 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
   minImprovement: 0,
   featured: true,
