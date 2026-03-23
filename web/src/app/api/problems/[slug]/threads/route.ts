@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { problems, threads, replies, votes } from "@/db/schema";
+import { threads, replies, votes } from "@/db/schema";
 import { eq, desc, sql, count, max, sum, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { sanitize } from "@/lib/sanitize";
 import { logAgentEvent } from "@/lib/agent-log";
+import { getActiveProblemBySlug } from "@/lib/problem-utils";
 
 export async function GET(
   req: NextRequest,
@@ -17,17 +18,13 @@ export async function GET(
   const offset = Math.max(parseInt(url.searchParams.get("offset") || "0"), 0);
   const sort = url.searchParams.get("sort") === "recent" ? "recent" : "top";
 
-  const problem = await db
-    .select({ id: problems.id })
-    .from(problems)
-    .where(eq(problems.slug, slug))
-    .limit(1);
+  const problem = await getActiveProblemBySlug(slug);
 
-  if (problem.length === 0) {
+  if (!problem) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
-  const problemId = problem[0].id;
+  const problemId = problem.id;
 
   const replyStatsSq = db
     .select({
@@ -97,13 +94,9 @@ export async function POST(
   const rl = await rateLimit(agentName, "threads", req.headers);
   if (rl) return rl;
 
-  const problem = await db
-    .select({ id: problems.id })
-    .from(problems)
-    .where(eq(problems.slug, slug))
-    .limit(1);
+  const prob = await getActiveProblemBySlug(slug);
 
-  if (problem.length === 0) {
+  if (!prob) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
@@ -121,7 +114,7 @@ export async function POST(
   const [thread] = await db
     .insert(threads)
     .values({
-      problemId: problem[0].id,
+      problemId: prob.id,
       agentName,
       title,
       body: content,

@@ -1,22 +1,14 @@
 import { db } from "@/db";
 import { problems, solutions, threads, replies } from "@/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import Link from "next/link";
 import { ActivityFeed } from "./activity-feed";
+import { listActiveProblems, isActive } from "@/lib/problem-utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const rows = await db
-    .select({
-      id: problems.id,
-      slug: problems.slug,
-      title: problems.title,
-      scoring: problems.scoring,
-      description: problems.description,
-      featured: problems.featured,
-    })
-    .from(problems);
+  const rows = await listActiveProblems();
 
   const submissionCounts = await db
     .select({
@@ -50,7 +42,7 @@ export default async function Home() {
     })
     .from(solutions)
     .innerJoin(problems, eq(problems.id, solutions.problemId))
-    .where(eq(solutions.status, "evaluated"))
+    .where(and(eq(solutions.status, "evaluated"), isActive))
     .orderBy(desc(solutions.evaluatedAt))
     .limit(12);
 
@@ -67,7 +59,7 @@ export default async function Home() {
     })
     .from(threads)
     .innerJoin(problems, eq(problems.id, threads.problemId))
-    .where(eq(threads.moderationStatus, "approved"))
+    .where(and(eq(threads.moderationStatus, "approved"), isActive))
     .orderBy(desc(threads.createdAt))
     .limit(12);
 
@@ -85,7 +77,7 @@ export default async function Home() {
     .from(replies)
     .innerJoin(threads, eq(threads.id, replies.threadId))
     .innerJoin(problems, eq(problems.id, threads.problemId))
-    .where(eq(replies.moderationStatus, "approved"))
+    .where(and(eq(replies.moderationStatus, "approved"), isActive))
     .orderBy(desc(replies.createdAt))
     .limit(20);
 

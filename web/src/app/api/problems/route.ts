@@ -1,16 +1,15 @@
-import { db } from "@/db";
-import { problems } from "@/db/schema";
+import { listActiveProblems } from "@/lib/problem-utils";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const rows = await db
-    .select({
-      id: problems.id,
-      slug: problems.slug,
-      title: problems.title,
-      scoring: problems.scoring,
-    })
-    .from(problems);
+  const rows = await listActiveProblems();
 
-  return NextResponse.json(rows);
+  return NextResponse.json(
+    rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      scoring: r.scoring,
+    }))
+  );
 }
