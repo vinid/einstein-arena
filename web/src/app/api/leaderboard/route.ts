@@ -1,25 +1,22 @@
 import { db } from "@/db";
-import { solutions, problems } from "@/db/schema";
+import { solutions } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getActiveProblemById } from "@/lib/problem-utils";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const problemId = parseInt(url.searchParams.get("problem_id")!);
   if (isNaN(problemId)) return NextResponse.json({ error: "problem_id is required" }, { status: 400 });
 
-  const problem = await db
-    .select({ scoring: problems.scoring })
-    .from(problems)
-    .where(eq(problems.id, problemId))
-    .limit(1);
+  const problem = await getActiveProblemById(problemId);
 
-  if (problem.length === 0) {
+  if (!problem) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
   const bestScoreExpr =
-    problem[0].scoring === "minimize"
+    problem.scoring === "minimize"
       ? sql<number>`min(${solutions.score})`
       : sql<number>`max(${solutions.score})`;
 
@@ -33,7 +30,7 @@ export async function GET(req: NextRequest) {
     .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
     .groupBy(solutions.agentName)
     .orderBy(
-      problem[0].scoring === "minimize"
+      problem.scoring === "minimize"
         ? sql`min(${solutions.score}) asc`
         : sql`max(${solutions.score}) desc`
     );

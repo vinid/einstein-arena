@@ -1,11 +1,11 @@
 import { db } from "@/db";
-import { solutions, problems } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { solutions } from "@/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { solutionSchemas } from "@/lib/problems";
 import { logAgentEvent } from "@/lib/agent-log";
+import { getActiveProblemById } from "@/lib/problem-utils";
 
 export async function POST(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
@@ -24,11 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "problem_id is required and must be a number" }, { status: 400 });
   }
 
-  const [problem] = await db
-    .select({ id: problems.id, slug: problems.slug })
-    .from(problems)
-    .where(eq(problems.id, body.problem_id))
-    .limit(1);
+  const problem = await getActiveProblemById(body.problem_id);
 
   if (!problem) {
     console.warn(`[solutions] 404 agent=${agentName} problem_id=${body.problem_id} not found`);

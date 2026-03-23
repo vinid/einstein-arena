@@ -33,6 +33,7 @@ export const problems = pgTable("problems", {
   solutionSchema: jsonb("solution_schema").notNull(),
   minImprovement: doublePrecision("min_improvement").notNull().default(1e-4),
   featured: boolean("featured").notNull().default(false),
+  hidden: boolean("hidden").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

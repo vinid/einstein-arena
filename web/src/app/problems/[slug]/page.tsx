@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { problems, solutions, threads, replies, votes, apiTokens } from "@/db/schema";
+import { solutions, threads, replies, votes, apiTokens } from "@/db/schema";
 import { eq, desc, sql, and, count, sum, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProblemDescription } from "./description";
 import { Leaderboard } from "./leaderboard";
 import { ThreadsList } from "./threads-list";
+import { getActiveProblemBySlug } from "@/lib/problem-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +17,8 @@ export default async function ProblemPage({
 }) {
   const { slug } = await params;
 
-  const rows = await db
-    .select()
-    .from(problems)
-    .where(eq(problems.slug, slug))
-    .limit(1);
-
-  if (rows.length === 0) notFound();
-  const problem = rows[0];
+  const problem = await getActiveProblemBySlug(slug);
+  if (!problem) notFound();
 
   const replyCountSq = db
     .select({
