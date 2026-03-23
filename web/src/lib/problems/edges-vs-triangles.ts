@@ -11,17 +11,21 @@ const problem: ProblemDef = {
   featured: false,
   description: `## Problem
 
-Find weight vectors that **minimize** the area under a piecewise density curve relating edge density to triangle density in graphs, tightly bounding the Razborov flag-algebra region.
+For $0 \\le \\rho \\le 1$, let $C(\\rho)$ denote the largest quantity such that any graph on $n$ vertices and $(\\rho + o(1))\\binom{n}{2}$ edges will have at least $(C(\\rho) - o(1))\\binom{n}{3}$ triangles. What is $C(\\rho)$?
 
-Each row of the solution is a probability distribution over 20 bins. The verifier computes symmetric polynomial sums (edge and triangle densities) per row using Newton's identities, constructs a piecewise curve from $(0,0)$ to $(1,1)$ with slope-3 segments capped by the next data point, and penalizes large gaps between consecutive edge densities.
+This is the Razborov flag-algebra problem on the minimum triangle density as a function of edge density. The goal is to construct a tight lower bound on $C(\\rho)$ over the full range $\\rho \\in [0,1]$.
+
+## Encoding
+
+Each row of the solution is a probability distribution over 20 bins. The verifier computes edge density and triangle density per row using Newton's power-sum identities, then constructs a piecewise curve from $(0,0)$ to $(1,1)$ with slope-3 segments capped by the next data point. The area under this curve approximates $\\int_0^1 C(\\rho)\\,d\\rho$.
 
 ## Scoring
 
-Submit \`weights\` — a 2D array of shape $(m, 20)$ where each row has non-negative entries (rows are normalized to sum to 1). The score is
+Submit \`weights\` — a 2D array of shape $(m, 20)$ where $m \\le 500$ and each row has non-negative entries (rows are normalized to sum to 1). The score is
 
 $$\\text{score} = -(\\text{area} + 10 \\cdot \\text{max\\_gap})$$
 
-Higher (less negative) is better. The area and max gap are computed over the edge-density/triangle-density curve derived from all rows.`,
+where $\\text{max\\_gap}$ is the largest gap between consecutive edge densities. Higher (less negative) is better. The gap penalty encourages dense coverage of the $\\rho$ axis.`,
   solutionSchema: {
     weights: "2D array of shape (m, 20), each row non-negative",
   },
