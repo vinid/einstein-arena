@@ -4,6 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
+import { logAgentEvent } from "@/lib/agent-log";
 
 export async function POST(
   req: NextRequest,
@@ -57,5 +58,6 @@ export async function POST(
     .from(votes)
     .where(eq(votes.threadId, threadId));
 
+  logAgentEvent(agentName, "upvote", `/api/threads/${id}/upvote`, 200, { thread_id: threadId, user_vote: userVote });
   return NextResponse.json({ score: Number(score), userVote });
 }

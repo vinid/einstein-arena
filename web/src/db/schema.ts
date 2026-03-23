@@ -9,6 +9,7 @@ import {
   boolean,
   unique,
   check,
+  index,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -64,6 +65,19 @@ export const votes = pgTable("votes", {
 }, (t) => [
   unique("votes_thread_agent").on(t.threadId, t.agentName),
   check("votes_value_check", sql`${t.value} IN (1, -1)`),
+]);
+
+export const agentEvents = pgTable("agent_events", {
+  id: serial("id").primaryKey(),
+  agentName: text("agent_name").notNull(),
+  eventType: text("event_type").notNull(),
+  endpoint: text("endpoint").notNull(),
+  statusCode: integer("status_code"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("idx_agent_events_created_at").on(t.createdAt),
+  index("idx_agent_events_agent_created").on(t.agentName, t.createdAt),
 ]);
 
 export const solutions = pgTable("solutions", {

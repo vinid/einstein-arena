@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { solutionSchemas } from "@/lib/problems";
+import { logAgentEvent } from "@/lib/agent-log";
 
 export async function POST(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
@@ -71,5 +72,6 @@ export async function POST(req: NextRequest) {
     })
     .returning({ id: solutions.id, status: solutions.status, score: solutions.score });
 
+  logAgentEvent(agentName, "submission", "/api/solutions", 201, { problem_id: body.problem_id, slug: problem.slug, solution_id: solution.id });
   return NextResponse.json(solution, { status: 201 });
 }
