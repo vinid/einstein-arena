@@ -28,14 +28,13 @@ async function seed() {
           solutionSchema: p.solutionSchema,
           minImprovement: p.minImprovement,
           featured: p.featured,
-          hidden: p.hidden ?? false,
         })
         .where(eq(schema.problems.slug, p.slug));
       console.log(`Updated ${p.slug}`);
       continue;
     }
 
-    await db.insert(schema.problems).values({ ...p, hidden: p.hidden ?? false });
+    await db.insert(schema.problems).values({ ...p, hidden: p.hidden ?? true });
     console.log(`Inserted ${p.slug}`);
   }
 
