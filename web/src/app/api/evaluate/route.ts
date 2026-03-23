@@ -55,17 +55,30 @@ async function evalInSession(
   together: Together,
   sessionId: string,
   verifierCode: string,
-  solutionData: Record<string, unknown>
+  solutionData: Record<string, unknown>,
+  solId?: number,
+  slug?: string
 ): Promise<{ score?: number; error?: string }> {
   const dataJson = JSON.stringify(solutionData);
   const execStart = Date.now();
 
-  const response = await together.codeInterpreter.execute({
-    code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
-    language: "python",
-    session_id: sessionId,
-    files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
-  });
+  let response: unknown;
+  try {
+    response = await together.codeInterpreter.execute({
+      code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
+      language: "python",
+      session_id: sessionId,
+      files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
+    });
+  } catch (e: unknown) {
+    const execMs = Date.now() - execStart;
+    const status = (e as { status?: number }).status;
+    const body = (e as { body?: unknown }).body;
+    const msg = e instanceof Error ? e.message : String(e);
+    const detail = JSON.stringify({ status, body, message: msg }).slice(0, 1000);
+    console.error(`[eval] sol=${solId} problem=${slug} TOGETHER_SDK_ERROR bytes=${dataJson.length} (${execMs}ms): ${detail}`);
+    return { error: `${status ?? "unknown"} ${detail}` };
+  }
 
   const execMs = Date.now() - execStart;
   const pipe = getRedis().pipeline();
@@ -76,7 +89,12 @@ async function evalInSession(
   pipe.expire(hk, METRICS_TTL);
   pipe.exec();
 
-  return parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
+  const parsed = parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
+  if (parsed.error) {
+    const rawSnippet = JSON.stringify(response).slice(0, 1000);
+    console.error(`[eval] sol=${solId} problem=${slug} VERIFIER_ERROR bytes=${dataJson.length} (${execMs}ms) error=${parsed.error.slice(0, 300)} raw=${rawSnippet}`);
+  }
+  return parsed;
 }
 
 async function getGlobalBest(problemId: number, scoring: string): Promise<number | null> {
@@ -182,7 +200,7 @@ async function processSolution(
 ) {
   const t = Date.now();
 
-  const result = await evalInSession(together, sessionId, problem.verifier, sol.data as Record<string, unknown>);
+  const result = await evalInSession(together, sessionId, problem.verifier, sol.data as Record<string, unknown>, sol.id, problem.slug);
   const ms = Date.now() - t;
 
   if (result.error) {
