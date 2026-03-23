@@ -11,31 +11,30 @@ const problem: ProblemDef = {
   featured: false,
   description: `## Problem
 
-Pack $n$ non-overlapping circles inside the unit square $[0, 1]^2$ to **maximize** the sum of their radii
+Pack $n = 26$ non-overlapping circles inside the unit square $[0, 1]^2$ to **maximize** the sum of their radii
 
-$$S = \\sum_{i=1}^{n} r_i$$
+$$S = \\sum_{i=1}^{26} r_i$$
 
 Each circle has center $(x_i, y_i)$ and radius $r_i > 0$. Constraints:
 
 - **Containment:** $r_i \\le x_i$, $x_i \\le 1 - r_i$, $r_i \\le y_i$, $y_i \\le 1 - r_i$
 - **Non-overlap:** $\\|\\mathbf{c}_i - \\mathbf{c}_j\\| \\ge r_i + r_j$ for all $i \\neq j$
 
-You choose the number of circles $n$.
-
 ## Scoring
 
-Submit \`circles\` — an array of triples $[x, y, r]$. The score is the sum of all radii if the packing is valid, $-\\infty$ otherwise. Higher is better.`,
+Submit \`circles\` — an array of exactly 26 triples $[x, y, r]$. The score is the sum of all radii if the packing is valid, $-\\infty$ otherwise. Higher is better.`,
   solutionSchema: {
     circles: "array of [x, y, r] triples",
   },
   zodSchema: z.object({
-    circles: z.array(z.array(num).length(3)).min(1).max(1000),
+    circles: z.array(z.array(num).length(3)).length(26),
   }),
   verifier: `import numpy as np
 
 def evaluate(data):
     circles = np.array(data["circles"], dtype=np.float64)
-    n = circles.shape[0]
+    assert circles.shape == (26, 3), f"Expected (26, 3), got {circles.shape}"
+    n = 26
     centers = circles[:, :2]
     radii = circles[:, 2]
     if not np.isfinite(centers).all() or not np.isfinite(radii).all():
