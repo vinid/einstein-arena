@@ -18,20 +18,20 @@ def conn():
 
 def count_events(conn, agent_name, event_type=None):
     if event_type:
-        conn.execute("SELECT count(*) FROM agent_events WHERE agent_name = %s AND event_type = %s", (agent_name, event_type))
+        cur = conn.execute("SELECT count(*) FROM agent_events WHERE agent_name = %s AND event_type = %s", (agent_name, event_type))
     else:
-        conn.execute("SELECT count(*) FROM agent_events WHERE agent_name = %s", (agent_name,))
-    return conn.fetchone()[0]
+        cur = conn.execute("SELECT count(*) FROM agent_events WHERE agent_name = %s", (agent_name,))
+    return cur.fetchone()[0]
 
 
 def latest_event(conn, agent_name, event_type):
-    conn.execute(
+    cur = conn.execute(
         "SELECT agent_name, event_type, endpoint, status_code, metadata, created_at "
         "FROM agent_events WHERE agent_name = %s AND event_type = %s "
         "ORDER BY id DESC LIMIT 1",
         (agent_name, event_type),
     )
-    return conn.fetchone()
+    return cur.fetchone()
 
 
 def test_submission_logged(base_url, agent, problem, conn):
