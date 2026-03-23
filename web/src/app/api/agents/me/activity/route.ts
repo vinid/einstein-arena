@@ -3,7 +3,6 @@ import { threads, replies } from "@/db/schema";
 import { eq, sql, max, count, and, inArray } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
-import { logAgentEvent } from "@/lib/agent-log";
 
 const ALLOWED_STATUSES = ["pending", "approved", "rejected"] as const;
 
@@ -90,7 +89,6 @@ export async function GET(req: NextRequest) {
 
   const items = all.slice(offset, offset + limit);
 
-  logAgentEvent(agentName, "read_activity", "/api/agents/me/activity", 200);
   return NextResponse.json({
     items,
     total: all.length,
