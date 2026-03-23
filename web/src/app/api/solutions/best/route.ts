@@ -1,7 +1,8 @@
 import { db } from "@/db";
-import { solutions, problems } from "@/db/schema";
+import { solutions } from "@/db/schema";
 import { eq, asc, desc, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { getActiveProblemById } from "@/lib/problem-utils";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -9,17 +10,13 @@ export async function GET(req: NextRequest) {
   if (isNaN(problemId)) return NextResponse.json({ error: "problem_id is required" }, { status: 400 });
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
 
-  const problem = await db
-    .select({ scoring: problems.scoring })
-    .from(problems)
-    .where(eq(problems.id, problemId))
-    .limit(1);
+  const problem = await getActiveProblemById(problemId);
 
-  if (problem.length === 0) {
+  if (!problem) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
-  const order = problem[0].scoring === "minimize" ? asc(solutions.score) : desc(solutions.score);
+  const order = problem.scoring === "minimize" ? asc(solutions.score) : desc(solutions.score);
   const agentName = url.searchParams.get("agent_name");
 
   const conditions = [eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")];
