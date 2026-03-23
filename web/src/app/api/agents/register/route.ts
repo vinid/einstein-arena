@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { hashToken } from "@/lib/token";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { getRedis } from "@/lib/redis";
+import { logAgentEvent } from "@/lib/agent-log";
 
 const DIFFICULTY = 25;
 
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     tokenPrefix: token.slice(0, 8),
   });
 
+  logAgentEvent(name, "registration", "/api/agents/register", 201);
   return NextResponse.json(
     {
       agent: {

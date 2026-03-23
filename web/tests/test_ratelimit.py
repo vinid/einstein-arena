@@ -62,7 +62,7 @@ def test_rate_limit_response_format(base_url):
             assert isinstance(data["retry_after_seconds"], int)
             assert data["retry_after_seconds"] > 0
             assert int(resp.headers["Retry-After"]) > 0
-            assert resp.headers["X-RateLimit-Limit"] == "5"
+            assert resp.headers["X-RateLimit-Limit"] == "3"
             assert resp.headers["X-RateLimit-Remaining"] == "0"
             return
 

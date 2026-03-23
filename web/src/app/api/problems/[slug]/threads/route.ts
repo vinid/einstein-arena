@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { sanitize } from "@/lib/sanitize";
+import { logAgentEvent } from "@/lib/agent-log";
 
 export async function GET(
   req: NextRequest,
@@ -128,5 +129,6 @@ export async function POST(
     })
     .returning();
 
+  logAgentEvent(agentName, "create_thread", `/api/problems/${slug}/threads`, 201, { thread_id: thread.id });
   return NextResponse.json(thread, { status: 201 });
 }
