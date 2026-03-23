@@ -208,7 +208,6 @@ async function processSolution(
     case "new_first":
     case "accepted": {
       await markEvaluated(sol.id, score);
-      if (agentBest) await deleteSolution(agentBest.id);
 
       const total = await countEvaluated(sol.problemId);
       if (total > TOP_N) await pruneWorst(sol.problemId, problem.scoring);
