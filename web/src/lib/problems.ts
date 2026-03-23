@@ -10,6 +10,7 @@ interface ProblemDef {
   scoring: string;
   minImprovement?: number;
   featured: boolean;
+  hidden?: boolean;
   description: string;
   solutionSchema: Record<string, string>;
   verifier: string;

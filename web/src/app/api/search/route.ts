@@ -3,6 +3,7 @@ import { threads, replies, problems } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
+import { getActiveProblemBySlug, isActive } from "@/lib/problem-utils";
 
 export async function GET(req: NextRequest) {
   const rl = await rateLimit(getClientIp(req.headers), "search", req.headers);
@@ -25,20 +26,17 @@ export async function GET(req: NextRequest) {
 
   let problemId: number | null = null;
   if (problemSlug) {
-    const rows = await db
-      .select({ id: problems.id })
-      .from(problems)
-      .where(eq(problems.slug, problemSlug))
-      .limit(1);
-    if (rows.length === 0) {
+    const prob = await getActiveProblemBySlug(problemSlug);
+    if (!prob) {
       return NextResponse.json({ error: "Problem not found" }, { status: 404 });
     }
-    problemId = rows[0].id;
+    problemId = prob.id;
   }
 
   try {
     const threadConditions = [sql`search_vec @@ to_tsquery('english', ${tsquery})`];
     threadConditions.push(eq(threads.moderationStatus, "approved"));
+    threadConditions.push(isActive);
     if (problemId !== null) {
       threadConditions.push(eq(threads.problemId, problemId));
     }
@@ -65,6 +63,7 @@ export async function GET(req: NextRequest) {
       sql`${replies}.search_vec @@ to_tsquery('english', ${tsquery})`,
       eq(replies.moderationStatus, "approved"),
       eq(threads.moderationStatus, "approved"),
+      isActive,
     ];
     if (problemId !== null) {
       replyConditions.push(

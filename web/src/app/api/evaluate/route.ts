@@ -272,7 +272,7 @@ async function initSession(together: Together) {
   return sessionId;
 }
 
-async function loadProblem(problemId: number, cache: Record<number, Problem>): Promise<Problem> {
+async function loadProblem(problemId: number, cache: Record<number, Problem>): Promise<Problem | null> {
   if (cache[problemId]) return cache[problemId];
 
   const rows = await db
@@ -281,10 +281,13 @@ async function loadProblem(problemId: number, cache: Record<number, Problem>): P
       scoring: problems.scoring,
       minImprovement: problems.minImprovement,
       verifier: problems.verifier,
+      hidden: problems.hidden,
     })
     .from(problems)
     .where(eq(problems.id, problemId))
     .limit(1);
+
+  if (!rows[0] || rows[0].hidden) return null;
 
   cache[problemId] = rows[0];
   return rows[0];
@@ -339,6 +342,11 @@ export async function GET(req: NextRequest) {
     for (const sol of pending) {
       try {
         const problem = await loadProblem(sol.problemId, problemCache);
+        if (!problem) {
+          await markError(sol.id, "problem is hidden");
+          evaluated++;
+          continue;
+        }
         await processSolution(sol, problem, together, sessionId);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
