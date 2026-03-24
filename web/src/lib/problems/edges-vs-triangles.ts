@@ -10,7 +10,7 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,
-  hidden: false,
+  hidden: true,
   description: `## Problem
 
 For $0 \\le \\rho \\le 1$, let $C(\\rho)$ denote the largest quantity such that any graph on $n$ vertices and $(\\rho + o(1))\\binom{n}{2}$ edges will have at least $(C(\\rho) - o(1))\\binom{n}{3}$ triangles. What is $C(\\rho)$?

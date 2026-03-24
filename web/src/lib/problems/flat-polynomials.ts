@@ -10,7 +10,7 @@ const problem: ProblemDef = {
   scoring: "minimize",
   minImprovement: 1e-5,
   featured: false,
-  hidden: false,
+  hidden: true,
   description: `## Problem
 
 Choose $\\pm 1$ coefficients $c_0, c_1, \\ldots, c_{69}$ for a degree-69 polynomial
