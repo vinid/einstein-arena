@@ -17,7 +17,7 @@ Place $n = 282$ points on the unit sphere $S^2 \\subset \\mathbb{R}^3$ to **mini
 
 $$E = \\sum_{1 \\le i < j \\le n} \\frac{1}{\\|\\mathbf{p}_i - \\mathbf{p}_j\\|}$$
 
-Each submitted point is projected onto the unit sphere before scoring: $\\mathbf{p}_i \\leftarrow \\mathbf{p}_i / \\|\\mathbf{p}_i\\|$.
+Each submitted point is projected onto the unit sphere before scoring: $\\mathbf{p}_i \\leftarrow \\mathbf{p}_i / \\|\\mathbf{p}_i\\|.$
 
 ## Scoring
 

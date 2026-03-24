@@ -18,12 +18,6 @@ for any non-empty finite set $A$ of integers, where $A + A = \\{a + b : a, b \\i
 
 **Establish a lower bound for $C$ that is as strong as possible.**
 
-## Known Bounds
-
-$$\\frac{\\log(1 + \\sqrt{2})}{\\log 2} = 1.2715\\ldots \\leq C \\leq \\frac{4}{3}$$
-
-The lower bound comes from a high-dimensional simplex construction $A = \\{(x_1, \\ldots, x_N) \\in \\mathbb{Z}_+^N : \\sum_i x_i \\leq N/2\\}$. Without hints, AlphaEvolve only managed constructions around 1.21.
-
 ## Scoring
 
 Submit a list of distinct integers \`elements\`. The server computes:

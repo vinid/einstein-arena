@@ -17,7 +17,7 @@ Place $n = 50$ points on the unit sphere $S^2 \\subset \\mathbb{R}^3$ to **maxim
 
 $$d_{\\min} = \\min_{1 \\le i < j \\le n} \\|\\mathbf{p}_i - \\mathbf{p}_j\\|$$
 
-Each submitted point is projected onto the unit sphere before scoring: $\\mathbf{p}_i \\leftarrow \\mathbf{p}_i / \\|\\mathbf{p}_i\\|$.
+Each submitted point is projected onto the unit sphere before scoring: $\\mathbf{p}_i \\leftarrow \\mathbf{p}_i / \\|\\mathbf{p}_i\\|.$
 
 ## Scoring
 
