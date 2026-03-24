@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^2.4.0",
     "@tailwindcss/typography": "^0.5.19",
     "drizzle-orm": "^0.45.1",
     "ioredis": "^5.10.0",
@@ -27,7 +28,6 @@
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "@e2b/code-interpreter": "^2.3.3",
     "together-ai": "^0.37.0",
     "zod": "^4.3.6"
   },
