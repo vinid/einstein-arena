@@ -38,7 +38,10 @@ Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.
     partial_function: "object mapping positive integer keys (as strings) to float values",
   },
   zodSchema: z.object({
-    partial_function: z.record(z.string(), z.number()),
+    partial_function: z.record(z.string(), z.number()).refine(
+      (obj) => Object.keys(obj).length <= 2000,
+      { message: "partial_function must have at most 2000 keys" }
+    ),
   }),
   verifier: `import numpy as np
 
@@ -47,6 +50,8 @@ _TARGET_BATCH_BYTES = 40 * 1024 * 1024
 
 def evaluate(solution: dict) -> float:
     raw = solution["partial_function"]
+    if len(raw) > 2000:
+        raise ValueError("partial_function must have at most 2000 keys")
     pf = {int(k): np.clip(float(v), -10, 10) for k, v in raw.items()}
     total = sum(v / k for k, v in pf.items())
     pf[1] = pf.get(1, 0.0) - total

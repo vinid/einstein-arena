@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { solutions, problems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import Together from "together-ai";
+import { Sandbox, type Context } from "@e2b/code-interpreter";
 import { getRedis } from "@/lib/redis";
 import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
 import { randomUUID } from "crypto";
@@ -13,6 +13,7 @@ const TOP_N = 100;
 const METRICS_TTL = 48 * 60 * 60;
 const EVALUATE_LOCK_KEY = "locks:evaluate";
 const EVALUATE_LOCK_TTL_SECONDS = 14 * 60;
+const VERIFIER_TIMEOUT_MS = 120_000;
 
 interface Problem {
   slug: string;
@@ -26,42 +27,33 @@ function evalHourKey() {
 }
 
 function parseVerifierOutput(
-  response: { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown }
+  exec: { logs: { stdout: string[]; stderr: string[] }; error?: { name: string; value: string; traceback: string[] } | null }
 ): { score?: number; error?: string } {
-  const errors = (response as unknown as { errors?: unknown }).errors;
-  if (errors) {
-    return { error: typeof errors === "string" ? errors : JSON.stringify(errors) };
+  if (exec.error) {
+    const tb = exec.error.traceback.join("\n").slice(0, 500);
+    return { error: `runtime_error: ${exec.error.value}\n${tb}` };
   }
 
-  const outputs = response.data?.outputs || [];
-  for (const output of outputs) {
-    if (output.type === "error" && output.data) {
-      return { error: `runtime_error: ${String(output.data).slice(0, 500)}` };
-    }
-    if (output.type === "stderr" && output.data) {
-      const stderr = String(output.data);
-      if (stderr.includes("Error") || stderr.includes("raise")) {
-        return { error: stderr.trim().split("\n").pop() || stderr };
-      }
-    }
-    if (output.type === "stdout" && typeof output.data === "string") {
-      const match = output.data.match(/SCORE:(-?inf|-?nan|[\d.eE+-]+)/i);
-      if (match) {
-        const raw = match[1].toLowerCase().replace("inf", "Infinity");
-        const score = parseFloat(raw);
-        if (!isFinite(score)) return { error: `verifier returned non-finite score: ${match[1]}` };
-        return { score };
-      }
-    }
+  const stderr = exec.logs.stderr.join("\n");
+  if (stderr && (stderr.includes("Error") || stderr.includes("raise"))) {
+    return { error: stderr.trim().split("\n").pop() || stderr };
   }
 
-  const allOutput = outputs.map((o) => `${o.type}: ${o.data}`).join("\n");
-  return { error: `No score returned. Output: ${allOutput.slice(0, 500)}` };
+  const stdout = exec.logs.stdout.join("\n");
+  const match = stdout.match(/SCORE:(-?inf|-?nan|[\d.eE+-]+)/i);
+  if (match) {
+    const raw = match[1].toLowerCase().replace("inf", "Infinity");
+    const score = parseFloat(raw);
+    if (!isFinite(score)) return { error: `verifier returned non-finite score: ${match[1]}` };
+    return { score };
+  }
+
+  return { error: `No score returned. stdout: ${stdout.slice(0, 300)} stderr: ${stderr.slice(0, 200)}` };
 }
 
-async function evalInSession(
-  together: Together,
-  sessionId: string,
+async function evalInSandbox(
+  sbx: Sandbox,
+  ctx: Context,
   verifierCode: string,
   solutionData: Record<string, unknown>,
   solId?: number,
@@ -70,22 +62,16 @@ async function evalInSession(
   const dataJson = JSON.stringify(solutionData);
   const execStart = Date.now();
 
-  let response: unknown;
+  const code = `import json\n${verifierCode}\ndata = json.loads(${JSON.stringify(dataJson)})\nscore = evaluate(data)\nprint(f"SCORE:{score}")`;
+
+  let exec: Awaited<ReturnType<typeof sbx.runCode>>;
   try {
-    response = await together.codeInterpreter.execute({
-      code: `import json\n${verifierCode}\nwith open('data.json') as f:\n    data = json.load(f)\nscore = evaluate(data)\nprint(f"SCORE:{score}")`,
-      language: "python",
-      session_id: sessionId,
-      files: [{ name: "data.json", content: dataJson, encoding: "string" as const }],
-    });
+    exec = await sbx.runCode(code, { context: ctx, timeoutMs: VERIFIER_TIMEOUT_MS, requestTimeoutMs: VERIFIER_TIMEOUT_MS });
   } catch (e: unknown) {
     const execMs = Date.now() - execStart;
-    const status = (e as { status?: number }).status;
-    const body = (e as { body?: unknown }).body;
     const msg = e instanceof Error ? e.message : String(e);
-    const detail = JSON.stringify({ status, body, message: msg }).slice(0, 1000);
-    console.error(`[eval] sol=${solId} problem=${slug} TOGETHER_SDK_ERROR bytes=${dataJson.length} (${execMs}ms): ${detail}`);
-    return { error: `${status ?? "unknown"} ${detail}` };
+    console.error(`[eval] sol=${solId} problem=${slug} E2B_SDK_ERROR bytes=${dataJson.length} (${execMs}ms): ${msg.slice(0, 1000)}`);
+    return { error: msg.slice(0, 500) };
   }
 
   const execMs = Date.now() - execStart;
@@ -97,10 +83,11 @@ async function evalInSession(
   pipe.expire(hk, METRICS_TTL);
   pipe.exec();
 
-  const parsed = parseVerifierOutput(response as { data?: { outputs?: { type: string; data: unknown }[] }; errors?: unknown });
+  const parsed = parseVerifierOutput(exec);
   if (parsed.error) {
-    const rawSnippet = JSON.stringify(response).slice(0, 1000);
-    console.error(`[eval] sol=${solId} problem=${slug} VERIFIER_ERROR bytes=${dataJson.length} (${execMs}ms) error=${parsed.error.slice(0, 300)} raw=${rawSnippet}`);
+    const rawStdout = exec.logs.stdout.join("\n").slice(0, 500);
+    const rawStderr = exec.logs.stderr.join("\n").slice(0, 500);
+    console.error(`[eval] sol=${solId} problem=${slug} VERIFIER_ERROR bytes=${dataJson.length} (${execMs}ms) error=${parsed.error.slice(0, 300)} stdout=${rawStdout} stderr=${rawStderr}`);
   }
   return parsed;
 }
@@ -203,12 +190,12 @@ async function decide(
 async function processSolution(
   sol: SolutionRow,
   problem: Problem,
-  together: Together,
-  sessionId: string
+  sbx: Sandbox,
+  ctx: Context
 ) {
   const t = Date.now();
 
-  const result = await evalInSession(together, sessionId, problem.verifier, sol.data as Record<string, unknown>, sol.id, problem.slug);
+  const result = await evalInSandbox(sbx, ctx, problem.verifier, sol.data as Record<string, unknown>, sol.id, problem.slug);
   const ms = Date.now() - t;
 
   if (result.error) {
@@ -257,15 +244,15 @@ type SolutionRow = {
   evaluatedAt: Date | null;
 };
 
-async function initSession(together: Together) {
+async function initSandbox(): Promise<{ sbx: Sandbox; ctx: Context }> {
   const t0 = Date.now();
-  const resp = await together.codeInterpreter.execute({
-    code: "import json\nprint('ready')",
-    language: "python",
+  const sbx = await Sandbox.create({
+    apiKey: process.env.E2B_API_KEY,
+    timeoutMs: EVALUATE_LOCK_TTL_SECONDS * 1000,
   });
+  const ctx = await sbx.createCodeContext();
   const ms = Date.now() - t0;
-  const sessionId = resp.data!.session_id;
-  console.log(`[eval] session ${sessionId} created (${ms}ms)`);
+  console.log(`[eval] sandbox ${sbx.sandboxId} + context ready (${ms}ms)`);
 
   const pipe = getRedis().pipeline();
   const hk = evalHourKey();
@@ -274,7 +261,7 @@ async function initSession(together: Together) {
   pipe.expire(hk, METRICS_TTL);
   pipe.exec();
 
-  return sessionId;
+  return { sbx, ctx };
 }
 
 async function loadProblem(problemId: number, cache: Record<number, Problem>): Promise<Problem | null> {
@@ -336,9 +323,10 @@ export async function GET(req: NextRequest) {
 
   console.log(`[eval] starting batch: ${pending.length} pending solutions`);
 
+  let sbx: Sandbox | null = null;
   try {
-    const together = new Together({ apiKey: process.env.TOGETHER_API_KEY });
-    const sessionId = await initSession(together);
+    const { sbx: sandbox, ctx } = await initSandbox();
+    sbx = sandbox;
     const problemCache: Record<number, Problem> = {};
 
     let evaluated = 0;
@@ -352,7 +340,8 @@ export async function GET(req: NextRequest) {
           evaluated++;
           continue;
         }
-        await processSolution(sol, problem, together, sessionId);
+        await processSolution(sol, problem, sbx, ctx);
+        await sbx.restartCodeContext(ctx);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
@@ -365,6 +354,7 @@ export async function GET(req: NextRequest) {
     console.log(`[eval] batch done: ${evaluated}/${pending.length} in ${totalMs}ms (avg ${Math.round(totalMs / evaluated)}ms/sol)`);
     return NextResponse.json({ evaluated, pending: pending.length });
   } finally {
+    if (sbx) await sbx.kill();
     await releaseEvaluateLock(lockValue);
   }
 }
