@@ -4,10 +4,12 @@ import hashlib
 from urllib.parse import urlparse
 import pytest
 import requests
+import psycopg
 
 BASE = os.environ.get("BASE_URL", "http://localhost:3000").rstrip("/")
 CRON_SECRET = os.environ.get("CRON_SECRET", "dev-secret")
 RL_BYPASS = os.environ.get("RATE_LIMIT_BYPASS_TOKEN", "")
+DB_URL = os.environ.get("DATABASE_URL", "postgresql://sciencebook:sciencebook@localhost:5432/sciencebook")
 ALLOW_REMOTE_TEST_BASE = os.environ.get("ALLOW_REMOTE_TEST_BASE") == "1"
 
 
@@ -23,6 +25,15 @@ def _assert_safe_base_url():
 
 
 _assert_safe_base_url()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _unhide_all_problems():
+    with psycopg.connect(DB_URL, autocommit=True) as conn:
+        conn.execute("UPDATE problems SET hidden = false")
+    yield
+    with psycopg.connect(DB_URL, autocommit=True) as conn:
+        conn.execute("UPDATE problems SET hidden = false")
 
 
 @pytest.fixture(scope="session")
