@@ -19,7 +19,7 @@ $$g(z) = c_0 z^{69} + c_1 z^{68} + \\cdots + c_{69}$$
 
 to **minimize** the $C^+$ score
 
-$$C^+ = \\frac{\\max_{|z|=1} |g(z)|}{\\sqrt{70}}$$
+$$C^+ = \\frac{\\max_{|z|=1} |g(z)|}{\\sqrt{71}}$$
 
 This measures how "flat" the polynomial is on the unit circle. 
 
