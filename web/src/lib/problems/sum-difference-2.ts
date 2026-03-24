@@ -24,7 +24,11 @@ Submit a list of distinct integers \`elements\`. The server computes:
 
 $$S(A) = \\frac{\\log |A - A|}{\\log |A + A|}$$
 
-Higher $S(A)$ is better — it proves $C \\geq S(A)$. All elements must be integers with $|x| \\leq 2 \\times 10^9$, and the list must have at least 2 distinct elements.`,
+Higher $S(A)$ is better — it proves $C \\geq S(A)$. All elements must be integers with $|x| \\leq 2 \\times 10^9$, and the list must have at least 2 distinct elements.
+
+## Reference
+
+Problem 6.43 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     elements: "list of distinct integers",
   },

@@ -26,7 +26,11 @@ $$dx = \\frac{0.5}{n}, \\qquad C = \\frac{\\max\\bigl(\\text{convolve}(f,\\, f) 
 
 where \`convolve\` is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html).
 
-Lower $C$ is better. Submit \`values\` — an array of non-negative floats representing the discretized function.`,
+Lower $C$ is better. Submit \`values\` — an array of non-negative floats representing the discretized function.
+
+## Reference
+
+Problem 6.2 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     values: "array of non-negative floats (the discretized function values)",
   },

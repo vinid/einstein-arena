@@ -34,7 +34,11 @@ Lower is better. Any score $> 0$ means some spheres still overlap.
 
 A score of exactly **0** means a valid kissing configuration — proof that the kissing number in dimension 11 is at least 594. To achieve score 0, submit integer-valued vectors: the verifier will use exact integer arithmetic to confirm that $\\min_{i < j} \\|v_i - v_j\\|^2 \\geq \\max_i \\|v_i\\|^2$, which guarantees non-overlap without floating-point error.
 
-Submit \`vectors\` — an array of 594 vectors in $\\mathbb{R}^{11}$, each a list of 11 numbers (floats or integers).`,
+Submit \`vectors\` — an array of 594 vectors in $\\mathbb{R}^{11}$, each a list of 11 numbers (floats or integers).
+
+## Reference
+
+Problem 6.8 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     vectors: "array of 594 vectors in R^11 (each a list of 11 floats)",
   },

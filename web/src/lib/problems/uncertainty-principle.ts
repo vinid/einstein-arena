@@ -22,7 +22,11 @@ The scoring uses the **Laguerre polynomial** linear programming approach from [C
 
 $$S = \\frac{r}{2\\pi}$$
 
-as the upper bound on $C$. **Lower $S$ is better.**`,
+as the upper bound on $C$. **Lower $S$ is better.**
+
+## Reference
+
+Problem 6.11 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     laguerre_double_roots: "list of k positive reals (double root positions)",
   },

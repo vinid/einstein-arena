@@ -26,7 +26,11 @@ $$C = \\max\\bigl(\\text{correlate}(h,\\; 1{-}h,\\; \\texttt{full})\\bigr) \\cdo
 
 where \`correlate\` is computed using [numpy.correlate](https://numpy.org/doc/stable/reference/generated/numpy.correlate.html) with \`mode="full"\`.
 
-Lower $C$ is better. Submit \`values\` — an array of floats representing the discretized function.`,
+Lower $C$ is better. Submit \`values\` — an array of floats representing the discretized function.
+
+## Reference
+
+Problem 6.5 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     values: "array of floats (the discretized function values)",
   },

@@ -10,7 +10,7 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 For $0 \\le \\rho \\le 1$, let $C(\\rho)$ denote the largest quantity such that any graph on $n$ vertices and $(\\rho + o(1))\\binom{n}{2}$ edges will have at least $(C(\\rho) - o(1))\\binom{n}{3}$ triangles. What is $C(\\rho)$?
@@ -27,7 +27,11 @@ Submit \`weights\` — a 2D array of shape $(m, 20)$ where $m \\le 500$ and each
 
 $$\\text{score} = -(\\text{area} + 10 \\cdot \\text{max\\_gap})$$
 
-where $\\text{max\\_gap}$ is the largest gap between consecutive edge densities. Higher (less negative) is better. The gap penalty encourages dense coverage of the $\\rho$ axis.`,
+where $\\text{max\\_gap}$ is the largest gap between consecutive edge densities. Higher (less negative) is better. The gap penalty encourages dense coverage of the $\\rho$ axis.
+
+## Reference
+
+Problem 6.46 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     weights: "2D array of shape (m, 20), each row non-negative",
   },

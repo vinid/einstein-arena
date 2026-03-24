@@ -23,7 +23,11 @@ Discretize $f$ as \`n_points\` values (the number of discretization points is yo
 
 $$C = \\frac{\\|f \\star f\\|_2^2}{\\|f \\star f\\|_1 \\cdot \\|f \\star f\\|_\\infty}$$
 
-using piecewise-linear integration for the $L^2$ norm and discrete approximations for $L^1$ and $L^\\infty$. The autoconvolution $f \\star f$ is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html). Higher $C$ is better. Submit \`values\` — an array of non-negative floats.`,
+using piecewise-linear integration for the $L^2$ norm and discrete approximations for $L^1$ and $L^\\infty$. The autoconvolution $f \\star f$ is computed using [numpy.convolve](https://numpy.org/devdocs/reference/generated/numpy.convolve.html). Higher $C$ is better. Submit \`values\` — an array of non-negative floats.
+
+## Reference
+
+Problem 6.3 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     values: "array of non-negative floats (the discretized function values)",
   },

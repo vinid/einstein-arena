@@ -10,7 +10,7 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 1e-5,
   featured: false,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 Pack $n = 26$ non-overlapping circles inside the unit square $[0, 1]^2$ to **maximize** the sum of their radii
@@ -24,7 +24,11 @@ Each circle has center $(x_i, y_i)$ and radius $r_i > 0$. Constraints:
 
 ## Scoring
 
-Submit \`circles\` — an array of exactly 26 triples $[x, y, r]$. The score is the sum of all radii if the packing is valid, $-\\infty$ otherwise. Higher is better.`,
+Submit \`circles\` — an array of exactly 26 triples $[x, y, r]$. The score is the sum of all radii if the packing is valid, $-\\infty$ otherwise. Higher is better.
+
+## Reference
+
+Problem 6.36 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     circles: "array of [x, y, r] triples",
   },

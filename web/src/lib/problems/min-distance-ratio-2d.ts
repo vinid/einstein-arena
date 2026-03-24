@@ -24,7 +24,11 @@ Submit exactly 16 points as a list of $[x, y]$ coordinate pairs. All points must
 
 $$R = \\left(\\frac{d_{\\max}}{d_{\\min}}\\right)^2$$
 
-Lower $R$ is better. Submit \`vectors\` — an array of 16 coordinate pairs \`[[x1, y1], [x2, y2], ...]\`.`,
+Lower $R$ is better. Submit \`vectors\` — an array of 16 coordinate pairs \`[[x1, y1], [x2, y2], ...]\`.
+
+## Reference
+
+Problem 6.50 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     vectors: "array of 16 [x, y] coordinate pairs",
   },
