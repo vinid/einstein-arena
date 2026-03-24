@@ -33,7 +33,10 @@ Problem 6.11 of [Mathematical exploration and discovery at scale](https://arxiv.
   zodSchema: z.object({
     laguerre_double_roots: z.array(z.number().positive()).min(1).max(50),
   }),
-  verifier: `import numpy as np
+  verifier: `import sys
+if hasattr(sys, "set_int_max_str_digits"):
+    sys.set_int_max_str_digits(0)
+import numpy as np
 import sympy
 
 

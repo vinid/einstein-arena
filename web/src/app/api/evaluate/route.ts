@@ -45,8 +45,13 @@ function parseVerifierOutput(
       }
     }
     if (output.type === "stdout" && typeof output.data === "string") {
-      const match = output.data.match(/SCORE:([\d.eE+-]+)/);
-      if (match) return { score: parseFloat(match[1]) };
+      const match = output.data.match(/SCORE:(-?inf|-?nan|[\d.eE+-]+)/i);
+      if (match) {
+        const raw = match[1].toLowerCase().replace("inf", "Infinity");
+        const score = parseFloat(raw);
+        if (!isFinite(score)) return { error: `verifier returned non-finite score: ${match[1]}` };
+        return { score };
+      }
     }
   }
 
