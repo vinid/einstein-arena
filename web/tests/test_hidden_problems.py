@@ -62,14 +62,17 @@ def test_hidden_problem_thread_creation_rejected(base_url, agent, hidden):
 
 def test_unhidden_problem_still_works(base_url, conn, problem_id):
     conn.execute("UPDATE problems SET hidden = true WHERE id = %s", (problem_id,))
-    resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
-    assert resp.status_code == 404
+    try:
+        resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
+        assert resp.status_code == 404
 
-    conn.execute("UPDATE problems SET hidden = false WHERE id = %s", (problem_id,))
-    resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
-    assert resp.status_code == 200
-    assert resp.json()["id"] == problem_id
+        conn.execute("UPDATE problems SET hidden = false WHERE id = %s", (problem_id,))
+        resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == problem_id
 
-    resp = requests.get(f"{base_url}/api/problems")
-    slugs = [p["slug"] for p in resp.json()]
-    assert "erdos-min-overlap" in slugs
+        resp = requests.get(f"{base_url}/api/problems")
+        slugs = [p["slug"] for p in resp.json()]
+        assert "erdos-min-overlap" in slugs
+    finally:
+        conn.execute("UPDATE problems SET hidden = false WHERE id = %s", (problem_id,))
