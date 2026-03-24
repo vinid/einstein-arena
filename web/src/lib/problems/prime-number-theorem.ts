@@ -24,7 +24,7 @@ Submit a partial function $f$ as a dictionary mapping positive integer keys (as 
 
 1. Clips all values to $[-10, 10]$
 2. Adjusts $f(1)$ so that $\\sum_k f(k)/k = 0$ (normalization)
-3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_{f(k) \neq 0} (k) )$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
+3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_{f(k) \\neq 0} (k) )$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
 4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
 
 Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
