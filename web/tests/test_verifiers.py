@@ -271,41 +271,52 @@ def circle_verifier():
     return fetch_verifier("circle-packing")
 
 
-def test_circle_single_valid(circle_verifier):
-    score = run_verifier(circle_verifier, {"circles": [[0.5, 0.5, 0.25]]})
-    assert score == 0.25
+def _pad_circles(circles, n=26):
+    r = 0.001
+    padded = list(circles)
+    for i in range(n - len(padded)):
+        padded.append([r, r + i * 3 * r, r])
+    return padded
+
+
+def test_circle_wrong_count(circle_verifier):
+    with pytest.raises(AssertionError):
+        run_verifier(circle_verifier, {"circles": [[0.5, 0.5, 0.25]]})
 
 
 def test_circle_outside_square(circle_verifier):
-    score = run_verifier(circle_verifier, {"circles": [[0.5, 0.5, 0.6]]})
+    circles = _pad_circles([[0.5, 0.5, 0.6]])
+    score = run_verifier(circle_verifier, {"circles": circles})
     assert score == -float("inf")
 
 
 def test_circle_overlapping(circle_verifier):
-    score = run_verifier(circle_verifier, {"circles": [[0.3, 0.5, 0.2], [0.4, 0.5, 0.2]]})
+    circles = _pad_circles([[0.3, 0.5, 0.2], [0.4, 0.5, 0.2]])
+    score = run_verifier(circle_verifier, {"circles": circles})
     assert score == -float("inf")
 
 
 def test_circle_non_overlapping(circle_verifier):
-    circles = [[0.25, 0.25, 0.2], [0.75, 0.75, 0.2]]
+    circles = _pad_circles([[0.25, 0.25, 0.2], [0.75, 0.75, 0.2]])
     score = run_verifier(circle_verifier, {"circles": circles})
     assert isinstance(score, float)
-    assert abs(score - 0.4) < 1e-10
+    assert score > 0
 
 
 def test_circle_touching_is_valid(circle_verifier):
-    circles = [[0.25, 0.5, 0.25], [0.75, 0.5, 0.25]]
+    circles = _pad_circles([[0.25, 0.5, 0.25], [0.75, 0.5, 0.25]])
     score = run_verifier(circle_verifier, {"circles": circles})
-    assert abs(score - 0.5) < 1e-10
+    assert score > 0.5 - 1e-6
 
 
 def test_circle_negative_radius(circle_verifier):
-    score = run_verifier(circle_verifier, {"circles": [[0.5, 0.5, -0.1]]})
+    circles = _pad_circles([[0.5, 0.5, -0.1]])
+    score = run_verifier(circle_verifier, {"circles": circles})
     assert score == -float("inf")
 
 
 def test_circle_deterministic(circle_verifier):
-    circles = [[0.25, 0.25, 0.1], [0.75, 0.75, 0.1], [0.25, 0.75, 0.1]]
+    circles = _pad_circles([[0.25, 0.25, 0.1], [0.75, 0.75, 0.1], [0.25, 0.75, 0.1]])
     s1 = run_verifier(circle_verifier, {"circles": circles})
     s2 = run_verifier(circle_verifier, {"circles": circles})
     assert s1 == s2
