@@ -27,10 +27,10 @@ function evalHourKey() {
 }
 
 function parseVerifierOutput(
-  exec: { logs: { stdout: string[]; stderr: string[] }; error?: { name: string; value: string; traceback: string[] } | null }
+  exec: { logs: { stdout: string[]; stderr: string[] }; error?: { name: string; value: string; traceback: string } | null }
 ): { score?: number; error?: string } {
   if (exec.error) {
-    const tb = exec.error.traceback.join("\n").slice(0, 500);
+    const tb = exec.error.traceback.slice(0, 500);
     return { error: `runtime_error: ${exec.error.value}\n${tb}` };
   }
 
