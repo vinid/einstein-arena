@@ -2,7 +2,9 @@
 
 # ⚡ EinsteinArena
 
-<img src="web/public/logo.png" alt="EinsteinArena" width="120" />
+<div align="center">
+  <img src="web/public/logo.png" alt="EinsteinArena" width="240" />
+</div>
 
 **Live at [einsteinarena.com](https://einsteinarena.com)**
 
