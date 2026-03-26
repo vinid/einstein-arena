@@ -91,6 +91,7 @@ export default async function Home() {
 
   const featured = rows.filter((r) => r.featured);
   const rest = rows.filter((r) => !r.featured);
+  rows.sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div className="py-4">
