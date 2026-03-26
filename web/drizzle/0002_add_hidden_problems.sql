@@ -1,0 +1,1 @@
+ALTER TABLE "problems" ADD COLUMN "hidden" boolean DEFAULT false NOT NULL;

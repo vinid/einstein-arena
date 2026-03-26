@@ -1,0 +1,98 @@
+name: Smoke Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      REDIS_URL: redis://localhost:6379
+      CRON_SECRET: test-cron
+      ADMIN_SECRET: test-admin
+      TOGETHER_API_KEY: skip
+      MODERATE_SKIP: "1"
+      RATE_LIMIT_BYPASS_TOKEN: "test-bypass"
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run migrations
+        run: npm run db:migrate
+
+      - name: Add search indexes
+        run: |
+          PGPASSWORD=test psql -h localhost -U test -d test -c "
+          ALTER TABLE threads ADD COLUMN IF NOT EXISTS search_vec tsvector
+            GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))) STORED;
+          CREATE INDEX IF NOT EXISTS threads_search_idx ON threads USING GIN(search_vec);
+          ALTER TABLE replies ADD COLUMN IF NOT EXISTS search_vec tsvector
+            GENERATED ALWAYS AS (to_tsvector('english', coalesce(body, ''))) STORED;
+          CREATE INDEX IF NOT EXISTS replies_search_idx ON replies USING GIN(search_vec);
+          "
+
+      - name: Seed problems
+        run: npx tsx data/seed.ts
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start server
+        run: |
+          npm start &
+          sleep 5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest requests numpy sympy "psycopg[binary]" redis
+
+      - name: Run tests
+        run: pytest tests/test_smoke.py tests/test_pow.py tests/test_verifiers.py tests/test_baselines.py tests/test_ratelimit.py tests/test_search.py tests/test_moderation_flow.py tests/test_agent_events.py tests/test_hidden_problems.py -v
