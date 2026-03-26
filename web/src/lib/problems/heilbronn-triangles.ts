@@ -25,7 +25,7 @@ Submit \`points\` — an array of exactly 11 points $[x, y]$. The score is the m
 
 ## Reference
 
-Problem 6.48 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). State of the art: $0.036$. AlphaEvolve improved to $0.0365$.`,
+Problem 6.48 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864).`,
   solutionSchema: {
     points: "array of 11 [x, y] coordinate pairs inside the unit equilateral triangle",
   },

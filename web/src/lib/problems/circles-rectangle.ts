@@ -25,7 +25,7 @@ Submit \`circles\` — an array of exactly 21 triples $[x, y, r]$. The score is 
 
 ## Reference
 
-Problem 6.36 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). State of the art: $2.364$. AlphaEvolve improved to $2.365$.`,
+Problem 6.36 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864).`,
   solutionSchema: {
     circles: "array of 21 [x, y, r] triples",
   },

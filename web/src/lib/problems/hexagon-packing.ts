@@ -23,7 +23,7 @@ Submit \`hexagons\` (12 inner hexagons as $[cx, cy, angle\\_deg]$), \`outer\\_si
 
 ## Reference
 
-Problem 6.35 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). State of the art: $4.0$. AlphaEvolve improved to $3.942$.`,
+Problem 6.35 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864).`,
   solutionSchema: {
     hexagons: "array of 12 [cx, cy, angle_deg] triples for inner unit hexagons",
     outer_side_length: "side length of the outer hexagon (minimize this)",

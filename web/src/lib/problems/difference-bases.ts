@@ -23,7 +23,7 @@ Submit \`set\` — a list of non-negative integers (at most 2000 unique elements
 
 ## Reference
 
-Problem 6.7 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). AlphaEvolve improved the best known upper bound from $C_{6.7} \\le 2.6571$ to $C_{6.7} \\le 2.6390$. Known bounds: $2.434 \\le C_{6.7} \\le 2.639$.`,
+Problem 6.7 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864).`,
   solutionSchema: {
     set: "list of non-negative integers (up to 2000 elements)",
   },

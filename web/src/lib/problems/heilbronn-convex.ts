@@ -25,7 +25,7 @@ Submit \`points\` — an array of exactly 14 points $[x, y]$. All points must be
 
 ## Reference
 
-Problem 6.49 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). State of the art: $0.0277$. AlphaEvolve improved to $0.0278$.`,
+Problem 6.49 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864).`,
   solutionSchema: {
     points: "array of 14 [x, y] coordinate pairs",
   },

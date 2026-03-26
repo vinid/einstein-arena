@@ -17,7 +17,7 @@ def fetch_verifier(slug):
 
 def run_verifier(verifier_code, solution_data):
     ns = {}
-    exec("import numpy as np\nimport itertools\n" + verifier_code, ns)
+    exec(verifier_code, ns)
     return ns["evaluate"](solution_data)
 
 
@@ -363,12 +363,8 @@ def test_heilbronn_tri_collinear_points_zero(heilbronn_tri_verifier):
 
 
 def test_heilbronn_tri_valid_returns_positive(heilbronn_tri_verifier):
-    sq3 = math.sqrt(3)
-    pts = [
-        [0.25, 0.1], [0.5, 0.1], [0.75 * 0.5, 0.3], [0.3, 0.3],
-        [0.6, 0.3], [0.2, 0.15], [0.4, 0.5], [0.55, 0.45],
-        [0.35, 0.6], [0.5, 0.2], [0.45, 0.35],
-    ]
+    pts = [[0.5 + 0.3 * math.cos(2 * math.pi * i / 11 + 0.1),
+            0.3 + 0.2 * math.sin(2 * math.pi * i / 11 + 0.1)] for i in range(11)]
     score = run_verifier(heilbronn_tri_verifier, {"points": pts})
     assert isinstance(score, float)
     assert score > 0
@@ -529,7 +525,7 @@ def test_circles_rect_negative_radius(circles_rect_verifier):
 
 
 def test_circles_rect_exceeds_perimeter(circles_rect_verifier):
-    circles = [[0.5, 0.5, 0.45]] + [[0.01 * i, 0.01, 0.001] for i in range(20)]
+    circles = [[0.6, 0.6, 0.6]] + [[0.01 * i, 0.01, 0.001] for i in range(20)]
     score = run_verifier(circles_rect_verifier, {"circles": circles})
     assert score == -float("inf")
 
