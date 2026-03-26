@@ -1,4 +1,7 @@
+import json
+import math
 import os
+
 import numpy as np
 import pytest
 import requests
@@ -14,7 +17,7 @@ def fetch_verifier(slug):
 
 def run_verifier(verifier_code, solution_data):
     ns = {}
-    exec("import numpy as np\nimport itertools\n" + verifier_code, ns)
+    exec(verifier_code, ns)
     return ns["evaluate"](solution_data)
 
 
@@ -319,4 +322,294 @@ def test_circle_deterministic(circle_verifier):
     circles = _pad_circles([[0.25, 0.25, 0.1], [0.75, 0.75, 0.1], [0.25, 0.75, 0.1]])
     s1 = run_verifier(circle_verifier, {"circles": circles})
     s2 = run_verifier(circle_verifier, {"circles": circles})
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Helpers shared by the 5 new problems
+# ---------------------------------------------------------------------------
+
+def _load_alphaevolve():
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "baselines", "alphaevolve.json")
+    with open(path) as f:
+        return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Heilbronn Problem for Triangles (n = 11)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def heilbronn_tri_verifier():
+    return fetch_verifier("heilbronn-triangles")
+
+
+def test_heilbronn_tri_wrong_count(heilbronn_tri_verifier):
+    pts = [[0.1 * i, 0.0] for i in range(10)]
+    score = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    assert score == -float("inf")
+
+
+def test_heilbronn_tri_point_outside_triangle(heilbronn_tri_verifier):
+    pts = [[0.5, 0.5 * math.sqrt(3)]] + [[0.1 * i, 0.05] for i in range(10)]
+    score = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    assert score == -float("inf")
+
+
+def test_heilbronn_tri_collinear_points_zero(heilbronn_tri_verifier):
+    pts = [[i / 10.0, 0.0] for i in range(11)]
+    score = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    assert score == 0.0
+
+
+def test_heilbronn_tri_valid_returns_positive(heilbronn_tri_verifier):
+    pts = [[0.5 + 0.3 * math.cos(2 * math.pi * i / 11 + 0.1),
+            0.3 + 0.2 * math.sin(2 * math.pi * i / 11 + 0.1)] for i in range(11)]
+    score = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    assert isinstance(score, float)
+    assert score > 0
+
+
+def test_heilbronn_tri_alphaevolve_score(heilbronn_tri_verifier):
+    sol = _load_alphaevolve()["heilbronn-triangles"]["solution"]
+    score = run_verifier(heilbronn_tri_verifier, sol)
+    assert abs(score - 0.0365) < 1e-3
+
+
+def test_heilbronn_tri_deterministic(heilbronn_tri_verifier):
+    pts = [[i / 10.0, 0.05] for i in range(11)]
+    s1 = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    s2 = run_verifier(heilbronn_tri_verifier, {"points": pts})
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Heilbronn Problem for Convex Regions (n = 14)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def heilbronn_conv_verifier():
+    return fetch_verifier("heilbronn-convex")
+
+
+def test_heilbronn_conv_wrong_count(heilbronn_conv_verifier):
+    pts = [[math.cos(2 * math.pi * i / 13), math.sin(2 * math.pi * i / 13)] for i in range(13)]
+    score = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    assert score == -float("inf")
+
+
+def test_heilbronn_conv_degenerate_collinear(heilbronn_conv_verifier):
+    pts = [[float(i), 0.0] for i in range(14)]
+    score = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    assert score == -float("inf")
+
+
+def test_heilbronn_conv_regular_polygon_positive(heilbronn_conv_verifier):
+    pts = [[math.cos(2 * math.pi * i / 14), math.sin(2 * math.pi * i / 14)] for i in range(14)]
+    score = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    assert isinstance(score, float)
+    assert score > 0
+
+
+def test_heilbronn_conv_scale_invariant(heilbronn_conv_verifier):
+    pts = [[math.cos(2 * math.pi * i / 14), math.sin(2 * math.pi * i / 14)] for i in range(14)]
+    pts_big = [[10 * x, 10 * y] for x, y in pts]
+    s1 = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    s2 = run_verifier(heilbronn_conv_verifier, {"points": pts_big})
+    assert abs(s1 - s2) < 1e-9
+
+
+def test_heilbronn_conv_alphaevolve_score(heilbronn_conv_verifier):
+    sol = _load_alphaevolve()["heilbronn-convex"]["solution"]
+    score = run_verifier(heilbronn_conv_verifier, sol)
+    assert abs(score - 0.0278) < 1e-3
+
+
+def test_heilbronn_conv_deterministic(heilbronn_conv_verifier):
+    pts = [[math.cos(2 * math.pi * i / 14), math.sin(2 * math.pi * i / 14)] for i in range(14)]
+    s1 = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    s2 = run_verifier(heilbronn_conv_verifier, {"points": pts})
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Hexagon Packing in a Hexagon (n = 12)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def hexagon_pack_verifier():
+    return fetch_verifier("hexagon-packing")
+
+
+def _trivial_hexagon_solution(outer_side=5.0):
+    hexagons = [[float(i) * 2.5, 0.0, 0.0] for i in range(12)]
+    return {
+        "hexagons": hexagons,
+        "outer_side_length": outer_side,
+        "outer_center": [0.0, 0.0],
+        "outer_angle_deg": 0.0,
+    }
+
+
+def test_hexagon_wrong_count(hexagon_pack_verifier):
+    sol = _trivial_hexagon_solution()
+    sol["hexagons"] = sol["hexagons"][:11]
+    score = run_verifier(hexagon_pack_verifier, sol)
+    assert score == float("inf")
+
+
+def test_hexagon_non_finite_rejected(hexagon_pack_verifier):
+    sol = _trivial_hexagon_solution()
+    sol["outer_side_length"] = float("nan")
+    score = run_verifier(hexagon_pack_verifier, sol)
+    assert score == float("inf")
+
+
+def test_hexagon_zero_side_rejected(hexagon_pack_verifier):
+    sol = _trivial_hexagon_solution(outer_side=0.0)
+    score = run_verifier(hexagon_pack_verifier, sol)
+    assert score == float("inf")
+
+
+def test_hexagon_penalty_for_violations(hexagon_pack_verifier):
+    sol = _trivial_hexagon_solution(outer_side=5.0)
+    score = run_verifier(hexagon_pack_verifier, sol)
+    assert score > 5.0
+
+
+def test_hexagon_alphaevolve_score(hexagon_pack_verifier):
+    sol = _load_alphaevolve()["hexagon-packing"]["solution"]
+    score = run_verifier(hexagon_pack_verifier, sol)
+    assert abs(score - 3.942) < 1e-2
+    assert score < 5.0
+
+
+def test_hexagon_deterministic(hexagon_pack_verifier):
+    sol = _load_alphaevolve()["hexagon-packing"]["solution"]
+    s1 = run_verifier(hexagon_pack_verifier, sol)
+    s2 = run_verifier(hexagon_pack_verifier, sol)
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Circles in a Rectangle (n = 21)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def circles_rect_verifier():
+    return fetch_verifier("circles-rectangle")
+
+
+def _grid_circles_21(r=0.08):
+    circles = []
+    cols, rows = 7, 3
+    for row in range(rows):
+        for col in range(cols):
+            x = r + col * 2 * r
+            y = r + row * 2 * r
+            circles.append([x, y, r])
+    return circles
+
+
+def test_circles_rect_wrong_count(circles_rect_verifier):
+    circles = [[0.1, 0.1, 0.05]] * 20
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert score == -float("inf")
+
+
+def test_circles_rect_negative_radius(circles_rect_verifier):
+    circles = _grid_circles_21()
+    circles[0][2] = -0.01
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert score == -float("inf")
+
+
+def test_circles_rect_exceeds_perimeter(circles_rect_verifier):
+    circles = [[0.6, 0.6, 0.6]] + [[0.01 * i, 0.01, 0.001] for i in range(20)]
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert score == -float("inf")
+
+
+def test_circles_rect_overlapping_rejected(circles_rect_verifier):
+    circles = _grid_circles_21()
+    circles[1][0] = circles[0][0]
+    circles[1][1] = circles[0][1]
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert score == -float("inf")
+
+
+def test_circles_rect_valid_returns_positive(circles_rect_verifier):
+    circles = _grid_circles_21()
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert isinstance(score, float)
+    assert score > 0
+
+
+def test_circles_rect_alphaevolve_score(circles_rect_verifier):
+    sol = _load_alphaevolve()["circles-rectangle"]["solution"]
+    score = run_verifier(circles_rect_verifier, sol)
+    assert abs(score - 2.365) < 0.01
+
+
+def test_circles_rect_deterministic(circles_rect_verifier):
+    circles = _grid_circles_21()
+    s1 = run_verifier(circles_rect_verifier, {"circles": circles})
+    s2 = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Difference Bases
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def diff_bases_verifier():
+    return fetch_verifier("difference-bases")
+
+
+def test_diff_bases_empty_set(diff_bases_verifier):
+    score = run_verifier(diff_bases_verifier, {"set": []})
+    assert score == float("inf")
+
+
+def test_diff_bases_no_coverage(diff_bases_verifier):
+    score = run_verifier(diff_bases_verifier, {"set": [0]})
+    assert score == float("inf")
+
+
+def test_diff_bases_minimal_set(diff_bases_verifier):
+    score = run_verifier(diff_bases_verifier, {"set": [0, 1]})
+    assert isinstance(score, float)
+    assert math.isfinite(score)
+    assert abs(score - 4.0) < 1e-9
+
+
+def test_diff_bases_zero_auto_added(diff_bases_verifier):
+    score_with = run_verifier(diff_bases_verifier, {"set": [0, 1, 2, 3]})
+    score_without = run_verifier(diff_bases_verifier, {"set": [1, 2, 3]})
+    assert abs(score_with - score_without) < 1e-9
+
+
+def test_diff_bases_over_2000_elements(diff_bases_verifier):
+    big_set = list(range(2001))
+    score = run_verifier(diff_bases_verifier, {"set": big_set})
+    assert score == float("inf")
+
+
+def test_diff_bases_deduplicates_input(diff_bases_verifier):
+    score_dupes = run_verifier(diff_bases_verifier, {"set": [0, 1, 1, 2, 2, 3, 3]})
+    score_clean = run_verifier(diff_bases_verifier, {"set": [0, 1, 2, 3]})
+    assert abs(score_dupes - score_clean) < 1e-9
+
+
+def test_diff_bases_alphaevolve_score(diff_bases_verifier):
+    sol = _load_alphaevolve()["difference-bases"]["solution"]
+    score = run_verifier(diff_bases_verifier, sol)
+    assert abs(score - 2.639) < 0.01
+
+
+def test_diff_bases_deterministic(diff_bases_verifier):
+    s = [0, 1, 3, 7, 12, 20]
+    s1 = run_verifier(diff_bases_verifier, {"set": s})
+    s2 = run_verifier(diff_bases_verifier, {"set": s})
     assert s1 == s2

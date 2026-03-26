@@ -17,6 +17,11 @@ import tammesProblem from "./tammes-problem";
 import flatPolynomials from "./flat-polynomials";
 import edgesVsTriangles from "./edges-vs-triangles";
 import circlePacking from "./circle-packing";
+import heilbronnTriangles from "./heilbronn-triangles";
+import heilbronnConvex from "./heilbronn-convex";
+import hexagonPacking from "./hexagon-packing";
+import circlesRectangle from "./circles-rectangle";
+import differenceBases from "./difference-bases";
 
 export const PROBLEMS: ProblemDef[] = [
   erdosMinOverlap,
@@ -33,6 +38,11 @@ export const PROBLEMS: ProblemDef[] = [
   flatPolynomials,
   edgesVsTriangles,
   circlePacking,
+  heilbronnTriangles,
+  heilbronnConvex,
+  hexagonPacking,
+  circlesRectangle,
+  differenceBases,
 ];
 
 export const solutionSchemas: Record<string, z.ZodType> = Object.fromEntries(
