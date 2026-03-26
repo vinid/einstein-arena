@@ -21,6 +21,11 @@ EXPECTED_SCORES = {
         "flat-polynomials": 1.3409252794557085,
         "edges-vs-triangles": -0.7124938782214396,
         "circle-packing": 2.6359830849176076,
+        "heilbronn-triangles": 0.036529889880030156,
+        "heilbronn-convex": 0.02783557145848214,
+        "hexagon-packing": 3.9419123,
+        "circles-rectangle": 2.3658321334167627,
+        "difference-bases": 2.639027469506608,
     },
     "TTT-Discover": {
         "erdos-min-overlap": 0.3808753232177187,
@@ -52,7 +57,7 @@ def fetch_verifier(slug):
 
 def run_verifier(verifier_code, solution_data):
     ns = {}
-    exec("import numpy as np\nimport sympy\n" + verifier_code, ns)
+    exec(verifier_code, ns)
     return ns["evaluate"](solution_data)
 
 

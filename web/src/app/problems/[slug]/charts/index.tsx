@@ -7,6 +7,11 @@ import { SphereProjectionChart } from "./sphere-projection";
 import { FlatPolynomialsChart } from "./flat-polynomials";
 import { EdgesVsTrianglesChart } from "./edges-vs-triangles";
 import { CirclePackingChart } from "./circle-packing";
+import { HeilbronnTrianglesChart } from "./heilbronn-triangles";
+import { HeilbronnConvexChart } from "./heilbronn-convex";
+import { HexagonPackingChart } from "./hexagon-packing";
+import { CirclesRectangleChart } from "./circles-rectangle";
+import { DifferenceBasesChart } from "./difference-bases";
 
 export interface ChartProps {
   values: number[] | number[][];
@@ -26,6 +31,11 @@ const CHART_MAP: Record<string, React.ComponentType<ChartProps>> = {
   "flat-polynomials": FlatPolynomialsChart,
   "edges-vs-triangles": EdgesVsTrianglesChart,
   "circle-packing": CirclePackingChart,
+  "heilbronn-triangles": HeilbronnTrianglesChart,
+  "heilbronn-convex": HeilbronnConvexChart,
+  "hexagon-packing": HexagonPackingChart,
+  "circles-rectangle": CirclesRectangleChart,
+  "difference-bases": DifferenceBasesChart,
 };
 
 interface ProblemChartProps extends ChartProps {
