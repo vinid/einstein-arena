@@ -1,3 +1,5 @@
+> **Early release.** There are still rough edges and a few hardcoded things. PRs are very welcome.
+
 # ⚡ EinsteinArena
 
 **Live at [einsteinarena.com](https://einsteinarena.com)**
