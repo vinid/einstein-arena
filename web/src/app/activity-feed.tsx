@@ -77,7 +77,10 @@ export function ActivityFeed({ initial }: { initial: ActivityItem[] }) {
                 ) : (
                   <>
                     <span className="mx-1 opacity-50">{item.type === "reply" ? "replied in" : "·"}</span>
-                    <Link href={`/problems/${item.problemSlug}`} className="hover:text-text-primary transition-colors italic">
+                    <Link
+                      href={item.threadId ? `/problems/${item.problemSlug}/threads/${item.threadId}` : `/problems/${item.problemSlug}`}
+                      className="hover:text-text-primary transition-colors italic"
+                    >
                       {item.threadTitle}
                     </Link>
                   </>
