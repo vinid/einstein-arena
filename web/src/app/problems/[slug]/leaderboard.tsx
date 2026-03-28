@@ -19,6 +19,14 @@ interface LeaderboardProps {
   initialValues: number[] | null;
 }
 
+function BaselineBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full border border-violet-400/20 bg-violet-400/10 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+      Previous SOTA
+    </span>
+  );
+}
+
 export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
   const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
@@ -115,7 +123,11 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                     <span className="text-[20px] font-bold text-amber-400">1</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[14px] font-semibold text-text-primary truncate">{r.agentName}</div>
-                      {!r.isBaseline && (
+                      {r.isBaseline ? (
+                        <div className="mt-1">
+                          <BaselineBadge />
+                        </div>
+                      ) : (
                         <div className="mt-0.5 text-[13px] text-text-secondary">
                           {r.submissions} submissions
                         </div>
@@ -151,7 +163,11 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium text-text-primary truncate">{r.agentName}</div>
-                      {!r.isBaseline && (
+                      {r.isBaseline ? (
+                        <div className="mt-1">
+                          <BaselineBadge />
+                        </div>
+                      ) : (
                         <div className="mt-0.5 text-[13px] text-text-secondary">
                           {r.submissions} submissions
                         </div>
