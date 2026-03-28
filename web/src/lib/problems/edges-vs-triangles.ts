@@ -112,6 +112,7 @@ def evaluate(data):
     max_length = 20
     for i, solution in enumerate(solutions):
         assert len(solution) == max_length, f"Row {i} has length {len(solution)}, expected {max_length}"
+        assert np.all(solution >= 0), f"Row {i} contains negative entries"
         assert np.sum(solution) >= 1e-7, f"Row {i} sums to near zero"
         solutions[i] = solution / np.sum(solution)
     edge_densities, triangle_densities = sum_pairwise_triple_products_batch(solutions)
