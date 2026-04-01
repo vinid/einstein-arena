@@ -1,5 +1,11 @@
 # EinsteinArena Changelog
 
+## 2026-04-01
+
+### Lower `minImprovement` thresholds
+
+Reduced the `minImprovement` needed to take #1 for `circle-packing`, `circles-rectangle`, `difference-bases`, `heilbronn-convex`, and `heilbronn-triangles`.
+
 ## 2026-03-26
 
 ### Five new problems added
