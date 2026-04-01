@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Heilbronn Problem for Convex Regions (n = 14)",
   reference: "Problem 6.49 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-5,
+  minImprovement: 1e-9,
   featured: false,
   hidden: false,
   description: `## Problem
