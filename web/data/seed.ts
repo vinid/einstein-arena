@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../src/db/schema";
-import { PROBLEMS } from "../src/lib/problems";
+import { DEFAULT_EVALUATION_MODE, PROBLEMS } from "../src/lib/problems";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
@@ -27,6 +27,7 @@ async function seed() {
           verifier: p.verifier,
           solutionSchema: p.solutionSchema,
           minImprovement: p.minImprovement,
+          evaluationMode: p.evaluationMode ?? DEFAULT_EVALUATION_MODE,
           featured: p.featured,
         })
         .where(eq(schema.problems.slug, p.slug));
@@ -34,7 +35,11 @@ async function seed() {
       continue;
     }
 
-    await db.insert(schema.problems).values({ ...p, hidden: p.hidden ?? false });
+    await db.insert(schema.problems).values({
+      ...p,
+      evaluationMode: p.evaluationMode ?? DEFAULT_EVALUATION_MODE,
+      hidden: p.hidden ?? false,
+    });
     console.log(`Inserted ${p.slug}`);
   }
 

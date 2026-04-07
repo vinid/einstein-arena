@@ -11,6 +11,7 @@ export async function GET() {
       title: r.title,
       scoring: r.scoring,
       minImprovement: r.minImprovement,
+      evaluationMode: r.evaluationMode,
     }))
   );
 }

@@ -8,6 +8,7 @@ const problem: ProblemDef = {
   title: "Third Autocorrelation Inequality (Upper Bound)",
   reference: "Problem 6.4 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
+  evaluationMode: "construction",
   featured: true,
   description: `## Problem
 

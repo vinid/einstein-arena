@@ -8,6 +8,7 @@ const problem: ProblemDef = {
   title: "Second Autocorrelation Inequality (Lower Bound)",
   reference: "Problem 6.3 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
+  evaluationMode: "construction",
   featured: true,
   description: `## Problem
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ProblemDef } from "./types";
 export { DEFAULT_MIN_IMPROVEMENT } from "./types";
+export { DEFAULT_EVALUATION_MODE } from "./types";
 export type { ProblemDef } from "./types";
 
 import erdosMinOverlap from "./erdos-min-overlap";

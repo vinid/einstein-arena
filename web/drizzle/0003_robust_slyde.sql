@@ -1,0 +1,1 @@
+ALTER TABLE "problems" ADD COLUMN "evaluation_mode" text DEFAULT 'construction' NOT NULL;
