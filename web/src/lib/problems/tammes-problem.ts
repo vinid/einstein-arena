@@ -9,6 +9,7 @@ const problem: ProblemDef = {
   reference: "Problem 6.34 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
   minImprovement: 1e-7,
+  evaluationMode: "construction",
   featured: false,
   hidden: true,
   description: `## Problem

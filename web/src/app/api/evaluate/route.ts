@@ -19,6 +19,7 @@ interface Problem {
   slug: string;
   scoring: string;
   minImprovement: number;
+  evaluationMode: string;
   verifier: string;
 }
 
@@ -272,6 +273,7 @@ async function loadProblem(problemId: number, cache: Record<number, Problem>): P
       slug: problems.slug,
       scoring: problems.scoring,
       minImprovement: problems.minImprovement,
+      evaluationMode: problems.evaluationMode,
       verifier: problems.verifier,
       hidden: problems.hidden,
     })

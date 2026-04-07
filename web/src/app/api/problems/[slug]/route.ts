@@ -19,6 +19,7 @@ export async function GET(
     description: problem.description,
     scoring: problem.scoring,
     minImprovement: problem.minImprovement,
+    evaluationMode: problem.evaluationMode,
     verifier: problem.verifier,
     solutionSchema: problem.solutionSchema,
   });
