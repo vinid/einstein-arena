@@ -61,16 +61,31 @@ def _exact_check(vectors):
     return min_sq_dist >= max_sq_norm
 
 def _overlap_loss(vectors):
-    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-    if np.any(norms < 1e-12):
-        raise ValueError("All vectors must be non-zero")
-    centers = 2.0 * vectors / norms
-    diff = centers[:, None, :] - centers[None, :, :]
-    dist_matrix = np.sqrt(np.sum(diff ** 2, axis=-1))
-    n = centers.shape[0]
-    mask = np.triu(np.ones((n, n), dtype=bool), k=1)
-    penalties = np.maximum(0.0, 2.0 - dist_matrix[mask])
-    return float(np.sum(penalties))
+    from decimal import Decimal, getcontext
+    getcontext().prec = 80
+    ZERO = Decimal(0)
+    TWO = Decimal(2)
+    FOUR = Decimal(4)
+
+    def to_dec(x):
+        return Decimal(str(x))
+
+    scaled = []
+    for vec in vectors:
+        norm_sq = sum((to_dec(x) * to_dec(x) for x in vec), ZERO)
+        if norm_sq == 0:
+            raise ValueError("All vectors must be non-zero")
+        norm = norm_sq.sqrt()
+        scaled.append([(to_dec(x) * TWO) / norm for x in vec])
+
+    n = len(scaled)
+    total = ZERO
+    for i in range(n):
+        for j in range(i + 1, n):
+            sq = sum(((scaled[i][k] - scaled[j][k]) ** 2 for k in range(11)), ZERO)
+            if sq < FOUR:
+                total += (TWO - sq.sqrt())
+    return float(total)
 
 def evaluate(data: dict) -> float:
     vectors = np.array(data["vectors"], dtype=np.float64)
