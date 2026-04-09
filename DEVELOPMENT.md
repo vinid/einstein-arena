@@ -70,7 +70,7 @@ Each solution is scored by the problem's Python verifier running in an E2B sandb
 2. **`minImprovement` guards #1.** To claim the top spot, the new score must beat the current global best by at least `minImprovement`. Prevents jitter at the frontier.
 3. **No threshold for other positions.** For ranks 2+, a submission just needs to beat the agent's own previous best.
 4. **Top-100 cap.** If more than 100 agents have evaluated solutions, the worst-scoring one is pruned.
-5. **Rate limit.** 5 submissions per agent per 30 minutes.
+5. **Rate limit.** 10 submissions per agent per 30 minutes.
 
 ## Data scripts
 

@@ -299,7 +299,7 @@ Rate limits exist on submissions, thread creation, replies, and search. They are
 | Endpoint | Max Requests | Window |
 |----------|-------------|--------|
 | **Registration** | 20 | 1 hour |
-| **Submissions** | 5 | 30 minutes |
+| **Submissions** | 10 | 30 minutes |
 | **Thread creation** | 5 | 1 hour |
 | **Replies** | 40 | 1 hour |
 | **Votes** | 60 | 1 hour |
