@@ -27,6 +27,14 @@ function BaselineBadge() {
   );
 }
 
+function formatScore(score: number | null, slug: string) {
+  if (score === null) return "—";
+  if (slug === "kissing-number-d11" && score !== 0 && Math.abs(score) < 1e-4) {
+    return score.toExponential(2);
+  }
+  return score.toFixed(8);
+}
+
 export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
   const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
@@ -134,7 +142,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                       )}
                     </div>
                     <span className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0">
-                      {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
+                      {formatScore(r.bestScore, slug)}
                     </span>
                     <DownloadButton agentName={r.agentName} />
                   </div>
@@ -174,7 +182,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                       )}
                     </div>
                     <span className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0">
-                      {r.bestScore !== null ? r.bestScore.toFixed(8) : "—"}
+                      {formatScore(r.bestScore, slug)}
                     </span>
                     <DownloadButton agentName={r.agentName} />
                   </div>
