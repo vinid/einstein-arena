@@ -46,51 +46,62 @@ Problem 6.8 of [Mathematical exploration and discovery at scale](https://arxiv.o
   zodSchema: z.object({
     vectors: z.array(z.array(num).length(11)).length(594),
   }),
-  verifier: `import numpy as np
-import itertools
+  verifier: `import itertools
+from decimal import Decimal, getcontext
+
+getcontext().prec = 80
+
+ZERO = Decimal(0)
+TWO = Decimal(2)
+FOUR = Decimal(4)
+
+
+def _to_dec(x):
+    return Decimal(str(x))
+
 
 def _exact_check(vectors):
-    rounded = np.around(vectors).astype(np.int64)
-    if np.max(np.abs(vectors - rounded)) > 0.01:
-        return False
-    squared_norms = [sum(int(x)**2 for x in c) for c in rounded]
-    if min(squared_norms) == 0:
+    d = len(vectors[0])
+    dec_vecs = [[_to_dec(x) for x in vec] for vec in vectors]
+
+    squared_norms = [sum(x * x for x in vec) for vec in dec_vecs]
+    if min(squared_norms) == ZERO:
         return False
     max_sq_norm = max(squared_norms)
-    min_sq_dist = min(sum(int(a - b)**2 for a, b in zip(p, q)) for p, q in itertools.combinations(rounded, 2))
+
+    min_sq_dist = None
+    for p, q in itertools.combinations(dec_vecs, 2):
+        sq_dist = sum((a - b) ** 2 for a, b in zip(p, q))
+        if min_sq_dist is None or sq_dist < min_sq_dist:
+            min_sq_dist = sq_dist
+
     return min_sq_dist >= max_sq_norm
 
+
 def _overlap_loss(vectors):
-    from decimal import Decimal, getcontext
-    getcontext().prec = 80
-    ZERO = Decimal(0)
-    TWO = Decimal(2)
-    FOUR = Decimal(4)
-
-    def to_dec(x):
-        return Decimal(str(x))
-
+    d = len(vectors[0])
     scaled = []
     for vec in vectors:
-        norm_sq = sum((to_dec(x) * to_dec(x) for x in vec), ZERO)
-        if norm_sq == 0:
+        norm_sq = sum((_to_dec(x) ** 2 for x in vec), ZERO)
+        if norm_sq == ZERO:
             raise ValueError("All vectors must be non-zero")
         norm = norm_sq.sqrt()
-        scaled.append([(to_dec(x) * TWO) / norm for x in vec])
+        scaled.append([(_to_dec(x) * TWO) / norm for x in vec])
 
     n = len(scaled)
     total = ZERO
     for i in range(n):
         for j in range(i + 1, n):
-            sq = sum(((scaled[i][k] - scaled[j][k]) ** 2 for k in range(11)), ZERO)
+            sq = sum(((scaled[i][k] - scaled[j][k]) ** 2 for k in range(d)), ZERO)
             if sq < FOUR:
                 total += (TWO - sq.sqrt())
     return float(total)
 
+
 def evaluate(data: dict) -> float:
-    vectors = np.array(data["vectors"], dtype=np.float64)
-    if vectors.ndim != 2 or vectors.shape[0] != 594 or vectors.shape[1] != 11:
-        raise ValueError(f"Expected shape (594, 11), got {vectors.shape}")
+    vectors = data["vectors"]
+    if len(vectors) != 594 or len(vectors[0]) != 11:
+        raise ValueError(f"Expected shape (594, 11), got ({len(vectors)}, {len(vectors[0])})")
     if _exact_check(vectors):
         return 0.0
     return _overlap_loss(vectors)`,
