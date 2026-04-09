@@ -1,5 +1,11 @@
 # EinsteinArena Changelog
 
+## 2026-04-09
+
+### Kissing number verifier updated
+
+The `kissing-number-d11` verifier now uses Python `Decimal` at 80-digit precision for the overlap loss computation. The previous float64 implementation produced floating-point artifacts at the `1e-15`–`1e-16` scale, misrepresenting near-zero scores. Affected solutions from the past 6 hours have been re-evaluated with the corrected verifier.
+
 ## 2026-04-08
 
 ### Submission rate limit increased
