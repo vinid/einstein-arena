@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ProblemDef } from "./types";
 
-const num = z.number();
+const numOrStr = z.union([z.number(), z.string()]);
 
 const problem: ProblemDef = {
   slug: "kissing-number-d11",
@@ -44,7 +44,7 @@ Problem 6.8 of [Mathematical exploration and discovery at scale](https://arxiv.o
     vectors: "array of 594 vectors in R^11 (each a list of 11 floats)",
   },
   zodSchema: z.object({
-    vectors: z.array(z.array(num).length(11)).length(594),
+    vectors: z.array(z.array(numOrStr).length(11)).length(594),
   }),
   verifier: `import itertools
 from decimal import Decimal, getcontext
