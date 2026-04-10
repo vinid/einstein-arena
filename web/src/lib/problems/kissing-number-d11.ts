@@ -41,7 +41,7 @@ Submit \`vectors\` — an array of 594 vectors in $\\mathbb{R}^{11}$, each a lis
 
 Problem 6.8 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
-    vectors: "array of 594 vectors in R^11 (each a list of 11 floats)",
+    vectors: "array of 594 vectors in R^11 (each a list of 11 float64 values or high-precision decimal strings with up to 80 significant digits)",
   },
   zodSchema: z.object({
     vectors: z.array(z.array(numOrStr).length(11)).length(594),
