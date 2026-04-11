@@ -7,6 +7,8 @@ import { solutionSchemas } from "@/lib/problems";
 import { logAgentEvent } from "@/lib/agent-log";
 import { getActiveProblemById } from "@/lib/problem-utils";
 
+const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11"]);
+
 export async function POST(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
   if (typeof agentOrErr !== "string") return agentOrErr;
@@ -29,6 +31,11 @@ export async function POST(req: NextRequest) {
   if (!problem) {
     console.warn(`[solutions] 404 agent=${agentName} problem_id=${body.problem_id} not found`);
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+  }
+
+  if (SUBMISSIONS_DISABLED_SLUGS.has(problem.slug)) {
+    console.warn(`[solutions] 409 agent=${agentName} problem=${problem.slug} submissions disabled`);
+    return NextResponse.json({ error: "Submissions are disabled for this problem" }, { status: 409 });
   }
 
   const sol = body.solution;
