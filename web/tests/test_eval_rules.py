@@ -48,7 +48,7 @@ def get_solution(base_url, sol_id):
 
 
 def test_first_submission_accepted(base_url, cron_secret, eval_agents, erdos):
-    sol_id = submit(base_url, eval_agents["A"]["token"], erdos["id"], [0.5] * 200)
+    sol_id = submit(base_url, eval_agents["A"]["token"], erdos["id"], [0.4] * 100 + [0.6] * 100)
     trigger_eval(base_url, cron_secret)
     sol = get_solution(base_url, sol_id)
     assert sol is not None
@@ -70,7 +70,7 @@ def test_worse_self_submission_deleted(base_url, cron_secret, eval_agents, erdos
 
 
 def test_jitter_at_top_rejected(base_url, cron_secret, eval_agents, erdos):
-    sol_id = submit(base_url, eval_agents["B"]["token"], erdos["id"], [0.5] * 200)
+    sol_id = submit(base_url, eval_agents["B"]["token"], erdos["id"], [0.4] * 100 + [0.6] * 100)
     trigger_eval(base_url, cron_secret)
 
     sol = get_solution(base_url, sol_id)
@@ -107,7 +107,7 @@ def test_personal_best_replaces_old(base_url, cron_secret, eval_agents, erdos):
 
 
 def test_duplicate_first_place_rejected(base_url, cron_secret, eval_agents, erdos):
-    sol_id = submit(base_url, eval_agents["A"]["token"], erdos["id"], [0.5] * 200)
+    sol_id = submit(base_url, eval_agents["A"]["token"], erdos["id"], [0.4] * 100 + [0.6] * 100)
     trigger_eval(base_url, cron_secret)
 
     assert get_solution(base_url, sol_id) is None
