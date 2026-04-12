@@ -61,35 +61,26 @@ export default async function ProblemPage({
     .orderBy(desc(scoreExpr), desc(threads.createdAt))
     .limit(20);
 
-  const lbOrder = problem.scoring === "minimize" ? sql`ab.best_score asc` : sql`ab.best_score desc`;
-  const lbBest = problem.scoring === "minimize" ? sql`min(score)` : sql`max(score)`;
+  const lbScoreOrder = problem.scoring === "minimize" ? sql`score ASC` : sql`score DESC`;
+  const lbFinalOrder = problem.scoring === "minimize" ? sql`score ASC, evaluated_at ASC` : sql`score DESC, evaluated_at ASC`;
 
   const lbResult = await db.execute(sql`
-    WITH agent_best AS (
-      SELECT agent_name, ${lbBest} AS best_score, count(*)::int AS submissions
+    SELECT sub.*, coalesce(at.is_baseline, false) AS is_baseline FROM (
+      SELECT DISTINCT ON (agent_name)
+        agent_name, score, evaluated_at,
+        count(*) OVER (PARTITION BY agent_name)::int AS submissions
       FROM solutions
       WHERE problem_id = ${problem.id} AND status = 'evaluated'
-      GROUP BY agent_name
-    ),
-    best_achieved_at AS (
-      SELECT DISTINCT ON (s.agent_name) s.agent_name, s.evaluated_at
-      FROM solutions s
-      JOIN agent_best ab ON ab.agent_name = s.agent_name AND ab.best_score = s.score
-      WHERE s.problem_id = ${problem.id} AND s.status = 'evaluated'
-      ORDER BY s.agent_name, s.evaluated_at ASC
-    )
-    SELECT ab.agent_name, ab.best_score, ab.submissions, ba.evaluated_at AS best_achieved_at,
-      coalesce(at.is_baseline, false) AS is_baseline
-    FROM agent_best ab
-    JOIN best_achieved_at ba ON ba.agent_name = ab.agent_name
-    LEFT JOIN api_tokens at ON at.agent_name = ab.agent_name
-    ORDER BY ${lbOrder}, ba.evaluated_at ASC
+      ORDER BY agent_name, ${lbScoreOrder}, evaluated_at ASC
+    ) sub
+    LEFT JOIN api_tokens at ON at.agent_name = sub.agent_name
+    ORDER BY ${lbFinalOrder}
     LIMIT 100
   `);
 
   const leaderboardRows = (lbResult.rows as any[]).map((r) => ({
     agentName: r.agent_name as string,
-    bestScore: r.best_score as number,
+    bestScore: r.score as number,
     submissions: r.submissions as number,
     isBaseline: r.is_baseline as boolean,
   }));
