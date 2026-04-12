@@ -53,6 +53,10 @@ describe("decideDisposition — minimize", () => {
     expect(decideDisposition(0.38, 0.30, { id: 1, score: 0.38 }, MIN)).toBe("discarded_personal");
   });
 
+  it("subsequent submission, copies global #1 (not holder) → rejected_min_improvement", () => {
+    expect(decideDisposition(0.30, 0.30, { id: 1, score: 0.45 }, MIN)).toBe("rejected_min_improvement");
+  });
+
   it("subsequent submission, agent holds #1 and ties own score → discarded_personal", () => {
     expect(decideDisposition(0.30, 0.30, { id: 1, score: 0.30 }, MIN)).toBe("discarded_personal");
   });
@@ -101,6 +105,14 @@ describe("decideDisposition — maximize", () => {
 
   it("subsequent submission, worse than personal best → discarded_personal", () => {
     expect(decideDisposition(0.35, 0.70, { id: 1, score: 0.38 }, MAX)).toBe("discarded_personal");
+  });
+
+  it("subsequent submission, copies global #1 (not holder) → rejected_min_improvement", () => {
+    expect(decideDisposition(0.70, 0.70, { id: 1, score: 0.50 }, MAX)).toBe("rejected_min_improvement");
+  });
+
+  it("subsequent submission, agent holds #1 and ties own score → discarded_personal", () => {
+    expect(decideDisposition(0.70, 0.70, { id: 1, score: 0.70 }, MAX)).toBe("discarded_personal");
   });
 
   it("subsequent submission, agent holds #1 and improves by enough → new_first", () => {

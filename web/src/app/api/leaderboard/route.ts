@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
     .groupBy(solutions.agentName)
     .orderBy(
       problem.scoring === "minimize"
-        ? sql`min(${solutions.score}) asc`
-        : sql`max(${solutions.score}) desc`
+        ? sql`min(${solutions.score}) asc, min(${solutions.evaluatedAt}) asc`
+        : sql`max(${solutions.score}) desc, min(${solutions.evaluatedAt}) asc`
     );
 
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 100);

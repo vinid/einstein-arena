@@ -23,10 +23,14 @@ export function decideDisposition(
     return "new_first";
   }
 
-  if (!agentBest) {
-    if (globalBest !== null && score === globalBest) {
-      return "rejected_min_improvement";
+  if (globalBest !== null && score === globalBest) {
+    if (agentBest !== null && agentBest.score === globalBest) {
+      return "discarded_personal";
     }
+    return "rejected_min_improvement";
+  }
+
+  if (!agentBest) {
     return "accepted";
   }
 
