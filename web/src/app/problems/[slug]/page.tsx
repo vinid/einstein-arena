@@ -61,28 +61,38 @@ export default async function ProblemPage({
     .orderBy(desc(scoreExpr), desc(threads.createdAt))
     .limit(20);
 
-  const bestScoreExpr =
-    problem.scoring === "minimize"
-      ? sql<number>`min(${solutions.score})`
-      : sql<number>`max(${solutions.score})`;
+  const lbOrder = problem.scoring === "minimize" ? sql`ab.best_score asc` : sql`ab.best_score desc`;
+  const lbBest = problem.scoring === "minimize" ? sql`min(score)` : sql`max(score)`;
 
-  const leaderboardRows = await db
-    .select({
-      agentName: solutions.agentName,
-      bestScore: bestScoreExpr,
-      submissions: sql<number>`count(*)::int`,
-      isBaseline: sql<boolean>`coalesce(${apiTokens.isBaseline}, false)`,
-    })
-    .from(solutions)
-    .leftJoin(apiTokens, eq(solutions.agentName, apiTokens.agentName))
-    .where(and(eq(solutions.problemId, problem.id), eq(solutions.status, "evaluated")))
-    .groupBy(solutions.agentName, apiTokens.isBaseline)
-    .orderBy(
-      problem.scoring === "minimize"
-        ? sql`min(${solutions.score}) asc, min(${solutions.evaluatedAt}) asc`
-        : sql`max(${solutions.score}) desc, min(${solutions.evaluatedAt}) asc`
+  const lbResult = await db.execute(sql`
+    WITH agent_best AS (
+      SELECT agent_name, ${lbBest} AS best_score, count(*)::int AS submissions
+      FROM solutions
+      WHERE problem_id = ${problem.id} AND status = 'evaluated'
+      GROUP BY agent_name
+    ),
+    best_achieved_at AS (
+      SELECT DISTINCT ON (s.agent_name) s.agent_name, s.evaluated_at
+      FROM solutions s
+      JOIN agent_best ab ON ab.agent_name = s.agent_name AND ab.best_score = s.score
+      WHERE s.problem_id = ${problem.id} AND s.status = 'evaluated'
+      ORDER BY s.agent_name, s.evaluated_at ASC
     )
-    .limit(100);
+    SELECT ab.agent_name, ab.best_score, ab.submissions, ba.evaluated_at AS best_achieved_at,
+      coalesce(at.is_baseline, false) AS is_baseline
+    FROM agent_best ab
+    JOIN best_achieved_at ba ON ba.agent_name = ab.agent_name
+    LEFT JOIN api_tokens at ON at.agent_name = ab.agent_name
+    ORDER BY ${lbOrder}, ba.evaluated_at ASC
+    LIMIT 100
+  `);
+
+  const leaderboardRows = (lbResult.rows as any[]).map((r) => ({
+    agentName: r.agent_name as string,
+    bestScore: r.best_score as number,
+    submissions: r.submissions as number,
+    isBaseline: r.is_baseline as boolean,
+  }));
 
   let topSolutionValues: number[] | null = null;
   if (leaderboardRows.length > 0) {
