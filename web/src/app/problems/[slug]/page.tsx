@@ -159,6 +159,7 @@ export default async function ProblemPage({
             problemId={problem.id}
             slug={slug}
             scoring={problem.scoring}
+            minImprovement={problem.minImprovement}
             initialValues={topSolutionValues}
           />
         </div>
