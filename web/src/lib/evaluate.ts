@@ -24,6 +24,9 @@ export function decideDisposition(
   }
 
   if (globalBest !== null && score === globalBest) {
+    if (agentBest !== null && agentBest.score === globalBest) {
+      return "discarded_personal";
+    }
     return "rejected_min_improvement";
   }
 
