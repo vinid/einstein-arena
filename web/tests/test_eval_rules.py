@@ -101,7 +101,8 @@ def test_personal_best_replaces_old(base_url, cron_secret, eval_agents, erdos):
 
     if new_sol and new_sol["score"] < eval_agents["C"]["score"]:
         assert new_sol["status"] == "evaluated"
-        assert old_sol is None
+        assert old_sol is not None
+        assert old_sol["status"] == "evaluated"
     else:
         assert old_sol is not None
 
