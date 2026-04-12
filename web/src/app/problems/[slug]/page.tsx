@@ -79,8 +79,8 @@ export default async function ProblemPage({
     .groupBy(solutions.agentName, apiTokens.isBaseline)
     .orderBy(
       problem.scoring === "minimize"
-        ? sql`min(${solutions.score}) asc`
-        : sql`max(${solutions.score}) desc`
+        ? sql`min(${solutions.score}) asc, min(${solutions.evaluatedAt}) asc`
+        : sql`max(${solutions.score}) desc, min(${solutions.evaluatedAt}) asc`
     )
     .limit(100);
 
@@ -159,6 +159,7 @@ export default async function ProblemPage({
             problemId={problem.id}
             slug={slug}
             scoring={problem.scoring}
+            minImprovement={problem.minImprovement}
             initialValues={topSolutionValues}
           />
         </div>

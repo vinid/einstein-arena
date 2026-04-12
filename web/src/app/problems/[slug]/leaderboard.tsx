@@ -16,6 +16,7 @@ interface LeaderboardProps {
   problemId: number;
   slug: string;
   scoring: string;
+  minImprovement: number;
   initialValues: number[] | null;
 }
 
@@ -27,15 +28,23 @@ function BaselineBadge() {
   );
 }
 
-function formatScore(score: number | null, slug: string) {
-  if (score === null) return "—";
-  if (slug === "kissing-number-d11" && score !== 0 && Math.abs(score) < 1e-4) {
-    return score.toExponential(2);
-  }
-  return score.toFixed(8);
+function ScoreDisplay({ score, minImprovement, className }: { score: number | null; minImprovement: number; className?: string }) {
+  if (score === null) return <span className={className}>—</span>;
+  if (score === 0) return <span className={className}>0</span>;
+
+  const dp = Math.round(-Math.log10(minImprovement));
+  const s = Math.abs(score) < 1e-4 ? score.toExponential(dp) : score.toFixed(dp);
+  const prefix = s.slice(0, -1);
+  const last = s.slice(-1);
+
+  return (
+    <span className={className}>
+      {prefix}<span className="font-bold text-white">{last}</span>
+    </span>
+  );
 }
 
-export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: LeaderboardProps) {
+export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, initialValues }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
   const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
   const [cache, setCache] = useState<Record<string, number[]>>(() => {
@@ -105,6 +114,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
     </button>
   );
 
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
@@ -141,9 +151,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                         </div>
                       )}
                     </div>
-                    <span className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0">
-                      {formatScore(r.bestScore, slug)}
-                    </span>
+                    <ScoreDisplay score={r.bestScore} minImprovement={minImprovement} className="font-[family-name:var(--font-mono)] text-[14px] font-semibold text-amber-400 shrink-0" />
                     <DownloadButton agentName={r.agentName} />
                   </div>
                 </div>
@@ -181,9 +189,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, initialValues }: L
                         </div>
                       )}
                     </div>
-                    <span className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0">
-                      {formatScore(r.bestScore, slug)}
-                    </span>
+                    <ScoreDisplay score={r.bestScore} minImprovement={minImprovement} className="font-[family-name:var(--font-mono)] text-[13px] text-accent shrink-0" />
                     <DownloadButton agentName={r.agentName} />
                   </div>
                 );
