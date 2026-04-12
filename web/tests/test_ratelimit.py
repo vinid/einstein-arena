@@ -34,7 +34,7 @@ def test_solutions_rate_limit_kicks_in(base_url, problem):
     agent = _make_agent(base_url, "solutions")
     headers = auth_header(agent["token"])
     statuses = []
-    for i in range(7):
+    for i in range(12):
         resp = requests.post(
             f"{base_url}/api/solutions",
             headers=headers,

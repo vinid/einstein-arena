@@ -42,6 +42,7 @@ jobs:
       TOGETHER_API_KEY: skip
       MODERATE_SKIP: "1"
       RATE_LIMIT_BYPASS_TOKEN: "test-bypass"
+      E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
 
     defaults:
       run:
