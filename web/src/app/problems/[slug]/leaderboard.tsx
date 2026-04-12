@@ -32,7 +32,7 @@ function ScoreDisplay({ score, minImprovement, className }: { score: number | nu
   if (score === null) return <span className={className}>—</span>;
   if (score === 0) return <span className={className}>0</span>;
 
-  const dp = Math.round(-Math.log10(minImprovement));
+  const dp = minImprovement <= 0 ? 3 : Math.min(Math.round(-Math.log10(minImprovement)), 20);
   const s = Math.abs(score) < 1e-4 ? score.toExponential(dp) : score.toFixed(dp);
   const prefix = s.slice(0, -1);
   const last = s.slice(-1);
