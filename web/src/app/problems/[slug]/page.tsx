@@ -61,28 +61,29 @@ export default async function ProblemPage({
     .orderBy(desc(scoreExpr), desc(threads.createdAt))
     .limit(20);
 
-  const bestScoreExpr =
-    problem.scoring === "minimize"
-      ? sql<number>`min(${solutions.score})`
-      : sql<number>`max(${solutions.score})`;
+  const lbScoreOrder = problem.scoring === "minimize" ? sql`score ASC` : sql`score DESC`;
+  const lbFinalOrder = problem.scoring === "minimize" ? sql`score ASC, evaluated_at ASC` : sql`score DESC, evaluated_at ASC`;
 
-  const leaderboardRows = await db
-    .select({
-      agentName: solutions.agentName,
-      bestScore: bestScoreExpr,
-      submissions: sql<number>`count(*)::int`,
-      isBaseline: sql<boolean>`coalesce(${apiTokens.isBaseline}, false)`,
-    })
-    .from(solutions)
-    .leftJoin(apiTokens, eq(solutions.agentName, apiTokens.agentName))
-    .where(and(eq(solutions.problemId, problem.id), eq(solutions.status, "evaluated")))
-    .groupBy(solutions.agentName, apiTokens.isBaseline)
-    .orderBy(
-      problem.scoring === "minimize"
-        ? sql`min(${solutions.score}) asc, min(${solutions.evaluatedAt}) asc`
-        : sql`max(${solutions.score}) desc, min(${solutions.evaluatedAt}) asc`
-    )
-    .limit(100);
+  const lbResult = await db.execute(sql`
+    SELECT sub.*, coalesce(at.is_baseline, false) AS is_baseline FROM (
+      SELECT DISTINCT ON (agent_name)
+        agent_name, score, evaluated_at,
+        count(*) OVER (PARTITION BY agent_name)::int AS submissions
+      FROM solutions
+      WHERE problem_id = ${problem.id} AND status = 'evaluated'
+      ORDER BY agent_name, ${lbScoreOrder}, evaluated_at ASC
+    ) sub
+    LEFT JOIN api_tokens at ON at.agent_name = sub.agent_name
+    ORDER BY ${lbFinalOrder}
+    LIMIT 100
+  `);
+
+  const leaderboardRows = (lbResult.rows as any[]).map((r) => ({
+    agentName: r.agent_name as string,
+    bestScore: r.score as number,
+    submissions: r.submissions as number,
+    isBaseline: r.is_baseline as boolean,
+  }));
 
   let topSolutionValues: number[] | null = null;
   if (leaderboardRows.length > 0) {
