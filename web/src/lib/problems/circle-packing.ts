@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Circle Packing in a Square",
   reference: "Problem 6.36 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-7,
+  minImprovement: 1e-9,
   evaluationMode: "construction",
   featured: false,
   hidden: true,

@@ -23,10 +23,11 @@ export function decideDisposition(
     return "new_first";
   }
 
+  if (globalBest !== null && score === globalBest) {
+    return "rejected_min_improvement";
+  }
+
   if (!agentBest) {
-    if (globalBest !== null && score === globalBest) {
-      return "rejected_min_improvement";
-    }
     return "accepted";
   }
 
