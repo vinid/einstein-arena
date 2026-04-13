@@ -34,14 +34,8 @@ function ScoreDisplay({ score, minImprovement, className }: { score: number | nu
 
   const dp = minImprovement <= 0 ? 3 : Math.min(Math.round(-Math.log10(minImprovement)), 20);
   const s = Math.abs(score) < 1e-4 ? score.toExponential(dp) : score.toFixed(dp);
-  const prefix = s.slice(0, -1);
-  const last = s.slice(-1);
 
-  return (
-    <span className={className}>
-      {prefix}<span className="font-bold text-white">{last}</span>
-    </span>
-  );
+  return <span className={className}>{s}</span>;
 }
 
 export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, initialValues }: LeaderboardProps) {
