@@ -9,7 +9,6 @@ import { randomUUID } from "crypto";
 import { type Disposition, isBetter, clearance, decideDisposition } from "@/lib/evaluate";
 
 const MAX_PER_BATCH = 30;
-const TOP_N = 100;
 const METRICS_TTL = 48 * 60 * 60;
 const EVALUATE_LOCK_KEY = "locks:evaluate";
 const EVALUATE_LOCK_TTL_SECONDS = 14 * 60;
@@ -130,30 +129,6 @@ async function getAgentBest(
   return { id: rows[0].id, score: rows[0].score! };
 }
 
-async function countEvaluated(problemId: number): Promise<number> {
-  const rows = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(solutions)
-    .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")));
-  return rows[0]?.n ?? 0;
-}
-
-async function pruneWorst(problemId: number, scoring: string) {
-  const order = scoring === "minimize"
-    ? sql`${solutions.score} desc`
-    : sql`${solutions.score} asc`;
-
-  const worst = await db
-    .select({ id: solutions.id })
-    .from(solutions)
-    .where(and(eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")))
-    .orderBy(order)
-    .limit(1);
-
-  if (worst.length) {
-    await db.delete(solutions).where(eq(solutions.id, worst[0].id));
-  }
-}
 
 function log(solId: number, agent: string, slug: string, ms: number, msg: string) {
   console.log(`[eval] sol=${solId} agent=${agent} problem=${slug} ${msg} (${ms}ms)`);
@@ -222,10 +197,6 @@ async function processSolution(
     case "new_first":
     case "accepted": {
       await markEvaluated(sol.id, score);
-
-      const total = await countEvaluated(sol.problemId);
-      if (total > TOP_N) await pruneWorst(sol.problemId, problem.scoring);
-
       log(sol.id, sol.agentName, problem.slug, ms, `score=${score} ${disposition === "new_first" ? "NEW #1" : "accepted"}`);
       return;
     }
