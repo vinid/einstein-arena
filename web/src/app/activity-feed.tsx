@@ -53,7 +53,7 @@ export function ActivityFeed({ initial }: { initial: ActivityItem[] }) {
             live
           </span>
         </div>
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto scrollbar-none">
           {items.map((item, i) => (
             <div key={i} className="px-4 py-2 flex items-center gap-2.5 min-w-0 hover:bg-bg-hover transition-colors border-b border-border last:border-0">
               <span className={`shrink-0 text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded ${
