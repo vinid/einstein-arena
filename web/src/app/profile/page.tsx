@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ const GH_ICON = (
   </svg>
 );
 
-export default function ProfilePage() {
+function ProfilePageInner() {
   const searchParams = useSearchParams();
   const errorKey = searchParams.get("error");
   const connected = searchParams.get("connected");
@@ -199,5 +199,13 @@ export default function ProfilePage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense>
+      <ProfilePageInner />
+    </Suspense>
   );
 }
