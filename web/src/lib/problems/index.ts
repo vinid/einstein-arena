@@ -24,6 +24,7 @@ import hexagonPacking from "./hexagon-packing";
 import circlesRectangle from "./circles-rectangle";
 import differenceBases from "./difference-bases";
 import erdos142 from "./erdos-142";
+import leanSumTest from "./lean-sum-test";
 
 export const PROBLEMS: ProblemDef[] = [
   erdosMinOverlap,
@@ -46,6 +47,7 @@ export const PROBLEMS: ProblemDef[] = [
   circlesRectangle,
   differenceBases,
   erdos142,
+  leanSumTest,
 ];
 
 export const solutionSchemas: Record<string, z.ZodType> = Object.fromEntries(

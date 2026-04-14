@@ -336,62 +336,82 @@ export async function GET(req: NextRequest) {
   let sbx: Sandbox | null = null;
   let ctx: Context | null = null;
   let leanVerifier: LeanVerifier | null = null;
-  let leanInitFailed = false;
   try {
     const problemCache: Record<number, Problem> = {};
-
-    let evaluated = 0;
     const t0 = Date.now();
+    let evaluated = 0;
 
+    // Resolve problems and split into two queues
+    const constructions: typeof pending = [];
+    const proofs: typeof pending = [];
     for (const sol of pending) {
-      try {
-        const problem = await loadProblem(sol.problemId, problemCache);
-        if (!problem) {
-          await markError(sol.id, "problem is hidden");
-          evaluated++;
-          continue;
-        }
-
-        if (problem.evaluationMode === "proof") {
-          if (!leanVerifier && !leanInitFailed) {
-            try {
-              const v = new LeanVerifier();
-              await v.init();
-              leanVerifier = v;
-            } catch (e: unknown) {
-              leanInitFailed = true;
-              const msg = e instanceof Error ? e.message : String(e);
-              console.error(`[eval] LEAN_INIT_FAILED: ${msg}`);
-              await markError(sol.id, `lean_verifier_unavailable: ${msg.slice(0, 300)}`);
-              evaluated++;
-              continue;
-            }
-          }
-          if (!leanVerifier) {
-            await markError(sol.id, "lean_verifier_unavailable");
-            evaluated++;
-            continue;
-          }
-          await processProofSolution(sol, problem, leanVerifier);
-        } else {
-          if (!sbx) {
-            const init = await initSandbox();
-            sbx = init.sbx;
-            ctx = init.ctx;
-          }
-          await processSolution(sol, problem, sbx, ctx!);
-          await sbx.restartCodeContext(ctx!);
-        }
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
-        await markError(sol.id, msg);
+      const problem = await loadProblem(sol.problemId, problemCache);
+      if (!problem) {
+        await markError(sol.id, "problem is hidden");
+        evaluated++;
+        continue;
       }
-      evaluated++;
+      if (problem.evaluationMode === "proof") {
+        proofs.push(sol);
+      } else {
+        constructions.push(sol);
+      }
+    }
+
+    // Pass 1 — construction problems (Python sandbox)
+    if (constructions.length > 0) {
+      const init = await initSandbox();
+      sbx = init.sbx;
+      ctx = init.ctx;
+      for (const sol of constructions) {
+        try {
+          const problem = problemCache[sol.problemId]!;
+          await processSolution(sol, problem, sbx, ctx);
+          await sbx.restartCodeContext(ctx);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
+          await markError(sol.id, msg);
+        }
+        evaluated++;
+      }
+      await sbx.kill();
+      sbx = null;
+    }
+
+    // Pass 2 — proof problems (Lean verifier)
+    if (proofs.length > 0) {
+      let leanInitFailed = false;
+      try {
+        const v = new LeanVerifier();
+        await v.init();
+        leanVerifier = v;
+      } catch (e: unknown) {
+        leanInitFailed = true;
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[eval] LEAN_INIT_FAILED: ${msg}`);
+        for (const sol of proofs) {
+          await markError(sol.id, `lean_verifier_unavailable: ${msg.slice(0, 300)}`);
+          evaluated++;
+        }
+      }
+      if (!leanInitFailed && leanVerifier) {
+        for (const sol of proofs) {
+          try {
+            const problem = problemCache[sol.problemId]!;
+            await processProofSolution(sol, problem, leanVerifier);
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
+            await markError(sol.id, msg);
+          }
+          evaluated++;
+        }
+      }
     }
 
     const totalMs = Date.now() - t0;
-    console.log(`[eval] batch done: ${evaluated}/${pending.length} in ${totalMs}ms (avg ${Math.round(totalMs / evaluated)}ms/sol)`);
+    console.log(`[eval] batch done: ${evaluated}/${pending.length} in ${totalMs}ms (avg ${Math.round(totalMs / Math.max(evaluated, 1))}ms/sol)`);
     return NextResponse.json({ evaluated, pending: pending.length });
   } finally {
     if (sbx) await sbx.kill();

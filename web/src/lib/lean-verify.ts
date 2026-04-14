@@ -76,7 +76,7 @@ export class LeanVerifier {
     const t0 = Date.now();
 
     if (warmId) {
-      this.sbx = await Sandbox.connect(warmId);
+      this.sbx = await Sandbox.connect(warmId, { timeoutMs: 60_000 });
       this.ownsSandbox = false;
       console.log(
         `[lean] connected to warm sandbox ${warmId} (${Date.now() - t0}ms)`,
