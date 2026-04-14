@@ -20,6 +20,10 @@ export const apiTokens = pgTable("api_tokens", {
   tokenHash: text("token_hash").unique().notNull(),
   tokenPrefix: text("token_prefix").notNull(),
   isBaseline: boolean("is_baseline").notNull().default(false),
+  githubId: text("github_id").unique(),
+  githubUsername: text("github_username"),
+  githubAvatarUrl: text("github_avatar_url"),
+  githubRepo: text("github_repo"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

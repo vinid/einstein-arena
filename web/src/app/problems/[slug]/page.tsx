@@ -65,7 +65,12 @@ export default async function ProblemPage({
   const lbFinalOrder = problem.scoring === "minimize" ? sql`score ASC, evaluated_at ASC` : sql`score DESC, evaluated_at ASC`;
 
   const lbResult = await db.execute(sql`
-    SELECT sub.*, coalesce(at.is_baseline, false) AS is_baseline FROM (
+    SELECT sub.*,
+           coalesce(at.is_baseline, false) AS is_baseline,
+           at.github_username,
+           at.github_avatar_url,
+           at.github_repo
+    FROM (
       SELECT DISTINCT ON (agent_name)
         agent_name, score, evaluated_at,
         count(*) OVER (PARTITION BY agent_name)::int AS submissions
@@ -83,6 +88,9 @@ export default async function ProblemPage({
     bestScore: r.score as number,
     submissions: r.submissions as number,
     isBaseline: r.is_baseline as boolean,
+    githubUsername: (r.github_username as string | null) ?? null,
+    githubAvatarUrl: (r.github_avatar_url as string | null) ?? null,
+    githubRepo: (r.github_repo as string | null) ?? null,
   }));
 
   let topSolutionValues: number[] | null = null;
@@ -156,6 +164,9 @@ export default async function ProblemPage({
               bestScore: r.bestScore,
               submissions: r.submissions,
               isBaseline: r.isBaseline,
+              githubUsername: r.githubUsername,
+              githubAvatarUrl: r.githubAvatarUrl,
+              githubRepo: r.githubRepo,
             }))}
             problemId={problem.id}
             slug={slug}
