@@ -7,6 +7,7 @@ import { getRedis } from "@/lib/redis";
 import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
 import { randomUUID } from "crypto";
 import { type Disposition, isBetter, clearance, decideDisposition } from "@/lib/evaluate";
+import { LeanVerifier } from "@/lib/lean-verify";
 
 const MAX_PER_BATCH = 30;
 const METRICS_TTL = 48 * 60 * 60;
@@ -203,6 +204,42 @@ async function processSolution(
   }
 }
 
+async function processProofSolution(
+  sol: SolutionRow,
+  problem: Problem,
+  leanVerifier: LeanVerifier,
+) {
+  const t = Date.now();
+  const data = sol.data as Record<string, unknown>;
+  const leanCode = data.lean_code as string | undefined;
+
+  if (!leanCode) {
+    log(sol.id, sol.agentName, problem.slug, 0, "ERROR: missing lean_code");
+    await markError(sol.id, "missing lean_code in solution data");
+    return;
+  }
+
+  const result = await leanVerifier.verifyProof(leanCode, problem.verifier);
+  const ms = Date.now() - t;
+
+  const pipe = getRedis().pipeline();
+  const hk = evalHourKey();
+  pipe.hincrby(hk, "executions", 1);
+  pipe.hincrby(hk, "exec_latency_sum", ms);
+  pipe.hincrby(hk, "exec_bytes", leanCode.length);
+  pipe.expire(hk, METRICS_TTL);
+  pipe.exec();
+
+  if (result.score === 0) {
+    log(sol.id, sol.agentName, problem.slug, ms, `PROOF_REJECTED: ${(result.error ?? "unknown").slice(0, 200)}`);
+    await markError(sol.id, result.error ?? "proof verification failed");
+    return;
+  }
+
+  await markEvaluated(sol.id, 1);
+  log(sol.id, sol.agentName, problem.slug, ms, "PROVED");
+}
+
 type SolutionRow = {
   id: number;
   problemId: number;
@@ -297,9 +334,10 @@ export async function GET(req: NextRequest) {
   console.log(`[eval] starting batch: ${pending.length} pending solutions`);
 
   let sbx: Sandbox | null = null;
+  let ctx: Context | null = null;
+  let leanVerifier: LeanVerifier | null = null;
+  let leanInitFailed = false;
   try {
-    const { sbx: sandbox, ctx } = await initSandbox();
-    sbx = sandbox;
     const problemCache: Record<number, Problem> = {};
 
     let evaluated = 0;
@@ -313,8 +351,37 @@ export async function GET(req: NextRequest) {
           evaluated++;
           continue;
         }
-        await processSolution(sol, problem, sbx, ctx);
-        await sbx.restartCodeContext(ctx);
+
+        if (problem.evaluationMode === "proof") {
+          if (!leanVerifier && !leanInitFailed) {
+            try {
+              const v = new LeanVerifier();
+              await v.init();
+              leanVerifier = v;
+            } catch (e: unknown) {
+              leanInitFailed = true;
+              const msg = e instanceof Error ? e.message : String(e);
+              console.error(`[eval] LEAN_INIT_FAILED: ${msg}`);
+              await markError(sol.id, `lean_verifier_unavailable: ${msg.slice(0, 300)}`);
+              evaluated++;
+              continue;
+            }
+          }
+          if (!leanVerifier) {
+            await markError(sol.id, "lean_verifier_unavailable");
+            evaluated++;
+            continue;
+          }
+          await processProofSolution(sol, problem, leanVerifier);
+        } else {
+          if (!sbx) {
+            const init = await initSandbox();
+            sbx = init.sbx;
+            ctx = init.ctx;
+          }
+          await processSolution(sol, problem, sbx, ctx!);
+          await sbx.restartCodeContext(ctx!);
+        }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error(`[eval] sol=${sol.id} agent=${sol.agentName} EXCEPTION: ${msg}`);
@@ -328,6 +395,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ evaluated, pending: pending.length });
   } finally {
     if (sbx) await sbx.kill();
+    if (leanVerifier) await leanVerifier.close();
     await releaseEvaluateLock(lockValue);
   }
 }

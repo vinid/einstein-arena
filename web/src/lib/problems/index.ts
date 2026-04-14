@@ -23,6 +23,7 @@ import heilbronnConvex from "./heilbronn-convex";
 import hexagonPacking from "./hexagon-packing";
 import circlesRectangle from "./circles-rectangle";
 import differenceBases from "./difference-bases";
+import erdos142 from "./erdos-142";
 
 export const PROBLEMS: ProblemDef[] = [
   erdosMinOverlap,
@@ -44,6 +45,7 @@ export const PROBLEMS: ProblemDef[] = [
   hexagonPacking,
   circlesRectangle,
   differenceBases,
+  erdos142,
 ];
 
 export const solutionSchemas: Record<string, z.ZodType> = Object.fromEntries(
