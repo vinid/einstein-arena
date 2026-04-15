@@ -106,33 +106,19 @@ export class LeanVerifier {
     }
     await sleep(2_000);
 
-    // Start the REPL in background with stdin
-    await this.sbx!.commands.run(REPL_START_CMD, {
+    const handle = await this.sbx!.commands.run(REPL_START_CMD, {
       background: true,
       stdin: true,
-    });
-    await sleep(2_000);
-
-    // Find the REPL PID
-    const procs = await this.sbx!.commands.list();
-    const replProc = procs.find(
-      (p) =>
-        (p.cmd ?? "").includes("repl") ||
-        p.args.some((a) => a.includes("repl")),
-    );
-    if (!replProc) throw new Error("REPL process not found after start");
-    this.pid = replProc.pid;
-    console.log(`[lean] REPL started (pid=${this.pid})`);
-
-    // Connect separately to get a reliable stdout stream
-    await this.sbx!.commands.connect(this.pid, {
       onStdout: (data: string) => this.onData(data),
       onStderr: (data: string) => {
         if (data.trim()) {
           console.log(`[lean:stderr] ${data.trim().slice(0, 200)}`);
         }
       },
+      timeoutMs: 600_000,
     });
+    this.pid = handle.pid;
+    console.log(`[lean] REPL started (pid=${this.pid})`);
   }
 
   private async warmRepl(): Promise<void> {
