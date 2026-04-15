@@ -32,6 +32,7 @@ def main():
 
     print("Pausing sandbox...")
     sandbox_id = sandbox.sandbox_id
+    repl.disconnect()
     sandbox.pause()
 
     SANDBOX_ID_FILE.write_text(sandbox_id)

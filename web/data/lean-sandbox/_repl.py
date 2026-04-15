@@ -2,6 +2,7 @@ import json
 import threading
 import time
 from e2b import Sandbox
+from e2b.sandbox_sync.commands.command_handle import CommandHandle
 
 LEAN_TEMPLATE = "lean-formal-conjectures-v4-28"
 REPL_START_CMD = (
@@ -15,31 +16,11 @@ class LeanRepl:
     def __init__(self, sandbox: Sandbox):
         self.sandbox = sandbox
         self.pid: int = 0
+        self._handle: CommandHandle | None = None
         self._buffer = ""
         self._lock = threading.Lock()
         self._response_ready = threading.Event()
         self._thread: threading.Thread | None = None
-
-    def _find_running_pid(self) -> int | None:
-        procs = self.sandbox.commands.list()
-        for p in procs:
-            if "repl" in (p.cmd or "") or any("repl" in a for a in p.args):
-                return p.pid
-        return None
-
-    def _attach(self, pid: int, stream_timeout: float) -> None:
-        self.pid = pid
-
-        handle = self.sandbox.commands.connect(pid, timeout=stream_timeout)
-
-        def _drain():
-            handle.wait(
-                on_stdout=self._on_stdout,
-                on_stderr=lambda d: print(f"[lean:stderr] {d.strip()[:200]}") if d.strip() else None,
-            )
-
-        self._thread = threading.Thread(target=_drain, daemon=True)
-        self._thread.start()
 
     def start_fresh(self, stream_timeout: float = 600) -> None:
         try:
@@ -48,26 +29,38 @@ class LeanRepl:
             pass
         time.sleep(1)
 
-        handle = self.sandbox.commands.run(
+        self._handle = self.sandbox.commands.run(
             REPL_START_CMD,
             background=True,
             stdin=True,
             timeout=stream_timeout,
         )
-        self.pid = handle.pid
+        self.pid = self._handle.pid
         print(f"[lean] REPL started fresh (pid={self.pid})")
 
+        handle = self._handle
+
         def _drain():
-            handle.wait(
-                on_stdout=self._on_stdout,
-                on_stderr=lambda d: print(f"[lean:stderr] {d.strip()[:200]}") if d.strip() else None,
-            )
+            try:
+                handle.wait(
+                    on_stdout=self._on_stdout,
+                    on_stderr=lambda d: print(f"[lean:stderr] {d.strip()[:200]}") if d.strip() else None,
+                )
+            except Exception:
+                pass
 
         self._thread = threading.Thread(target=_drain, daemon=True)
         self._thread.start()
 
     def start(self, stream_timeout: float = 120) -> None:
         self.start_fresh(stream_timeout=stream_timeout)
+
+    def disconnect(self) -> None:
+        if self._handle:
+            try:
+                self._handle.disconnect()
+            except Exception:
+                pass
 
     def _on_stdout(self, data: str) -> None:
         with self._lock:

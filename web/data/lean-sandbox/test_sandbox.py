@@ -46,6 +46,7 @@ def main():
     print(f"Errors: {errors}")
     print(f"Total time: {elapsed:.1f}s")
 
+    repl.disconnect()
     sandbox.pause()
     print("Sandbox paused.")
 
