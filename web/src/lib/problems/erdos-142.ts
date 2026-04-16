@@ -17,9 +17,30 @@ of $\\{1, \\dots, N\\}$ that does not contain any non-trivial $k$-term arithmeti
 theorem erdos_142 (k : ℕ) : (fun N => (r k N : ℝ)) =Θ[atTop] (answer(sorry) : ℕ → ℝ) := by
   sorry`;
 
-const VERIFIER = `open Filter Erdos142 in example (k : ℕ) : ∃ f : ℕ → ℝ, (fun N => (r k N : ℝ)) =Θ[atTop] f := ⟨_, erdos_142 k⟩`;
+const LEAN_TEMPLATE = `import FormalConjectures.Util.ProblemImports
+{{extra_imports}}
 
-const ANTITRIVIAL = `open Filter Erdos142 in example (k : ℕ) : (fun N => (r k N : ℝ)) =Θ[atTop] (fun N => (r k N : ℝ)) := erdos_142 k`;
+open Filter
+
+namespace Erdos142
+
+noncomputable abbrev r := Set.IsAPOfLengthFree.maxCard
+
+noncomputable def erdos_142_answer (k : ℕ) : ℕ → ℝ :=
+{{answer_expr}}
+
+@[category research open, AMS 11]
+theorem erdos_142 (k : ℕ) :
+    (fun N => (r k N : ℝ)) =Θ[atTop] erdos_142_answer k := by
+{{proof}}`;
+
+const EXACT_VERIFIER = `open Filter Erdos142 in
+example (k : ℕ) :
+  (fun N => (r k N : ℝ)) =Θ[atTop] erdos_142_answer k := erdos_142 k`;
+
+const ANTITRIVIAL = `open Filter Erdos142 in
+example (k : ℕ) :
+  (fun N => (r k N : ℝ)) =Θ[atTop] (fun N => (r k N : ℝ)) := erdos_142 k`;
 
 const problem: ProblemDef = {
   slug: "erdos-142",
@@ -28,7 +49,9 @@ const problem: ProblemDef = {
   scoring: "maximize",
   minImprovement: 0,
   evaluationMode: "proof",
+  proofKind: "formula_proof",
   featured: true,
+  hidden: true,
   description: `## Problem
 
 Let $r_k(N)$ be the largest possible size of a subset of $\\{1, \\dots, N\\}$ that does not contain any non-trivial $k$-term arithmetic progression. **Prove an asymptotic formula for $r_k(N)$.**
@@ -37,40 +60,76 @@ This is [Erdős Problem #142](https://www.erdosproblems.com/142).
 
 ## Submission
 
-Submit Lean 4 code that proves the theorem \`erdos_142\` with a concrete asymptotic formula replacing \`answer(sorry)\`. Your proof must:
+Submit structured fields:
+- \`answer_expr\` — a Lean expression for the asymptotic formula (type: \`ℕ → ℝ\`)
+- \`proof\` — a Lean proof body (after \`:= by\`)
+- \`extra_imports\` — (optional) additional Mathlib imports
+
+Your proof must:
 
 1. **Compile without \`sorry\`** — no axiom gaps allowed
-2. **Match the canonical type** — \`(fun N => (r k N : ℝ)) =Θ[atTop] f\` for some explicit \`f\`
-3. **Be non-trivial** — the answer cannot be definitionally equal to the LHS itself
+2. **Match the canonical type** — \`(fun N => (r k N : ℝ)) =Θ[atTop] erdos_142_answer k\`
+3. **Pass axiom audit** — only standard axioms (propext, Classical.choice, Quot.sound) allowed
+4. **Be non-circular** — the answer must not reference \`r\`, \`Set.IsAPOfLengthFree.maxCard\`, or the theorem itself
 
 ## Lean Statement
 
 \`\`\`lean
-${LEAN_STATEMENT}
+import FormalConjectures.Util.ProblemImports
+
+open Filter
+namespace Erdos142
+
+noncomputable abbrev r := Set.IsAPOfLengthFree.maxCard
+
+noncomputable def erdos_142_answer (k : ℕ) : ℕ → ℝ := <your answer_expr>
+
+theorem erdos_142 (k : ℕ) :
+    (fun N => (r k N : ℝ)) =Θ[atTop] erdos_142_answer k := by
+  <your proof>
 \`\`\`
 
 ## Verification
 
-Your submission is checked in three steps:
+Your submission is checked in these steps:
 
-1. **Compilation** — your code is loaded into the Lean REPL and must compile without errors or \`sorry\`
-2. **Shape verification** — an existential verifier checks that \`erdos_142 k\` produces a proof of the correct type: \`∃ f, (fun N => (r k N : ℝ)) =Θ[atTop] f\`
-3. **Anti-triviality** — we check that your answer is not self-referential (e.g., \`answer(fun N => r k N)\` proved by \`rfl\`)
+1. **Import validation** — only Mathlib and FormalConjectures imports are allowed
+2. **Compilation** — the generated module is compiled in the Lean REPL
+3. **Exact shape check** — \`erdos_142 k\` must produce a proof targeting the named answer
+4. **Axiom audit** — theorem and answer are checked with \`#print axioms\`
+5. **Answer inspection** — the answer must not reference forbidden constants
+6. **Anti-triviality** — a known trivial self-reference pattern is tested and must fail
 
 ## Reference
 
 [Erdős Problem #142](https://www.erdosproblems.com/142).`,
   solutionSchema: {
-    lean_code: "Lean 4 source code proving the theorem",
+    answer_expr: "Lean expression for the asymptotic formula (ℕ → ℝ)",
+    proof: "Lean proof body (after := by)",
+    extra_imports: "(optional) additional Mathlib imports",
   },
   zodSchema: z.object({
-    lean_code: z.string().min(1).max(1_000_000),
+    answer_expr: z.string().min(1).max(200_000),
+    proof: z.string().min(1).max(800_000),
+    extra_imports: z.array(z.string()).max(16).optional(),
   }),
   verifier: JSON.stringify({
     statement: LEAN_STATEMENT,
-    verifier: VERIFIER,
+    verifier: `open Filter Erdos142 in example (k : ℕ) : ∃ f : ℕ → ℝ, (fun N => (r k N : ℝ)) =Θ[atTop] f := ⟨_, erdos_142 k⟩`,
     antitrivial: ANTITRIVIAL,
   }),
-}; 
-//  A valid submission must make the VERIFIER compile and the ANTITRIVIAL fail.
+
+  leanTemplate: LEAN_TEMPLATE,
+  theoremName: "Erdos142.erdos_142",
+  answerName: "Erdos142.erdos_142_answer",
+  answerSignature: "(k : ℕ) : ℕ → ℝ",
+  exactVerifier: EXACT_VERIFIER,
+  forbiddenAnswerConsts: [
+    "Set.IsAPOfLengthFree.maxCard",
+    "Erdos142.r",
+    "Erdos142.erdos_142",
+  ],
+  antitrivial: ANTITRIVIAL,
+};
+
 export default problem;

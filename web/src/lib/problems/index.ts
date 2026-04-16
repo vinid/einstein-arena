@@ -23,6 +23,9 @@ import heilbronnConvex from "./heilbronn-convex";
 import hexagonPacking from "./hexagon-packing";
 import circlesRectangle from "./circles-rectangle";
 import differenceBases from "./difference-bases";
+import erdos3 from "./erdos-3";
+import erdos20 from "./erdos-20";
+import erdos30 from "./erdos-30";
 import erdos142 from "./erdos-142";
 import leanSumTest from "./lean-sum-test";
 
@@ -46,6 +49,9 @@ export const PROBLEMS: ProblemDef[] = [
   hexagonPacking,
   circlesRectangle,
   differenceBases,
+  erdos3,
+  erdos20,
+  erdos30,
   erdos142,
   leanSumTest,
 ];

@@ -14,12 +14,23 @@ const PRELOADED_IMPORTS = new Set([
   "import FormalConjectures.Util.ProblemImports",
 ]);
 
+const DEFAULT_ALLOWED_IMPORT_PREFIXES = ["Mathlib", "FormalConjectures"];
+
+const DEFAULT_ALLOWED_AXIOMS = new Set([
+  "propext",
+  "Classical.choice",
+  "Quot.sound",
+]);
+
+// ── Types ───────────────────────────────────────────────────────────
+
 interface ReplResponse {
   env?: number;
   messages?: Array<{ severity?: string; data?: string }>;
 }
 
-interface VerifierConfig {
+/** Legacy config shape used by old-style `verifyProof()` */
+interface LegacyVerifierConfig {
   statement: string;
   verifier: string;
   antitrivial?: string;
@@ -30,11 +41,77 @@ export interface ProofVerifyResult {
   error?: string;
   details: {
     user_ok: boolean;
+    exact_ok: boolean;
     verify_ok: boolean;
+    axioms_ok: boolean;
+    answer_ok: boolean;
     has_sorry: boolean;
     is_trivial: boolean;
+    bad_axioms: string[];
+    bad_answer_refs: string[];
     elapsed_ms: number;
   };
+}
+
+/** Input to the new structured verification path */
+export interface StructuredProofInput {
+  proofKind: "formula_proof" | "claim_proof";
+
+  extraImports?: string[];
+  answerExpr?: string;
+  proof: string;
+  claim?: string;
+
+  leanTemplate?: string;
+  leanTemplateYes?: string;
+  leanTemplateNo?: string;
+
+  theoremName?: string;
+  answerName?: string;
+  exactVerifier?: string;
+  forbiddenAnswerConsts?: string[];
+  allowedAxioms?: string[];
+  allowedImportPrefixes?: string[];
+  allowedClaims?: string[];
+  antitrivial?: string;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+
+function summarizeErrors(resp: ReplResponse): string {
+  return (resp.messages ?? [])
+    .filter((m) => m.severity === "error")
+    .map((m) => m.data ?? "")
+    .join("; ")
+    .slice(0, 1000);
+}
+
+function containsSorryText(resp: ReplResponse): boolean {
+  return (resp.messages ?? []).some((m) => (m.data ?? "").includes("sorry"));
+}
+
+function parseAxioms(text: string): string[] {
+  if (!text.trim()) return [];
+  if (/does not depend on any axioms/i.test(text)) return [];
+
+  const out = new Set<string>();
+  const bracketMatches = text.match(/\[[^\]]*\]/g) ?? [];
+  for (const block of bracketMatches) {
+    const inner = block.slice(1, -1).trim();
+    if (!inner) continue;
+    for (const part of inner.split(",")) {
+      const name = part.trim().replace(/^`|`$/g, "");
+      if (name) out.add(name);
+    }
+  }
+  return [...out];
+}
+
+function parseConstants(text: string): string[] {
+  const out = new Set<string>();
+  const matches = text.matchAll(/\b([A-Z][\w.]*\.\w[\w.]*)\b/g);
+  for (const m of matches) out.add(m[1]);
+  return [...out];
 }
 
 function parseImports(leanCode: string): {
@@ -54,13 +131,87 @@ function parseImports(leanCode: string): {
   return { extraImports: extra, code: kept.join("\n").trim() };
 }
 
-/**
- * Manages a Lean 4 REPL running inside an E2B sandbox and exposes
- * the three-step proof verification protocol:
- *   1. Compile user code
- *   2. Type-check canonical verifier statement
- *   3. Anti-triviality check (open problems only)
- */
+function validateImports(
+  imports: string[],
+  allowedPrefixes: string[],
+): string | null {
+  for (const imp of imports) {
+    const mod = imp.replace(/^import\s+/, "").trim();
+    const ok = allowedPrefixes.some(
+      (p) => mod === p || mod.startsWith(p + "."),
+    );
+    if (!ok) return `forbidden import: ${mod}`;
+  }
+  return null;
+}
+
+function indentBlock(text: string, spaces: number): string {
+  const pad = " ".repeat(spaces);
+  return text
+    .split("\n")
+    .map((line) => (line.trim() ? pad + line : line))
+    .join("\n");
+}
+
+function buildLeanModule(input: StructuredProofInput): string {
+  if (input.proofKind === "formula_proof") {
+    if (!input.leanTemplate) throw new Error("leanTemplate required for formula_proof");
+    if (!input.answerExpr) throw new Error("answerExpr required for formula_proof");
+
+    const importBlock = (input.extraImports ?? []).map((i) =>
+      i.startsWith("import ") ? i : `import ${i}`,
+    ).join("\n");
+
+    return input.leanTemplate
+      .replace("{{extra_imports}}", importBlock)
+      .replace("{{answer_expr}}", indentBlock(input.answerExpr, 2))
+      .replace("{{proof}}", indentBlock(input.proof, 2));
+  }
+
+  if (input.proofKind === "claim_proof") {
+    if (!input.claim) throw new Error("claim required for claim_proof");
+    const template =
+      input.claim === "yes" ? input.leanTemplateYes : input.leanTemplateNo;
+    if (!template) throw new Error(`leanTemplate${input.claim === "yes" ? "Yes" : "No"} required`);
+
+    const importBlock = (input.extraImports ?? []).map((i) =>
+      i.startsWith("import ") ? i : `import ${i}`,
+    ).join("\n");
+
+    return template
+      .replace("{{extra_imports}}", importBlock)
+      .replace("{{proof}}", indentBlock(input.proof, 2));
+  }
+
+  throw new Error(`unknown proofKind: ${input.proofKind}`);
+}
+
+function failResult(
+  error: string,
+  elapsed: number,
+  partial?: Partial<ProofVerifyResult["details"]>,
+): ProofVerifyResult {
+  return {
+    score: 0,
+    error,
+    details: {
+      user_ok: false,
+      exact_ok: false,
+      verify_ok: false,
+      axioms_ok: false,
+      answer_ok: false,
+      has_sorry: false,
+      is_trivial: false,
+      bad_axioms: [],
+      bad_answer_refs: [],
+      elapsed_ms: elapsed,
+      ...partial,
+    },
+  };
+}
+
+// ── LeanVerifier ────────────────────────────────────────────────────
+
 export class LeanVerifier {
   private sbx: Sandbox | null = null;
   private pid = 0;
@@ -194,14 +345,33 @@ export class LeanVerifier {
     return promise;
   }
 
-  // ── Three-step verification ─────────────────────────────────────
+  // ── Lean introspection helpers ──────────────────────────────────
+
+  private async collectAxioms(
+    declName: string,
+    env: number,
+  ): Promise<string[]> {
+    const resp = await this.sendCmd(`#print axioms ${declName}`, env);
+    const text = (resp.messages ?? []).map((m) => m.data ?? "").join("\n");
+    return parseAxioms(text);
+  }
+
+  private async printDecl(declName: string, env: number): Promise<string> {
+    const resp = await this.sendCmd(
+      `set_option pp.all true in\n#print ${declName}`,
+      env,
+    );
+    return (resp.messages ?? []).map((m) => m.data ?? "").join("\n");
+  }
+
+  // ── Legacy verification (old lean_code path) ───────────────────
 
   async verifyProof(
     leanCode: string,
     verifierJson: string,
   ): Promise<ProofVerifyResult> {
     const t0 = Date.now();
-    const config: VerifierConfig = JSON.parse(verifierJson);
+    const config: LegacyVerifierConfig = JSON.parse(verifierJson);
     const { extraImports, code } = parseImports(leanCode);
 
     let env = this.warmEnv;
@@ -211,7 +381,6 @@ export class LeanVerifier {
       env = resp.env ?? env;
     }
 
-    // Step 1 — compile user code
     const userResp = await this.sendCmd(code, env);
     const userEnv = userResp.env ?? env;
     const userMsgs = userResp.messages ?? [];
@@ -223,20 +392,11 @@ export class LeanVerifier {
         .filter((m) => m.severity === "error")
         .map((m) => m.data)
         .join("; ");
-      return {
-        score: 0,
-        error: `compilation_error: ${errors.slice(0, 500)}`,
-        details: {
-          user_ok: false,
-          verify_ok: false,
-          has_sorry: hasSorry,
-          is_trivial: false,
-          elapsed_ms: Date.now() - t0,
-        },
-      };
+      return failResult(`compilation_error: ${errors.slice(0, 500)}`, Date.now() - t0, {
+        has_sorry: hasSorry,
+      });
     }
 
-    // Step 2 — type-check canonical verifier
     const verifyResp = await this.sendCmd(config.verifier, userEnv);
     const verifyMsgs = verifyResp.messages ?? [];
     const verifyOk = !verifyMsgs.some((m) => m.severity === "error");
@@ -246,20 +406,12 @@ export class LeanVerifier {
         .filter((m) => m.severity === "error")
         .map((m) => m.data)
         .join("; ");
-      return {
-        score: 0,
-        error: `verification_failed: ${errors.slice(0, 500)}`,
-        details: {
-          user_ok: true,
-          verify_ok: false,
-          has_sorry: hasSorry,
-          is_trivial: false,
-          elapsed_ms: Date.now() - t0,
-        },
-      };
+      return failResult(`verification_failed: ${errors.slice(0, 500)}`, Date.now() - t0, {
+        user_ok: true,
+        has_sorry: hasSorry,
+      });
     }
 
-    // Step 3 — anti-triviality (open problems only)
     let isTrivial = false;
     if (config.antitrivial) {
       const trivResp = await this.sendCmd(config.antitrivial, userEnv);
@@ -277,10 +429,189 @@ export class LeanVerifier {
       error,
       details: {
         user_ok: true,
+        exact_ok: true,
         verify_ok: verifyOk,
+        axioms_ok: true,
+        answer_ok: true,
         has_sorry: hasSorry,
         is_trivial: isTrivial,
+        bad_axioms: [],
+        bad_answer_refs: [],
         elapsed_ms: Date.now() - t0,
+      },
+    };
+  }
+
+  // ── Structured verification (trusted-wrapper path) ─────────────
+
+  async verifyStructuredProof(
+    input: StructuredProofInput,
+  ): Promise<ProofVerifyResult> {
+    const t0 = Date.now();
+    const elapsed = () => Date.now() - t0;
+
+    // ── 0. Validate imports against allowlist ─────────────────────
+    const allowedPrefixes =
+      input.allowedImportPrefixes ?? DEFAULT_ALLOWED_IMPORT_PREFIXES;
+    const rawImports = (input.extraImports ?? []).map((i) =>
+      i.startsWith("import ") ? i : `import ${i}`,
+    );
+    const importErr = validateImports(rawImports, allowedPrefixes);
+    if (importErr) {
+      return failResult(importErr, elapsed());
+    }
+
+    // ── 0b. Validate claim for claim_proof ───────────────────────
+    if (input.proofKind === "claim_proof") {
+      const allowed = input.allowedClaims ?? ["yes", "no"];
+      if (!input.claim || !allowed.includes(input.claim)) {
+        return failResult(
+          `invalid claim: ${input.claim ?? "(missing)"}, allowed: ${allowed.join(", ")}`,
+          elapsed(),
+        );
+      }
+    }
+
+    // ── 1. Build trusted Lean module ─────────────────────────────
+    let leanModule: string;
+    try {
+      leanModule = buildLeanModule(input);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return failResult(`template_error: ${msg}`, elapsed());
+    }
+
+    console.log(`[lean] generated module (${leanModule.length} bytes)`);
+
+    // ── 2. Compile in REPL ───────────────────────────────────────
+    const { extraImports, code } = parseImports(leanModule);
+
+    let env = this.warmEnv;
+    for (const imp of extraImports) {
+      const resp = await this.sendCmd(imp, env);
+      env = resp.env ?? env;
+      const impErrors = summarizeErrors(resp);
+      if (impErrors) {
+        return failResult(`import_error: ${impErrors}`, elapsed());
+      }
+    }
+
+    const userResp = await this.sendCmd(code, env);
+    const userEnv = userResp.env ?? env;
+    const userOk = !summarizeErrors(userResp);
+    const hasSorry = containsSorryText(userResp);
+
+    if (!userOk) {
+      return failResult(
+        `compilation_error: ${summarizeErrors(userResp)}`,
+        elapsed(),
+        { has_sorry: hasSorry },
+      );
+    }
+
+    // ── 3. Exact theorem-shape check ─────────────────────────────
+    let exactOk = true;
+    if (input.exactVerifier) {
+      const resp = await this.sendCmd(input.exactVerifier, userEnv);
+      exactOk = !summarizeErrors(resp);
+      if (!exactOk) {
+        return failResult(
+          `exact_verification_failed: ${summarizeErrors(resp)}`,
+          elapsed(),
+          { user_ok: true, has_sorry: hasSorry },
+        );
+      }
+    }
+
+    // ── 4. Axiom audit ───────────────────────────────────────────
+    const allowedAxioms = new Set(
+      input.allowedAxioms ?? [...DEFAULT_ALLOWED_AXIOMS],
+    );
+    const badAxioms = new Set<string>();
+
+    const declsToAudit = [input.theoremName, input.answerName].filter(
+      Boolean,
+    ) as string[];
+    for (const declName of declsToAudit) {
+      const axioms = await this.collectAxioms(declName, userEnv);
+      for (const ax of axioms) {
+        if (!allowedAxioms.has(ax)) badAxioms.add(ax);
+      }
+    }
+    const axiomsOk = badAxioms.size === 0;
+
+    if (!axiomsOk) {
+      return failResult(
+        `bad_axioms: ${[...badAxioms].join(", ")}`,
+        elapsed(),
+        {
+          user_ok: true,
+          exact_ok: exactOk,
+          has_sorry: hasSorry,
+          bad_axioms: [...badAxioms],
+        },
+      );
+    }
+
+    // ── 5. Answer dependency audit (transitive) ──────────────────
+    let badAnswerRefs: string[] = [];
+    if (
+      input.answerName &&
+      (input.forbiddenAnswerConsts?.length ?? 0) > 0
+    ) {
+      const printed = await this.printDecl(input.answerName, userEnv);
+      const reachableConsts = parseConstants(printed);
+      badAnswerRefs = input.forbiddenAnswerConsts!.filter((forbidden) =>
+        reachableConsts.some(
+          (c) => c === forbidden || c.endsWith("." + forbidden),
+        ) || printed.includes(forbidden),
+      );
+    }
+    const answerOk = badAnswerRefs.length === 0;
+
+    if (!answerOk) {
+      return failResult(
+        `forbidden_answer_refs: ${badAnswerRefs.join(", ")}`,
+        elapsed(),
+        {
+          user_ok: true,
+          exact_ok: exactOk,
+          axioms_ok: true,
+          has_sorry: hasSorry,
+          bad_answer_refs: badAnswerRefs,
+        },
+      );
+    }
+
+    // ── 6. Anti-triviality ───────────────────────────────────────
+    let isTrivial = false;
+    if (input.antitrivial) {
+      const resp = await this.sendCmd(input.antitrivial, userEnv);
+      isTrivial = !summarizeErrors(resp);
+    }
+
+    // ── 7. Final verdict ─────────────────────────────────────────
+    const valid =
+      exactOk && axiomsOk && answerOk && !hasSorry && !isTrivial;
+
+    let error: string | undefined;
+    if (hasSorry) error = "proof uses sorry";
+    else if (isTrivial) error = "trivial self-referential answer";
+
+    return {
+      score: valid ? 1 : 0,
+      error,
+      details: {
+        user_ok: true,
+        exact_ok: exactOk,
+        verify_ok: true,
+        axioms_ok: axiomsOk,
+        answer_ok: answerOk,
+        has_sorry: hasSorry,
+        is_trivial: isTrivial,
+        bad_axioms: [...badAxioms],
+        bad_answer_refs: badAnswerRefs,
+        elapsed_ms: elapsed(),
       },
     };
   }

@@ -4,11 +4,16 @@ import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { Sandbox, type Context } from "@e2b/code-interpreter";
 import { getRedis } from "@/lib/redis";
-import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
+import { DEFAULT_MIN_IMPROVEMENT, PROBLEMS } from "@/lib/problems";
 import { scoreOrder } from "@/lib/problem-utils";
 import { randomUUID } from "crypto";
 import { type Disposition, isBetter, clearance, decideDisposition } from "@/lib/evaluate";
-import { LeanVerifier } from "@/lib/lean-verify";
+import { LeanVerifier, type StructuredProofInput } from "@/lib/lean-verify";
+import type { ProblemDef } from "@/lib/problems/types";
+
+const problemDefsBySlug: Record<string, ProblemDef> = Object.fromEntries(
+  PROBLEMS.map((p) => [p.slug, p]),
+);
 
 const MAX_PER_BATCH = 30;
 const METRICS_TTL = 48 * 60 * 60;
@@ -208,6 +213,52 @@ async function processProofSolution(
 ) {
   const t = Date.now();
   const data = sol.data as Record<string, unknown>;
+  const def = problemDefsBySlug[problem.slug];
+
+  // Use the new structured path when the problem defines proofKind
+  if (def?.proofKind) {
+    const input: StructuredProofInput = {
+      proofKind: def.proofKind,
+      proof: data.proof as string,
+      answerExpr: data.answer_expr as string | undefined,
+      claim: data.claim as string | undefined,
+      extraImports: data.extra_imports as string[] | undefined,
+      leanTemplate: def.leanTemplate,
+      leanTemplateYes: def.leanTemplateYes,
+      leanTemplateNo: def.leanTemplateNo,
+      theoremName: def.theoremName,
+      answerName: def.answerName,
+      exactVerifier: def.exactVerifier,
+      forbiddenAnswerConsts: def.forbiddenAnswerConsts,
+      allowedAxioms: def.allowedAxioms,
+      allowedImportPrefixes: def.allowedImportPrefixes,
+      allowedClaims: def.allowedClaims,
+      antitrivial: def.antitrivial,
+    };
+
+    const result = await leanVerifier.verifyStructuredProof(input);
+    const ms = Date.now() - t;
+
+    const pipe = getRedis().pipeline();
+    const hk = evalHourKey();
+    pipe.hincrby(hk, "executions", 1);
+    pipe.hincrby(hk, "exec_latency_sum", ms);
+    pipe.hincrby(hk, "exec_bytes", (data.proof as string ?? "").length + (data.answer_expr as string ?? "").length);
+    pipe.expire(hk, METRICS_TTL);
+    pipe.exec();
+
+    if (result.score === 0) {
+      log(sol.id, sol.agentName, problem.slug, ms, `PROOF_REJECTED: ${(result.error ?? "unknown").slice(0, 200)}`);
+      await markError(sol.id, result.error ?? "proof verification failed");
+      return;
+    }
+
+    await markEvaluated(sol.id, 1);
+    log(sol.id, sol.agentName, problem.slug, ms, "PROVED");
+    return;
+  }
+
+  // Legacy path: raw lean_code
   const leanCode = data.lean_code as string | undefined;
 
   if (!leanCode) {
