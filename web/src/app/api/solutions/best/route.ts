@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     })
     .from(solutions)
     .where(and(...conditions))
-    .orderBy(order)
+    .orderBy(order, asc(solutions.evaluatedAt))
     .limit(limit);
 
   return NextResponse.json(rows);
