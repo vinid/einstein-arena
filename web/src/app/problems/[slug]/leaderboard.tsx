@@ -18,6 +18,7 @@ interface LeaderboardProps {
   scoring: string;
   minImprovement: number;
   initialValues: number[] | null;
+  enableChart: boolean;
 }
 
 function BaselineBadge() {
@@ -38,9 +39,11 @@ function ScoreDisplay({ score, minImprovement, className }: { score: number | nu
   return <span className={className}>{s}</span>;
 }
 
-export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, initialValues }: LeaderboardProps) {
+export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, initialValues, enableChart }: LeaderboardProps) {
   const topAgent = rows.length > 0 ? rows[0].agentName : null;
-  const [selected, setSelected] = useState<string | null>(initialValues ? topAgent : null);
+  const [selected, setSelected] = useState<string | null>(
+    enableChart && initialValues ? topAgent : null
+  );
   const [cache, setCache] = useState<Record<string, number[]>>(() => {
     if (topAgent && initialValues) return { [topAgent]: initialValues };
     return {};
@@ -49,6 +52,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const handleClick = useCallback(async (agentName: string) => {
+    if (!enableChart) return;
     if (selected === agentName) {
       setSelected(null);
       return;
@@ -70,7 +74,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
         setCache((prev) => ({ ...prev, [agentName]: values }));
       }
     }
-  }, [selected, cache, problemId]);
+  }, [enableChart, selected, cache, problemId]);
 
   const download = useCallback(async (e: React.MouseEvent, agentName: string) => {
     e.stopPropagation();
@@ -126,10 +130,10 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
               return (
                 <div
                   key={r.agentName}
-                  onClick={() => handleClick(r.agentName)}
-                  className={`mx-3 my-3 px-4 py-4 rounded-lg cursor-pointer transition-colors bg-amber-400/5 border border-amber-400/20 ${
+                    onClick={enableChart ? () => handleClick(r.agentName) : undefined}
+                    className={`mx-3 my-3 px-4 py-4 rounded-lg transition-colors bg-amber-400/5 border border-amber-400/20 ${
                     isSelected ? "ring-1 ring-accent" : "hover:bg-amber-400/10"
-                  }`}
+                    } ${enableChart ? "cursor-pointer" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-[20px] font-bold text-amber-400">1</span>
@@ -159,12 +163,12 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
                 return (
                   <div
                     key={r.agentName}
-                    onClick={() => handleClick(r.agentName)}
-                    className={`px-4 py-3 flex items-center transition-colors cursor-pointer ${
+                    onClick={enableChart ? () => handleClick(r.agentName) : undefined}
+                    className={`px-4 py-3 flex items-center transition-colors ${
                       isSelected
                         ? "bg-accent/8 border-l-2 border-l-accent"
                         : "hover:bg-bg-hover"
-                    }`}
+                    } ${enableChart ? "cursor-pointer" : ""}`}
                   >
                     <span className={`text-[14px] font-bold w-6 ${
                       r.rank === 2 ? "text-zinc-400" : r.rank === 3 ? "text-orange-400" : "text-text-secondary"
@@ -198,14 +202,14 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
         )}
       </div>
 
-      {selected && loading && !chartValues && (
+      {enableChart && selected && loading && !chartValues && (
         <div className="rounded-xl border border-border bg-bg-card p-8 animate-pulse">
           <div className="h-4 w-32 bg-bg-hover rounded mb-4" />
           <div className="h-[180px] bg-bg-hover rounded" />
         </div>
       )}
 
-      {selectedRow && chartValues && (
+      {enableChart && selectedRow && chartValues && (
         <ProblemChart
           slug={slug}
           values={chartValues}
