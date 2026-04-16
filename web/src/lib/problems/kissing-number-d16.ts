@@ -49,9 +49,9 @@ Submit \`vectors\` — an array of 4321 vectors in $\\mathbb{R}^{16}$, each a li
   verifier: `import numpy as np
 
 
-def _overlap_loss(scaled, N):
+def _overlap_loss(scaled, n):
     total = 0.0
-    for i in range(N):
+    for i in range(n):
         diffs = scaled[i + 1 :] - scaled[i]
         sq_dists = np.sum(diffs ** 2, axis=1)
         mask = sq_dists < 4.0
@@ -62,13 +62,13 @@ def _overlap_loss(scaled, N):
 
 def evaluate(data: dict) -> float:
     vectors = data["vectors"]
-    N, D = 4321, 16
+    n, d = 4321, 16
 
-    if len(vectors) != N:
-        raise ValueError(f"Expected {N} vectors, got {len(vectors)}")
+    if len(vectors) != n:
+        raise ValueError(f"Expected {n} vectors, got {len(vectors)}")
     for v in vectors:
-        if len(v) != D:
-            raise ValueError(f"Each vector must have {D} components, got {len(v)}")
+        if len(v) != d:
+            raise ValueError(f"Each vector must have {d} components, got {len(v)}")
 
     float_vecs = np.array([[float(x) for x in v] for v in vectors], dtype=np.float64)
     sq_norms_f = np.sum(float_vecs ** 2, axis=1)
@@ -80,7 +80,7 @@ def evaluate(data: dict) -> float:
         sq_norms = np.sum(int_vecs ** 2, axis=1)
         max_sq_norm = int(sq_norms.max())
         valid = True
-        for i in range(N):
+        for i in range(n):
             diffs = int_vecs[i + 1 :] - int_vecs[i]
             sq_dists = np.sum(diffs ** 2, axis=1)
             if len(sq_dists) > 0 and int(sq_dists.min()) < max_sq_norm:
@@ -91,7 +91,7 @@ def evaluate(data: dict) -> float:
 
     norms = np.sqrt(sq_norms_f[:, None])
     scaled = float_vecs / norms * 2.0
-    return _overlap_loss(scaled, N)`,
+    return _overlap_loss(scaled, n)`,
 };
 
 export default problem;
