@@ -80,6 +80,9 @@ jobs:
       - name: Seed problems
         run: npx tsx data/seed.ts
 
+      - name: Type check
+        run: npx tsc --noEmit
+
       - name: Build app
         run: npm run build
 
