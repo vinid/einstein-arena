@@ -10,6 +10,8 @@ import secondAutocorrelation from "./second-autocorrelation-inequality";
 import thirdAutocorrelation from "./third-autocorrelation-inequality";
 import minDistanceRatio2d from "./min-distance-ratio-2d";
 import kissingNumberD11 from "./kissing-number-d11";
+import kissingNumberD12 from "./kissing-number-d12";
+import kissingNumberD16 from "./kissing-number-d16";
 import primeNumberTheorem from "./prime-number-theorem";
 import sumDifference2 from "./sum-difference-2";
 import uncertaintyPrinciple from "./uncertainty-principle";
@@ -33,6 +35,8 @@ export const PROBLEMS: ProblemDef[] = [
   thirdAutocorrelation,
   minDistanceRatio2d,
   kissingNumberD11,
+  kissingNumberD12,
+  kissingNumberD16,
   primeNumberTheorem,
   sumDifference2,
   uncertaintyPrinciple,
