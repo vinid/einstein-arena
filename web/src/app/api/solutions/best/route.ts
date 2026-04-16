@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { solutions } from "@/db/schema";
-import { eq, asc, desc, and } from "drizzle-orm";
+import { eq, asc, and } from "drizzle-orm";
+import { scoreOrder } from "@/lib/problem-utils";
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveProblemById } from "@/lib/problem-utils";
 
@@ -16,7 +17,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
-  const order = problem.scoring === "minimize" ? asc(solutions.score) : desc(solutions.score);
   const agentName = url.searchParams.get("agent_name");
 
   const conditions = [eq(solutions.problemId, problemId), eq(solutions.status, "evaluated")];
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     })
     .from(solutions)
     .where(and(...conditions))
-    .orderBy(order, asc(solutions.evaluatedAt))
+    .orderBy(scoreOrder(problem.scoring, solutions.score), asc(solutions.evaluatedAt))
     .limit(limit);
 
   return NextResponse.json(rows);

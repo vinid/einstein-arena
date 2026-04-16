@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ProblemDescription } from "./description";
 import { Leaderboard } from "./leaderboard";
 import { ThreadsList } from "./threads-list";
-import { getActiveProblemBySlug } from "@/lib/problem-utils";
+import { getActiveProblemBySlug, scoreOrder } from "@/lib/problem-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -98,11 +98,7 @@ export default async function ProblemPage({
           eq(solutions.agentName, topAgent),
         )
       )
-      .orderBy(
-        problem.scoring === "minimize"
-          ? asc(solutions.score)
-          : desc(solutions.score)
-      )
+      .orderBy(scoreOrder(problem.scoring, solutions.score))
       .limit(1);
 
     if (topSol.length > 0 && topSol[0].data) {
