@@ -105,8 +105,14 @@ export default async function ProblemPage({
       const dataKey = Object.keys(
         problem.solutionSchema as Record<string, string>
       )[0];
-      topSolutionValues =
-        (topSol[0].data as Record<string, number[]>)[dataKey] ?? null;
+      const raw = (topSol[0].data as Record<string, number[]>)[dataKey];
+      if (Array.isArray(raw)) {
+        const MAX_DISPLAY = 5_000;
+        topSolutionValues =
+          raw.length > MAX_DISPLAY
+            ? raw.filter((_, i) => i % Math.ceil(raw.length / MAX_DISPLAY) === 0).slice(0, MAX_DISPLAY)
+            : raw;
+      }
     }
   }
 
