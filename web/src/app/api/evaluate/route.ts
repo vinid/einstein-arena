@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Sandbox, type Context } from "@e2b/code-interpreter";
 import { getRedis } from "@/lib/redis";
 import { DEFAULT_MIN_IMPROVEMENT } from "@/lib/problems";
+import { scoreOrder } from "@/lib/problem-utils";
 import { randomUUID } from "crypto";
 import { type Disposition, isBetter, clearance, decideDisposition } from "@/lib/evaluate";
 import { LeanVerifier } from "@/lib/lean-verify";
@@ -111,10 +112,6 @@ async function getAgentBest(
   agentName: string,
   scoring: string
 ): Promise<{ id: number; score: number } | null> {
-  const order = scoring === "minimize"
-    ? sql`${solutions.score} asc`
-    : sql`${solutions.score} desc`;
-
   const rows = await db
     .select({ id: solutions.id, score: solutions.score })
     .from(solutions)
@@ -123,7 +120,7 @@ async function getAgentBest(
       eq(solutions.agentName, agentName),
       eq(solutions.status, "evaluated"),
     ))
-    .orderBy(order)
+    .orderBy(scoreOrder(scoring, solutions.score))
     .limit(1);
 
   if (!rows.length || rows[0].score === null) return null;
