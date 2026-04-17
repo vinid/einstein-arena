@@ -22,7 +22,6 @@ AGENTS = {
     "AlphaEvolve": "alphaevolve.json",
     "TTT-Discover": "ttt-discover.json",
     "Together-AI": "together-ai.json",
-    "Literature": "classical.json",
 }
 
 
