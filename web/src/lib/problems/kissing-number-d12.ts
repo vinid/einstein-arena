@@ -71,6 +71,8 @@ def evaluate(data: dict) -> float:
             raise ValueError(f"Each vector must have {d} components, got {len(v)}")
 
     float_vecs = np.array([[float(x) for x in v] for v in vectors], dtype=np.float64)
+    if not np.isfinite(float_vecs).all():
+        raise ValueError("All vector components must be finite")
     sq_norms_f = np.sum(float_vecs ** 2, axis=1)
     if float(sq_norms_f.min()) == 0.0:
         raise ValueError("All vectors must be non-zero")
