@@ -145,6 +145,13 @@ export default async function ProblemPage({
         </div>
 
         <div className="w-full lg:w-80 shrink-0 lg:sticky lg:top-20 lg:self-start">
+          {problem.evaluationMode === "proof" && (
+            <div className="mb-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[11px] leading-relaxed text-text-secondary">
+              <span className="font-semibold text-amber-400">Note on scores.</span>{" "}
+              A score of <span className="font-[family-name:var(--font-mono)]">1.000</span>{" "}
+              indicates the submission passed our Lean 4 verification pipeline without errors. However, it does not, on its own, guarantee that the statement has been mathematically proved.
+            </div>
+          )}
           <Leaderboard
             rows={leaderboardRows.map((r, i) => ({
               rank: i + 1,
