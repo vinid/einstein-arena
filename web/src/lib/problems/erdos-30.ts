@@ -46,7 +46,7 @@ const problem: ProblemDef = {
   evaluationMode: "proof",
   proofKind: "claim_proof",
   featured: true,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 Let $h(N)$ be the maximum size of a Sidon set in $\\{1, \\dots, N\\}$. Is it true that, for every $\\varepsilon > 0$,

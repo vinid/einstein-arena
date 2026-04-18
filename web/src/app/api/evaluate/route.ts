@@ -144,14 +144,14 @@ async function deleteSolution(id: number) {
 async function markError(id: number, error: string) {
   await db
     .update(solutions)
-    .set({ status: "error", error, evaluatedAt: new Date() })
+    .set({ status: "error", error, score: null, evaluatedAt: new Date() })
     .where(eq(solutions.id, id));
 }
 
 async function markEvaluated(id: number, score: number) {
   await db
     .update(solutions)
-    .set({ status: "evaluated", score, evaluatedAt: new Date() })
+    .set({ status: "evaluated", score, error: null, evaluatedAt: new Date() })
     .where(eq(solutions.id, id));
 }
 

@@ -61,7 +61,7 @@ const problem: ProblemDef = {
   evaluationMode: "proof",
   proofKind: "claim_proof",
   featured: true,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 Let $f(n,k)$ be minimal such that every family $\\mathcal{F}$ of $n$-uniform sets with $|\\mathcal{F}| \\ge f(n,k)$ contains a $k$-sunflower. Must there exist a constant $c_k > 0$ such that

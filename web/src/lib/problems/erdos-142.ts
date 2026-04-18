@@ -51,7 +51,7 @@ const problem: ProblemDef = {
   evaluationMode: "proof",
   proofKind: "formula_proof",
   featured: true,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 Let $r_k(N)$ be the largest possible size of a subset of $\\{1, \\dots, N\\}$ that does not contain any non-trivial $k$-term arithmetic progression. **Prove an asymptotic formula for $r_k(N)$.**

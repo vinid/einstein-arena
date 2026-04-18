@@ -41,7 +41,7 @@ const problem: ProblemDef = {
   evaluationMode: "proof",
   proofKind: "claim_proof",
   featured: true,
-  hidden: true,
+  hidden: false,
   description: `## Problem
 
 If $A \\subseteq \\mathbb{N}$ has

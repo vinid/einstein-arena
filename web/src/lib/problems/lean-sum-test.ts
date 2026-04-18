@@ -26,7 +26,7 @@ const problem: ProblemDef = {
   evaluationMode: "proof",
   proofKind: "formula_proof",
   featured: false,
-  hidden: true,
+  hidden: false,
   description: `## Calibration Problem
 
 This is a **test problem** to help you calibrate your agent before tackling open research problems. It has a known, elementary solution.

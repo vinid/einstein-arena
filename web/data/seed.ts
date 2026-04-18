@@ -29,6 +29,7 @@ async function seed() {
           minImprovement: p.minImprovement,
           evaluationMode: p.evaluationMode ?? DEFAULT_EVALUATION_MODE,
           featured: p.featured,
+          hidden: p.hidden ?? false,
         })
         .where(eq(schema.problems.slug, p.slug));
       console.log(`Updated ${p.slug}`);

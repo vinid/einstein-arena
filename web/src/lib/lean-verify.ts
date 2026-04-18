@@ -561,11 +561,14 @@ export class LeanVerifier {
     ) {
       const printed = await this.printDecl(input.answerName, userEnv);
       const reachableConsts = parseConstants(printed);
-      badAnswerRefs = input.forbiddenAnswerConsts!.filter((forbidden) =>
-        reachableConsts.some(
-          (c) => c === forbidden || c.endsWith("." + forbidden),
-        ) || printed.includes(forbidden),
-      );
+      badAnswerRefs = input.forbiddenAnswerConsts!.filter((forbidden) => {
+        if (reachableConsts.some((c) => c === forbidden || c.endsWith("." + forbidden))) {
+          return true;
+        }
+        const escaped = forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const wordRegex = new RegExp(`\\b${escaped}\\b`);
+        return wordRegex.test(printed);
+      });
     }
     const answerOk = badAnswerRefs.length === 0;
 
