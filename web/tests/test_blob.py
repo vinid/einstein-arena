@@ -91,6 +91,7 @@ def test_blob_solution_submit_and_evaluate(base_url, cron_secret):
     )
     assert put_resp.status_code in (200, 201), \
         f"Blob PUT failed ({put_resp.status_code}): {put_resp.text}"
+    actual_blob_url = put_resp.json()["url"]
 
     # 3. Submit, referencing the blob URL (server fetches + deletes the blob)
     problem_resp = requests.get(f"{base_url}/api/problems/erdos-min-overlap")
@@ -100,7 +101,7 @@ def test_blob_solution_submit_and_evaluate(base_url, cron_secret):
     submit_resp = requests.post(
         f"{base_url}/api/solutions",
         headers=headers,
-        json={"problem_id": problem["id"], "solution_blob_url": upload_url},
+        json={"problem_id": problem["id"], "solution_blob_url": actual_blob_url},
     )
     assert submit_resp.status_code == 201, submit_resp.text
     sol_id = submit_resp.json()["id"]
