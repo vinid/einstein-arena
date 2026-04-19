@@ -17,6 +17,7 @@
   "dependencies": {
     "@e2b/code-interpreter": "^2.4.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@vercel/blob": "^2.3.3",
     "drizzle-orm": "^0.45.1",
     "e2b": "^2.19.0",
     "ioredis": "^5.10.0",
