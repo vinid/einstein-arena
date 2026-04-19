@@ -6,6 +6,8 @@ import { rateLimit } from "@/lib/ratelimit";
 import { solutionSchemas } from "@/lib/problems";
 import { logAgentEvent } from "@/lib/agent-log";
 import { getActiveProblemById } from "@/lib/problem-utils";
+import { del, list } from "@vercel/blob";
+import { MAX_BLOB_BYTES } from "@/lib/constants";
 
 const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11"]);
 
@@ -38,8 +40,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Submissions are disabled for this problem" }, { status: 409 });
   }
 
-  const sol = body.solution;
+  let sol = body.solution;
+  let blobUrlToDelete: string | null = null;
+
+  if (!sol && body.solution_blob_key) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ error: "Large uploads not configured on this server" }, { status: 503 });
+    }
+    const blobKey: string = body.solution_blob_key;
+    if (!blobKey.startsWith(`solutions/${agentName}/`) || !blobKey.endsWith(".json")) {
+      return NextResponse.json({ error: "Invalid blob key" }, { status: 400 });
+    }
+    const keyPrefix = blobKey.endsWith(".json") ? blobKey.slice(0, -5) : blobKey;
+    const { blobs } = await list({ prefix: keyPrefix, limit: 1 });
+    const blobMeta = blobs.find(b => b.pathname.startsWith(keyPrefix) && b.pathname.endsWith(".json"));
+    if (!blobMeta) {
+      return NextResponse.json({ error: "Blob not found" }, { status: 400 });
+    }
+    if (blobMeta.size > MAX_BLOB_BYTES) {
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+      return NextResponse.json({ error: "Solution blob exceeds maximum allowed size" }, { status: 400 });
+    }
+    const blobRes = await fetch(blobMeta.url, {
+      headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
+    });
+    if (!blobRes.ok) {
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+      return NextResponse.json({ error: "Failed to fetch solution from blob storage" }, { status: 400 });
+    }
+    let text: string;
+    try {
+      text = new TextDecoder().decode(await blobRes.arrayBuffer());
+      sol = JSON.parse(text);
+    } catch {
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+      return NextResponse.json({ error: "Blob content is not valid JSON" }, { status: 400 });
+    }
+    blobUrlToDelete = blobMeta.url;
+  }
+
   if (!sol || typeof sol !== "object") {
+    if (blobUrlToDelete) del(blobUrlToDelete, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
     return NextResponse.json({ error: "solution is required and must be an object" }, { status: 400 });
   }
 
@@ -51,13 +92,16 @@ export async function POST(req: NextRequest) {
       const path = issue.path.length ? issue.path.join(".") : "";
       const msg = path ? `solution.${path}: ${issue.message}` : issue.message;
       console.warn(`[solutions] 400 agent=${agentName} problem=${problem.slug} schema error: ${msg}`);
+      if (blobUrlToDelete) del(blobUrlToDelete, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
       return NextResponse.json({ error: msg }, { status: 400 });
     }
   }
 
-  const dataStr = JSON.stringify(sol);
-  if (dataStr.length > 2_000_000) {
-    return NextResponse.json({ error: "Solution data must be under 2 MB" }, { status: 400 });
+  if (!blobUrlToDelete) {
+    const dataStr = JSON.stringify(sol);
+    if (dataStr.length > 2_000_000) {
+      return NextResponse.json({ error: "Solution data must be under 2 MB" }, { status: 400 });
+    }
   }
 
   const bypassToken = process.env.RATE_LIMIT_BYPASS_TOKEN;
@@ -74,6 +118,12 @@ export async function POST(req: NextRequest) {
       ...(precomputedScore !== null ? { status: "evaluated", score: precomputedScore, evaluatedAt: new Date() } : {}),
     })
     .returning({ id: solutions.id, status: solutions.status, score: solutions.score });
+
+  if (blobUrlToDelete) {
+    del(blobUrlToDelete, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch((err) => {
+      console.error("[solutions] failed to delete blob", blobUrlToDelete, err);
+    });
+  }
 
   logAgentEvent(agentName, "submission", "/api/solutions", 201, { problem_id: body.problem_id, slug: problem.slug, solution_id: solution.id });
   return NextResponse.json(solution, { status: 201 });

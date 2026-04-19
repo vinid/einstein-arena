@@ -7,6 +7,10 @@
     {
       "path": "/api/evaluate",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/blobs/cleanup",
+      "schedule": "0 3 * * *"
     }
   ]
 }
