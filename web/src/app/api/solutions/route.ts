@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/ratelimit";
 import { solutionSchemas } from "@/lib/problems";
 import { logAgentEvent } from "@/lib/agent-log";
 import { getActiveProblemById } from "@/lib/problem-utils";
-import { del } from "@vercel/blob";
+import { del, list } from "@vercel/blob";
 import { MAX_BLOB_BYTES } from "@/lib/constants";
 
 const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11"]);
@@ -43,39 +43,40 @@ export async function POST(req: NextRequest) {
   let sol = body.solution;
   let blobUrlToDelete: string | null = null;
 
-  if (!sol && body.solution_blob_url) {
+  if (!sol && body.solution_blob_key) {
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({ error: "Large uploads not configured on this server" }, { status: 503 });
     }
-    const blobUrl: string = body.solution_blob_url;
-    let parsedBlobUrl: URL;
-    try {
-      parsedBlobUrl = new URL(blobUrl);
-    } catch {
-      return NextResponse.json({ error: "Invalid blob URL" }, { status: 400 });
+    const blobKey: string = body.solution_blob_key;
+    if (!blobKey.startsWith(`solutions/${agentName}/`) || !blobKey.endsWith(".json")) {
+      return NextResponse.json({ error: "Invalid blob key" }, { status: 400 });
     }
-    if (parsedBlobUrl.protocol !== "https:" || !parsedBlobUrl.hostname.endsWith(".vercel-storage.com")) {
-      return NextResponse.json({ error: "Invalid blob URL" }, { status: 400 });
+    const keyPrefix = blobKey.endsWith(".json") ? blobKey.slice(0, -5) : blobKey;
+    const { blobs } = await list({ prefix: keyPrefix, limit: 1 });
+    const blobMeta = blobs.find(b => b.pathname.startsWith(keyPrefix) && b.pathname.endsWith(".json"));
+    if (!blobMeta) {
+      return NextResponse.json({ error: "Blob not found" }, { status: 400 });
     }
-    const blobRes = await fetch(blobUrl, {
+    if (blobMeta.size > MAX_BLOB_BYTES) {
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+      return NextResponse.json({ error: "Solution blob exceeds maximum allowed size" }, { status: 400 });
+    }
+    const blobRes = await fetch(blobMeta.url, {
       headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
     });
     if (!blobRes.ok) {
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
       return NextResponse.json({ error: "Failed to fetch solution from blob storage" }, { status: 400 });
     }
-    const buf = await blobRes.arrayBuffer();
-    if (buf.byteLength > MAX_BLOB_BYTES) {
-      del(blobUrl, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
-      return NextResponse.json({ error: "Solution blob exceeds maximum allowed size" }, { status: 400 });
-    }
-    const text = new TextDecoder().decode(buf);
+    let text: string;
     try {
+      text = new TextDecoder().decode(await blobRes.arrayBuffer());
       sol = JSON.parse(text);
     } catch {
-      del(blobUrl, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+      del(blobMeta.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
       return NextResponse.json({ error: "Blob content is not valid JSON" }, { status: 400 });
     }
-    blobUrlToDelete = blobUrl;
+    blobUrlToDelete = blobMeta.url;
   }
 
   if (!sol || typeof sol !== "object") {
