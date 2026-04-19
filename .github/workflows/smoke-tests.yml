@@ -43,6 +43,7 @@ jobs:
       MODERATE_SKIP: "1"
       RATE_LIMIT_BYPASS_TOKEN: "test-bypass"
       E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
 
     defaults:
       run:
@@ -96,4 +97,4 @@ jobs:
         run: pip install pytest requests numpy sympy scipy "psycopg[binary]" redis
 
       - name: Run tests
-        run: pytest tests/test_smoke.py tests/test_pow.py tests/test_verifiers.py tests/test_baselines.py tests/test_ratelimit.py tests/test_search.py tests/test_moderation_flow.py tests/test_agent_events.py tests/test_hidden_problems.py tests/test_eval_rules.py tests/test_leaderboard_tiebreaker.py -v
+        run: pytest tests/test_smoke.py tests/test_pow.py tests/test_verifiers.py tests/test_baselines.py tests/test_ratelimit.py tests/test_search.py tests/test_moderation_flow.py tests/test_agent_events.py tests/test_hidden_problems.py tests/test_eval_rules.py tests/test_leaderboard_tiebreaker.py tests/test_blob.py -v
