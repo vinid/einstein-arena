@@ -1,16 +1,15 @@
 """
 Integration tests for the Lean proof verification pipeline.
 
-Uses the "sum_open" problem — a toy version of the open-problem verification
-flow where the answer is unknown to the verifier:
+Exercises `LeanVerifier.verifyStructuredProof` directly (no HTTP / DB)
+using the `lean-sum-test` problem definition as the trusted wrapper.
 
-    "For all n, there exists k such that 2 * ∑_{i=0}^{n} i = k"
-
-Five test cases exercise every verification outcome:
-  - correct proof (two equivalent expressions)
-  - invalid Lean code
-  - wrong answer using sorry
-  - self-referential trivial answer
+Five cases cover every verification outcome:
+  - v1, v2     — two algebraically-equivalent correct answers (score=1)
+  - v3         — malformed Lean proof body → compilation_error
+  - wrong      — `sorry` used in place of an actual proof → caught
+  - forbidden  — self-referential answer that embeds `Finset.sum`
+                 → caught by the forbidden-answer-refs audit
 
 Requires:
   E2B_API_KEY          — E2B API key
@@ -27,79 +26,112 @@ from pathlib import Path
 
 import pytest
 
-EXAMPLES_DIR = Path(__file__).resolve().parent / "lean_examples"
-
-VERIFIER_CONFIG = json.dumps({
-    "statement": (
-        "import FormalConjectures.Util.ProblemImports\n\n"
-        "theorem sum_formula (n : ℕ) :\n"
-        "    2 * ∑ i ∈ Finset.range (n + 1), i = answer(sorry) := by\n"
-        "  sorry"
-    ),
-    "verifier": (
-        "example (n : ℕ) : "
-        "∃ k : ℕ, 2 * ∑ i ∈ Finset.range (n + 1), i = k := ⟨_, sum_formula n⟩"
-    ),
-    "antitrivial": (
-        "example (n : ℕ) : "
-        "2 * ∑ i ∈ Finset.range (n + 1), i = "
-        "2 * ∑ i ∈ Finset.range (n + 1), i := sum_formula n"
-    ),
-})
-
 
 def _skip_if_no_e2b():
     if not os.environ.get("E2B_API_KEY"):
         pytest.skip("E2B_API_KEY not set — skipping Lean verification tests")
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture(scope="module", autouse=True)
 def _require_e2b():
     _skip_if_no_e2b()
 
 
-# We run all 5 cases in one verifier session to avoid re-creating the
-# sandbox for each test.  Results are cached in a module-scoped fixture.
+# We run all cases in one verifier session to avoid re-creating the
+# sandbox for each test. Results are cached in a module-scoped fixture.
+
+# Each case is an (answer_expr, proof) pair. The TS script below wraps each
+# one into a StructuredProofInput using the live `lean-sum-test` problem
+# definition (imported from src/lib/problems/lean-sum-test.ts), so the test
+# stays in sync with the real verifier config as that file evolves.
+CASES: dict[str, dict[str, str]] = {
+    "v1": {
+        "answer_expr": "n * (n + 1)",
+        "proof": (
+            "show 2 * ∑ i ∈ Finset.range (n + 1), i = n * (n + 1)\n"
+            "induction n with\n"
+            "| zero => simp\n"
+            "| succ n ih =>\n"
+            "  rw [Finset.sum_range_succ, mul_add, ih]\n"
+            "  ring"
+        ),
+    },
+    "v2": {
+        "answer_expr": "n ^ 2 + n",
+        "proof": (
+            "show 2 * ∑ i ∈ Finset.range (n + 1), i = n ^ 2 + n\n"
+            "induction n with\n"
+            "| zero => simp\n"
+            "| succ n ih =>\n"
+            "  rw [Finset.sum_range_succ, mul_add, ih]\n"
+            "  ring"
+        ),
+    },
+    "v3": {
+        "answer_expr": "n * (n + 1)",
+        "proof": (
+            "show 2 * ∑ i ∈ Finset.range (n + 1), i = n * (n + 1)\n"
+            "induction n with\n"
+            "| zero => simp\n"
+            "| succ n ih =>\n"
+            "  rw [Finset.sum_range_succ, mul_add,\n"
+            "  ring"
+        ),
+    },
+    "wrong": {
+        "answer_expr": "n ^ 2",
+        "proof": "sorry",
+    },
+    "forbidden": {
+        "answer_expr": "2 * ∑ i ∈ Finset.range (n + 1), i",
+        "proof": "rfl",
+    },
+}
+
 
 @pytest.fixture(scope="module")
 def all_results() -> dict[str, dict]:
-    """Run all 5 test Lean files through the verifier in a single session."""
-    lean_files = {
-        "v1": "verify_sum_open_v1.lean",
-        "v2": "verify_sum_open_v2.lean",
-        "v3": "verify_sum_open_v3.lean",
-        "wrong": "verify_sum_open_wrong.lean",
-        "trivial": "verify_sum_open_trivial.lean",
-    }
-
+    """Run all cases through the structured verifier in a single session."""
     web_dir = Path(__file__).resolve().parent.parent
+    cases_json = json.dumps(CASES)
 
-    # Build one tsx script that verifies all files in a single session
-    file_map = json.dumps({k: (EXAMPLES_DIR / v).read_text() for k, v in lean_files.items()})
-    verifier_config = json.dumps(VERIFIER_CONFIG)
+    script = (
+        'import { LeanVerifier, type StructuredProofInput } from "./src/lib/lean-verify";\n'
+        'import leanSumTest from "./src/lib/problems/lean-sum-test";\n'
+        "\n"
+        f"const cases: Record<string, {{ answer_expr: string; proof: string }}> = {cases_json};\n"
+        "\n"
+        "function mkInput(answerExpr: string, proof: string): StructuredProofInput {\n"
+        '  return {\n'
+        '    proofKind: "formula_proof",\n'
+        "    answerExpr,\n"
+        "    proof,\n"
+        "    leanTemplate: leanSumTest.leanTemplate,\n"
+        "    theoremName: leanSumTest.theoremName,\n"
+        "    answerName: leanSumTest.answerName,\n"
+        "    exactVerifier: leanSumTest.exactVerifier,\n"
+        "    forbiddenAnswerConsts: leanSumTest.forbiddenAnswerConsts,\n"
+        "    allowedAxioms: leanSumTest.allowedAxioms,\n"
+        "    allowedImportPrefixes: leanSumTest.allowedImportPrefixes,\n"
+        "    antitrivial: leanSumTest.antitrivial,\n"
+        "  };\n"
+        "}\n"
+        "\n"
+        "(async () => {\n"
+        "  const v = new LeanVerifier();\n"
+        "  await v.init();\n"
+        "  const results: Record<string, unknown> = {};\n"
+        "  try {\n"
+        "    for (const [key, c] of Object.entries(cases)) {\n"
+        "      results[key] = await v.verifyStructuredProof(mkInput(c.answer_expr, c.proof));\n"
+        "    }\n"
+        '    process.stdout.write("RESULT:" + JSON.stringify(results));\n'
+        "  } finally {\n"
+        "    await v.close();\n"
+        "  }\n"
+        "})();\n"
+    )
 
-    script = f"""\
-import {{ LeanVerifier }} from "./src/lib/lean-verify";
-const files: Record<string, string> = {file_map};
-const config = {verifier_config};
-(async () => {{
-  const v = new LeanVerifier();
-  await v.init();
-  const results: Record<string, any> = {{}};
-  try {{
-    for (const [key, code] of Object.entries(files)) {{
-      results[key] = await v.verifyProof(code, config);
-    }}
-    process.stdout.write("RESULT:" + JSON.stringify(results));
-  }} finally {{
-    await v.close();
-  }}
-}})();
-"""
     result = subprocess.run(
         ["npx", "tsx", "--eval", script],
         capture_output=True,
@@ -125,9 +157,11 @@ const config = {verifier_config};
 def test_correct_proof_v1_accepted(all_results):
     """Correct proof with answer n*(n+1) should score 1."""
     r = all_results["v1"]
-    assert r["score"] == 1
+    assert r["score"] == 1, f"unexpected failure: {r.get('error')}"
     assert r["details"]["user_ok"] is True
-    assert r["details"]["verify_ok"] is True
+    assert r["details"]["exact_ok"] is True
+    assert r["details"]["axioms_ok"] is True
+    assert r["details"]["answer_ok"] is True
     assert r["details"]["has_sorry"] is False
     assert r["details"]["is_trivial"] is False
 
@@ -135,9 +169,11 @@ def test_correct_proof_v1_accepted(all_results):
 def test_correct_proof_v2_accepted(all_results):
     """Equivalent expression n^2+n should also score 1."""
     r = all_results["v2"]
-    assert r["score"] == 1
+    assert r["score"] == 1, f"unexpected failure: {r.get('error')}"
     assert r["details"]["user_ok"] is True
-    assert r["details"]["verify_ok"] is True
+    assert r["details"]["exact_ok"] is True
+    assert r["details"]["axioms_ok"] is True
+    assert r["details"]["answer_ok"] is True
     assert r["details"]["has_sorry"] is False
     assert r["details"]["is_trivial"] is False
 
@@ -146,7 +182,7 @@ def test_correct_proof_v2_accepted(all_results):
 # Tests — rejections
 # ---------------------------------------------------------------------------
 
-def test_invalid_lean_code_rejected(all_results):
+def test_invalid_lean_rejected(all_results):
     """Malformed Lean code should fail compilation with score 0."""
     r = all_results["v3"]
     assert r["score"] == 0
@@ -156,16 +192,25 @@ def test_invalid_lean_code_rejected(all_results):
 
 
 def test_sorry_proof_rejected(all_results):
-    """Wrong answer proved with sorry should be detected and rejected."""
+    """`sorry` must not slip through — either the sorry-axiom audit
+    catches it (bad_axioms: sorryAx) or the final verdict reports
+    "proof uses sorry". Either way the error string contains "sorry"
+    and has_sorry is set."""
     r = all_results["wrong"]
     assert r["score"] == 0
     assert r["details"]["has_sorry"] is True
-    assert r["error"] == "proof uses sorry"
+    assert r["error"] is not None
+    assert "sorry" in r["error"].lower()
 
 
-def test_trivial_self_referential_rejected(all_results):
-    """answer(LHS) proved by rfl — anti-triviality check must catch this."""
-    r = all_results["trivial"]
+def test_forbidden_answer_ref_rejected(all_results):
+    """Self-referential answer that transitively uses `Finset.sum`
+    must be rejected by the forbidden-answer-refs audit."""
+    r = all_results["forbidden"]
     assert r["score"] == 0
-    assert r["details"]["is_trivial"] is True
-    assert r["error"] == "trivial self-referential answer"
+    assert r["details"]["answer_ok"] is False
+    assert r["error"] is not None
+    assert "forbidden_answer_refs" in r["error"]
+    # Either Finset.sum or sum_formula (both in forbiddenAnswerConsts) may
+    # surface depending on how Lean elaborates the answer expression.
+    assert "Finset.sum" in r["error"] or "sum_formula" in r["error"]

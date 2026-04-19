@@ -4,9 +4,19 @@ End-to-end test for the Lean proof evaluation pipeline via HTTP.
 Submits 4 solutions to the local `lean-sum-test` problem, triggers the
 evaluate cron, then polls until all 4 are resolved and asserts their outcomes.
 
+The submissions use the structured schema (answer_expr + proof) that the
+verifier wraps into a trusted Lean module per `lean-sum-test.ts`:
+
+    def sum_formula_answer (n : ℕ) : ℕ := {{answer_expr}}
+
+    theorem sum_formula (n : ℕ) :
+        2 * ∑ i ∈ Finset.range (n + 1), i = sum_formula_answer n := by
+      {{proof}}
+
 Requirements:
   - Next.js dev server running at BASE_URL (default http://localhost:3000)
-  - Local DB seeded with `lean-sum-test` problem (run setup once with npm run db:seed or the tsx seed script)
+  - Local DB seeded with `lean-sum-test` problem (run setup once with
+    npm run db:seed or the tsx seed script)
 
 Run:
   pytest tests/test_lean_e2e.py -v -s
@@ -28,57 +38,69 @@ AUTH = {"Authorization": f"Bearer {AGENT_TOKEN}"}
 BYPASS = {"Authorization": f"Bearer {AGENT_TOKEN}", "x-ratelimit-bypass": BYPASS_TOKEN}
 CRON = {"Authorization": f"Bearer {CRON_SECRET}"}
 
+# Each case submits structured fields conforming to lean-sum-test's zodSchema:
+#   { answer_expr: str, proof: str, extra_imports?: list[str] }
+# The server plugs these into the problem's LEAN_TEMPLATE before compiling.
 PROOFS = {
+    # Correct answer n*(n+1), proved by induction.
     "valid": {
-        "lean_code": (
-            "import FormalConjectures.Util.ProblemImports\n"
-            "theorem sum_formula (n : ℕ) :\n"
-            "    2 * ∑ i ∈ Finset.range (n + 1), i = answer(n * (n + 1)) := by\n"
-            "  show 2 * ∑ i ∈ Finset.range (n + 1), i = n * (n + 1)\n"
-            "  induction n with\n"
-            "  | zero => simp\n"
-            "  | succ n ih =>\n"
-            "    rw [Finset.sum_range_succ, mul_add, ih]\n"
-            "    ring"
-        ),
-        "expect_score": 1,
+        "solution": {
+            "answer_expr": "n * (n + 1)",
+            "proof": (
+                "show 2 * ∑ i ∈ Finset.range (n + 1), i = n * (n + 1)\n"
+                "induction n with\n"
+                "| zero => simp\n"
+                "| succ n ih =>\n"
+                "  rw [Finset.sum_range_succ, mul_add, ih]\n"
+                "  ring"
+            ),
+        },
         "expect_status": "evaluated",
+        "expect_score": 1,
+        "expect_error_contains": None,
     },
+    # Truncated `rw [...,` — must fail Lean compilation.
     "invalid": {
-        "lean_code": (
-            "import FormalConjectures.Util.ProblemImports\n"
-            "theorem sum_formula (n : ℕ) :\n"
-            "    2 * ∑ i ∈ Finset.range (n + 1), i = answer(n ^ 2 + n) := by\n"
-            "  show 2 * ∑ i ∈ Finset.range (n + 1), i = n ^ 2 + n\n"
-            "  induction n with\n"
-            "  | zero => simp\n"
-            "  | succ n ih =>\n"
-            "    rw [Finset.sum_range_succ, mul_add,\n"
-            "    ring"
-        ),
-        "expect_score": None,
+        "solution": {
+            "answer_expr": "n * (n + 1)",
+            "proof": (
+                "show 2 * ∑ i ∈ Finset.range (n + 1), i = n * (n + 1)\n"
+                "induction n with\n"
+                "| zero => simp\n"
+                "| succ n ih =>\n"
+                "  rw [Finset.sum_range_succ, mul_add,\n"
+                "  ring"
+            ),
+        },
         "expect_status": "error",
+        "expect_score": None,
+        "expect_error_contains": "compilation_error",
     },
+    # Wrong answer n^2 "proved" via sorry. Module compiles (sorry is a
+    # warning, not an error) but the axiom audit catches `sorryAx`, which
+    # is not in the default allowed-axioms set.
     "sorry": {
-        "lean_code": (
-            "import FormalConjectures.Util.ProblemImports\n"
-            "theorem sum_formula (n : ℕ) :\n"
-            "    2 * ∑ i ∈ Finset.range (n + 1), i = answer(n ^ 2) := by\n"
-            "  sorry"
-        ),
-        "expect_score": None,
+        "solution": {
+            "answer_expr": "n ^ 2",
+            "proof": "sorry",
+        },
         "expect_status": "error",
+        "expect_score": None,
+        "expect_error_contains": "sorry",
     },
-    "trivial": {
-        "lean_code": (
-            "import FormalConjectures.Util.ProblemImports\n"
-            "theorem sum_formula (n : ℕ) :\n"
-            "    2 * ∑ i ∈ Finset.range (n + 1), i =\n"
-            "    answer(2 * ∑ i ∈ Finset.range (n + 1), i) := by\n"
-            "  rfl"
-        ),
-        "expect_score": None,
+    # Self-referential answer: plug the LHS expression back into the answer
+    # slot. Module compiles fine and the exact-shape check passes, but
+    # `Finset.sum` appears in the elaborated answer definition and is
+    # listed in forbiddenAnswerConsts. The forbidden-refs audit fires
+    # before the anti-triviality check and must reject this.
+    "forbidden_ref": {
+        "solution": {
+            "answer_expr": "2 * ∑ i ∈ Finset.range (n + 1), i",
+            "proof": "rfl",
+        },
         "expect_status": "error",
+        "expect_score": None,
+        "expect_error_contains": "forbidden_answer_refs",
     },
 }
 
@@ -92,10 +114,10 @@ def get_problem_id() -> int:
     pytest.fail(f"Problem '{PROBLEM_SLUG}' not found — did you seed the local DB?")
 
 
-def submit_solution(problem_id: int, lean_code: str) -> int:
+def submit_solution(problem_id: int, solution: dict) -> int:
     r = requests.post(
         f"{BASE_URL}/api/solutions",
-        json={"problem_id": problem_id, "solution": {"lean_code": lean_code}},
+        json={"problem_id": problem_id, "solution": solution},
         headers=BYPASS,
     )
     assert r.status_code == 201, f"POST /api/solutions failed: {r.text}"
@@ -126,8 +148,8 @@ def results() -> dict[str, dict]:
     print(f"\nUsing problem_id={problem_id}")
 
     sol_ids: dict[str, int] = {}
-    for name, proof in PROOFS.items():
-        sid = submit_solution(problem_id, proof["lean_code"])
+    for name, case in PROOFS.items():
+        sid = submit_solution(problem_id, case["solution"])
         sol_ids[name] = sid
         print(f"  Submitted {name} → solution id={sid}")
 
@@ -158,10 +180,12 @@ def test_invalid_lean_rejected(results):
 def test_sorry_proof_rejected(results):
     r = results["sorry"]
     assert r["status"] == "error", f"expected error, got {r['status']}"
-    assert r["error"] == "proof uses sorry", f"unexpected error: {r['error']}"
+    # Either "bad_axioms: sorryAx" (caught by axiom audit) or the final
+    # "proof uses sorry" verdict — both contain "sorry".
+    assert r["error"] and "sorry" in r["error"].lower(), f"unexpected error: {r['error']}"
 
 
-def test_trivial_proof_rejected(results):
-    r = results["trivial"]
+def test_forbidden_ref_rejected(results):
+    r = results["forbidden_ref"]
     assert r["status"] == "error", f"expected error, got {r['status']}"
-    assert r["error"] == "trivial self-referential answer", f"unexpected error: {r['error']}"
+    assert r["error"] and "forbidden_answer_refs" in r["error"], f"unexpected error: {r['error']}"

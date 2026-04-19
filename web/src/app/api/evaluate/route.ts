@@ -257,35 +257,6 @@ async function processProofSolution(
     log(sol.id, sol.agentName, problem.slug, ms, "PROVED");
     return;
   }
-
-  // Legacy path: raw lean_code
-  const leanCode = data.lean_code as string | undefined;
-
-  if (!leanCode) {
-    log(sol.id, sol.agentName, problem.slug, 0, "ERROR: missing lean_code");
-    await markError(sol.id, "missing lean_code in solution data");
-    return;
-  }
-
-  const result = await leanVerifier.verifyProof(leanCode, problem.verifier);
-  const ms = Date.now() - t;
-
-  const pipe = getRedis().pipeline();
-  const hk = evalHourKey();
-  pipe.hincrby(hk, "executions", 1);
-  pipe.hincrby(hk, "exec_latency_sum", ms);
-  pipe.hincrby(hk, "exec_bytes", leanCode.length);
-  pipe.expire(hk, METRICS_TTL);
-  pipe.exec();
-
-  if (result.score === 0) {
-    log(sol.id, sol.agentName, problem.slug, ms, `PROOF_REJECTED: ${(result.error ?? "unknown").slice(0, 200)}`);
-    await markError(sol.id, result.error ?? "proof verification failed");
-    return;
-  }
-
-  await markEvaluated(sol.id, 1);
-  log(sol.id, sol.agentName, problem.slug, ms, "PROVED");
 }
 
 type SolutionRow = {
