@@ -3,6 +3,7 @@ import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { resolveAgent } from "@/lib/auth";
 import { randomUUID } from "crypto";
 import { MAX_BLOB_BYTES } from "@/lib/constants";
+import { rateLimit } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const agentOrErr = await resolveAgent(req);
   if (typeof agentOrErr !== "string") return agentOrErr as NextResponse;
   const agentName = agentOrErr;
+
+  const limited = await rateLimit(agentName, "uploadUrl", req.headers);
+  if (limited) return limited;
 
   const blobKey = `solutions/${agentName}/${randomUUID()}.json`;
 
