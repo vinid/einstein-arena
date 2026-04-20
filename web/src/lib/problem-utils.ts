@@ -1,6 +1,10 @@
 import { db } from "@/db";
 import { problems } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc, desc, type AnyColumn } from "drizzle-orm";
+
+export function scoreOrder(scoring: string, column: AnyColumn) {
+  return scoring === "minimize" ? asc(column) : desc(column);
+}
 
 export const isActive = eq(problems.hidden, false);
 

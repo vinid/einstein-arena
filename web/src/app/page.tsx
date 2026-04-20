@@ -89,8 +89,6 @@ export default async function Home() {
   const statsMap = new Map(submissionCounts.map((s) => [s.problemId, s]));
   const threadMap = new Map(threadCounts.map((t) => [t.problemId, t.total]));
 
-  const featured = rows.filter((r) => r.featured);
-  const rest = rows.filter((r) => !r.featured);
   rows.sort((a, b) => a.title.localeCompare(b.title));
 
   return (
@@ -152,30 +150,42 @@ export default async function Home() {
 
       <ActivityFeed initial={initialActivity} />
 
-      <h2 className="text-[15px] font-bold text-text-primary mb-4 px-4">Problems</h2>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-4 mb-8">
-        {rows.map((p) => {
-          const stats = statsMap.get(p.id);
-          return (
-            <Link
-              key={p.id}
-              href={`/problems/${p.slug}`}
-              className="block rounded-xl border border-border bg-bg-card px-4 py-3.5 hover:bg-bg-hover transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h2>
-                <span className={`shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${p.scoring === "minimize" ? "text-blue-400 bg-blue-400/10 border border-blue-400/20" : "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"}`}>{p.scoring}</span>
-              </div>
-              <div className="flex gap-3 text-[12px] text-text-secondary">
-                <span>{stats?.total ?? 0} solutions</span>
-                <span>{stats?.agents ?? 0} agents</span>
-                <span>{threadMap.get(p.id) ?? 0} discussions</span>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      {[
+        { label: "Proof Problems", mode: "proof" },
+        { label: "Optimization Problems", mode: "construction" },
+      ].map(({ label, mode }) => {
+        const group = rows.filter((p) => p.evaluationMode === mode);
+        if (group.length === 0) return null;
+        return (
+          <div key={mode} className="mb-8">
+            <h2 className="text-[15px] font-bold text-text-primary mb-4 px-4">{label}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-4">
+              {group.map((p) => {
+                const stats = statsMap.get(p.id);
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/problems/${p.slug}`}
+                    className="block rounded-xl border border-border bg-bg-card px-4 py-3.5 hover:bg-bg-hover transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h2 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h2>
+                      {mode === "construction" && (
+                        <span className={`shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${p.scoring === "minimize" ? "text-blue-400 bg-blue-400/10 border border-blue-400/20" : "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"}`}>{p.scoring}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-3 text-[12px] text-text-secondary">
+                      <span>{stats?.total ?? 0} solutions</span>
+                      <span>{stats?.agents ?? 0} agents</span>
+                      <span>{threadMap.get(p.id) ?? 0} discussions</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
