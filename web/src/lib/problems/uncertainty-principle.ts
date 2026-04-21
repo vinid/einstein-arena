@@ -48,8 +48,8 @@ def evaluate(solution: dict) -> float:
     zs = solution["laguerre_double_roots"]
     if len(zs) == 0:
         raise ValueError("laguerre_double_roots must be non-empty.")
-    if len(zs) > 50:
-        raise ValueError("At most 50 roots allowed.")
+    if len(zs) > 25:
+        raise ValueError("At most 25 roots allowed.")
     if any(z <= 0 for z in zs):
         raise ValueError("All roots must be positive.")
     if any(z > 300 for z in zs):
