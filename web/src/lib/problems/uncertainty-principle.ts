@@ -37,7 +37,10 @@ Problem 6.11 of [Mathematical exploration and discovery at scale](https://arxiv.
   verifier: `import sys
 if hasattr(sys, "set_int_max_str_digits"):
     sys.set_int_max_str_digits(0)
-import numpy as np
+
+import math
+from itertools import groupby
+
 import sympy
 
 
@@ -52,37 +55,59 @@ def evaluate(solution: dict) -> float:
     if any(z > 300 for z in zs):
         raise ValueError("All roots must be <= 300.")
 
-    g_fn = _find_laguerre_combination(zs)
-    x = sympy.symbols("x")
+    # Exact rationals from the decimal the user typed (not from the float's
+    # binary expansion). This avoids 17-digit denominators in sympy.
+    zs_rat = [sympy.Rational(repr(float(z))) for z in zs]
+    if len(set(zs_rat)) != len(zs_rat):
+        raise ValueError("Duplicate double-root positions are not allowed.")
 
-    div = sympy.prod([(x - sympy.Rational(z)) ** 2 for z in zs]) * x
+    x = sympy.symbols("x")
+    g_fn = _find_laguerre_combination(zs_rat, x)
+
+    div = sympy.prod([(x - zi) ** 2 for zi in zs_rat]) * x
     gq_fn = sympy.exquo(g_fn, div)
 
+    # The Cohn-Gonçalves upper bound r/(2*pi) for the "f(0), f_hat(0) < 0"
+    # variant (this problem) is valid only when g is eventually non-positive
+    # on (0, inf). By construction gq(0) = g'(0) / prod(z_i^2) > 0, so the
+    # bound is valid exactly when the leading coefficient of gq is negative
+    # (then g flips to <= 0 after its largest sign change and stays there).
+    gq_poly = sympy.Poly(gq_fn, x)
+    if gq_poly.LC() >= 0:
+        raise ValueError(
+            "Invalid construction: g is not eventually non-positive on "
+            "(0, inf), so the Cohn-Gonçalves upper bound does not apply "
+            "to this choice of double roots."
+        )
+
+    # Sign changes of g (equivalently, of gq) on (0, inf) correspond to
+    # real roots of gq with odd multiplicity. sympy.real_roots already
+    # returns roots repeated by multiplicity and sorted, so grouping is
+    # enough; no numerical sign-check is needed.
     real_roots = sympy.real_roots(gq_fn, x)
     if not real_roots:
-        raise ValueError("g has no sign changes.")
+        raise ValueError("g has no sign changes on (0, inf).")
 
-    gq_np = sympy.lambdify(x, gq_fn, modules="numpy")
-    largest_sign_change = 0.0
-    for root in real_roots:
-        r_val = float(root.evalf(30))
-        eps = 1e-6
-        if np.sign(gq_np(r_val - eps)) != np.sign(gq_np(r_val + eps)):
-            largest_sign_change = max(largest_sign_change, r_val)
+    largest_sign_change = None
+    for root, group in groupby(real_roots):
+        mult = sum(1 for _ in group)
+        if mult % 2 == 1:
+            r_val = float(root.evalf(30))
+            if r_val > 0 and (largest_sign_change is None or r_val > largest_sign_change):
+                largest_sign_change = r_val
 
-    if largest_sign_change == 0:
-        raise ValueError("No sign-changing roots found.")
+    if largest_sign_change is None:
+        raise ValueError("No sign-changing roots on (0, inf).")
 
-    return float(largest_sign_change) / (2 * np.pi)
+    return largest_sign_change / (2 * math.pi)
 
 
-def _find_laguerre_combination(zs):
-    m = len(zs)
-    alpha = sympy.Rational(1, 2) - 1
-    x = sympy.symbols("x")
-    degrees = np.arange(0, 4 * m + 4, 2)
+def _find_laguerre_combination(zs_rat, x):
+    m = len(zs_rat)
+    alpha = sympy.Rational(-1, 2)
+    degrees = list(range(0, 4 * m + 4, 2))
     lps = [
-        sympy.polys.orthopolys.laguerre_poly(n=int(i), x=x, alpha=alpha, polys=False)
+        sympy.polys.orthopolys.laguerre_poly(n=i, x=x, alpha=alpha, polys=False)
         for i in degrees
     ]
     num_lps = len(lps)
@@ -97,7 +122,7 @@ def _find_laguerre_combination(zs):
         mat[1, j] = lps[j].diff(x).subs(x, 0)
 
     for i in range(m):
-        zi = sympy.Rational(zs[i])
+        zi = zs_rat[i]
         for j in range(num_lps):
             mat[2 * i + 2, j] = lps[j].subs(x, zi)
             mat[2 * i + 3, j] = lps[j].diff(x).subs(x, zi)
