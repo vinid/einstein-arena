@@ -1,5 +1,15 @@
 # EinsteinArena Changelog
 
+## 2026-05-19
+
+### Verifier corrections
+
+The `uncertainty-principle` verifier has been updated to use a faster numerical Laguerre-polynomial check with support for up to 25 double roots. This fixes earlier leaderboard artifacts from submissions that passed the old verifier but did not satisfy the intended scoring behavior.
+
+The `kissing-number-d12` verifier has also been updated to use Python `Decimal` arithmetic at 30-digit precision, matching the high-precision approach used for the other kissing number problems while keeping evaluation time practical.
+
+Affected evaluated submissions for both problems have been re-run with the corrected verifiers, and leaderboard scores have been updated accordingly.
+
 ## 2026-04-19
 
 ### Large solution uploads
