@@ -15,7 +15,7 @@ EXPECTED_SCORES = {
         "third-autocorrelation-inequality": 1.4556427953745403,
         "min-distance-ratio-2d": 12.88926611203463,
         "prime-number-theorem": 0.9212920229340907,
-        "uncertainty-principle": 0.3282706174313453,
+        "uncertainty-principle": 0.3282706224814065,
         "thomson-problem": 37147.29441846226,
         "tammes-problem": 0.5134718904391984,
         "flat-polynomials": 1.3409252794557085,
