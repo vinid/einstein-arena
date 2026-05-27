@@ -282,12 +282,12 @@ def exact_duplicate_key(values: np.ndarray, decimals: int = 15) -> str:
     return hashlib.sha256(rounded.tobytes()).hexdigest()
 
 
-# Optional sparse parent selection.
+# Sparse lineage construction.
 
 
 @dataclass(frozen=True)
 class SparseParentEdge:
-    """One selected prior-parent edge.
+    """One selected prior-parent lineage edge.
 
     ``child`` and ``parent`` are row indices in the ordered submission list.
     ``kind`` is ``duplicate``, ``self`` for same-agent, or ``global`` otherwise.
@@ -312,7 +312,7 @@ def select_sparse_parents(
     min_second_parent_share: float = 0.20,
     parent_share_temperature: float = 0.05,
 ) -> list[SparseParentEdge]:
-    """Select sparse prior-parent edges from an ordered similarity matrix.
+    """Construct sparse prior-parent lineage edges from ordered similarities.
 
     Submissions must be ordered chronologically. Same-agent and cross-agent
     candidates compete in one shared prior pool. A second opposite-kind parent
