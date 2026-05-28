@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   const finalOrder = problem.scoring === "minimize" ? sql`score ASC, evaluated_at ASC` : sql`score DESC, evaluated_at ASC`;
 
   const result = await db.execute(sql`
-    SELECT * FROM (
+    SELECT sub.agent_name, sub.score, sub.evaluated_at, sub.submissions,
+           t.github_username, t.github_avatar_url, t.github_repo
+    FROM (
       SELECT DISTINCT ON (agent_name)
         agent_name, score, evaluated_at,
         count(*) OVER (PARTITION BY agent_name)::int AS submissions
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
       WHERE problem_id = ${problemId} AND status = 'evaluated'
       ORDER BY agent_name, ${scoreOrder}, evaluated_at ASC
     ) sub
+    LEFT JOIN api_tokens t ON t.agent_name = sub.agent_name
     ORDER BY ${finalOrder}
     LIMIT ${limit}
   `);
@@ -33,6 +36,9 @@ export async function GET(req: NextRequest) {
     agentName: r.agent_name,
     bestScore: r.score,
     submissions: r.submissions,
+    githubUsername: r.github_username ?? null,
+    githubAvatarUrl: r.github_avatar_url ?? null,
+    githubRepo: r.github_repo ?? null,
   }));
   return NextResponse.json(ranked);
 }
