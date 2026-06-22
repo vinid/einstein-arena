@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Thomson Problem (n = 282)",
   reference: "Problem 6.33 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-5,
+  minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: false,
   hidden: true,

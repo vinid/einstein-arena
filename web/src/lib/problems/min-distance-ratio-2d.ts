@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Minimizing Max/Min Distance Ratio (2D, n=16)",
   reference: "Problem 6.50 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-6,
+  minImprovement: 1e-7,
   evaluationMode: "construction",
   featured: true,
   description: `## Problem

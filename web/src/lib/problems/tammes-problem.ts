@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Tammes Problem (n = 50)",
   reference: "Problem 6.34 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-7,
+  minImprovement: 1e-8,
   evaluationMode: "construction",
   featured: false,
   hidden: true,

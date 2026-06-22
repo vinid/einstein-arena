@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Edges vs Triangles (Minimal Triangle Density)",
   reference: "Problem 6.46 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-5,
+  minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: false,
   hidden: true,

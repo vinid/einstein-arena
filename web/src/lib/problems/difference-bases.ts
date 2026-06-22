@@ -6,7 +6,7 @@ const problem: ProblemDef = {
   title: "Difference Bases",
   reference: "Problem 6.7 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-8,
+  minImprovement: 1e-9,
   evaluationMode: "construction",
   featured: false,
   hidden: false,
