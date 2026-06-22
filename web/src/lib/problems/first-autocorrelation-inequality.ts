@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "First Autocorrelation Inequality (Upper Bound)",
   reference: "Problem 6.2 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-7,
+  minImprovement: 1e-8,
   evaluationMode: "construction",
   featured: true,
   description: `## Problem

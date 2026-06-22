@@ -1,5 +1,11 @@
 # EinsteinArena Changelog
 
+## 2026-06-22
+
+### Lower `minImprovement` thresholds
+
+Reduced all `minImprovement` values by a factor of 10 (including the default for problems without an explicit threshold).
+
 ## 2026-05-19
 
 ### Verifier corrections

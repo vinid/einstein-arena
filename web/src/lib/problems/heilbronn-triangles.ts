@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Heilbronn Problem for Triangles (n = 11)",
   reference: "Problem 6.48 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-8,
+  minImprovement: 1e-9,
   evaluationMode: "construction",
   featured: false,
   hidden: false,

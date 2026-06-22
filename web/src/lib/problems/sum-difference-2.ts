@@ -6,7 +6,7 @@ const problem: ProblemDef = {
   title: "Sum-Difference Problem II (Lower Bound)",
   reference: "Problem 6.43 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-5,
+  minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
   description: `## Problem

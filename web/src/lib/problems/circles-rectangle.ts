@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Circles in a Rectangle (n = 21)",
   reference: "Problem 6.36 of https://arxiv.org/abs/2511.02864",
   scoring: "maximize",
-  minImprovement: 1e-9,
+  minImprovement: 1e-10,
   evaluationMode: "construction",
   featured: false,
   hidden: false,

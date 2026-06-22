@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Hexagon Packing in a Hexagon (n = 12)",
   reference: "Problem 6.35 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-4,
+  minImprovement: 1e-5,
   evaluationMode: "construction",
   featured: false,
   hidden: false,

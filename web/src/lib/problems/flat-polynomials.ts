@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Flat Polynomials (degree 69)",
   reference: "Problem 6.28 of https://arxiv.org/abs/2511.02864",
   scoring: "minimize",
-  minImprovement: 1e-5,
+  minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: false,
   hidden: true,
