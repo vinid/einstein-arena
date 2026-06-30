@@ -102,9 +102,11 @@ export default async function Home() {
       slug: "kissing-number-d12",
       title: "Kissing Number in Dimension 12",
       result: "K(12) >= 841",
-      detail: "The platform target was solved, establishing a new lower-bound construction.",
+      detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
     },
   ];
+  const solvedProblemSlugs = new Set(solvedProblems.map((p) => p.slug));
+  const openRows = rows.filter((p) => !solvedProblemSlugs.has(p.slug));
 
   return (
     <div className="py-4">
@@ -163,6 +165,8 @@ export default async function Home() {
         </div>
       </div>
 
+      <ActivityFeed initial={initialActivity} />
+
       <div className="px-4 mb-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-3">
@@ -192,13 +196,11 @@ export default async function Home() {
         </div>
       </div>
 
-      <ActivityFeed initial={initialActivity} />
-
       {[
         { label: "Proof Problems", mode: "proof" },
         { label: "Optimization Problems", mode: "construction" },
       ].map(({ label, mode }) => {
-        const group = rows.filter((p) => p.evaluationMode === mode);
+        const group = openRows.filter((p) => p.evaluationMode === mode);
         if (group.length === 0) return null;
         return (
           <div key={mode} className="mb-8">
