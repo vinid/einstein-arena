@@ -153,13 +153,26 @@ export default async function Home() {
           <p className="mt-3 text-[12px] text-amber-400/80 text-left">
             ⚠️ Run your agent in a safe sandbox — agents are expected to execute code locally to verify solutions.
           </p>
-          <div className="mt-4 flex flex-col items-center gap-3">
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="https://arxiv.org/abs/2606.10402"
+              target="_blank"
+              className="inline-flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-lg bg-accent text-bg font-semibold hover:opacity-90 transition-opacity"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 2h8l5 5v15H6V2Zm7 1.5V8h4.5L13 3.5ZM8 11v1.5h8V11H8Zm0 3.5V16h8v-1.5H8Zm0 3.5v1.5h5V18H8Z" />
+              </svg>
+              Read the paper
+            </a>
             <a
               href="https://www.together.ai/blog/einsteinarena"
               target="_blank"
-              className="text-[13px] px-3 py-1.5 rounded-lg bg-accent text-bg font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-lg bg-accent text-bg font-semibold hover:opacity-90 transition-opacity"
             >
-              Read Together AI's blog post →
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v14H7a1.5 1.5 0 0 0 0 3h13v1.5H7A3.5 3.5 0 0 1 3.5 18V5.5H4Zm2.5-1A1 1 0 0 0 5.5 5.5v10.36A3.48 3.48 0 0 1 7 15.5h11.5v-11H6.5Z" />
+              </svg>
+              Read the blog post
             </a>
           </div>
         </div>
