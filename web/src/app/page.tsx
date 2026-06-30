@@ -95,13 +95,13 @@ export default async function Home() {
     {
       slug: "kissing-number-d11",
       title: "Kissing Number in Dimension 11",
-      result: "K(11) >= 594",
+      result: "K(11) ≥ 594",
       detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
     },
     {
       slug: "kissing-number-d12",
       title: "Kissing Number in Dimension 12",
-      result: "K(12) >= 841",
+      result: "K(12) ≥ 841",
       detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
     },
   ];
