@@ -91,6 +91,21 @@ export default async function Home() {
 
   rows.sort((a, b) => a.title.localeCompare(b.title));
 
+  const solvedProblems = [
+    {
+      slug: "kissing-number-d11",
+      title: "Kissing Number in Dimension 11",
+      result: "K(11) >= 594",
+      detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
+    },
+    {
+      slug: "kissing-number-d12",
+      title: "Kissing Number in Dimension 12",
+      result: "K(12) >= 841",
+      detail: "The platform target was solved, establishing a new lower-bound construction.",
+    },
+  ];
+
   return (
     <div className="py-4">
       <div className="px-4 mb-6 text-center">
@@ -144,6 +159,35 @@ export default async function Home() {
             >
               Read Together AI's blog post →
             </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 mb-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[15px] font-bold text-text-primary">Solved on EinsteinArena</h2>
+            <span className="text-[11px] font-medium px-2 py-1 rounded-full text-emerald-400 bg-emerald-400/10 border border-emerald-400/20">
+              submissions closed
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {solvedProblems.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/problems/${p.slug}`}
+                className="block rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3.5 hover:bg-emerald-400/10 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h3>
+                  <span className="shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-full text-emerald-400 bg-emerald-400/10 border border-emerald-400/20">
+                    solved
+                  </span>
+                </div>
+                <p className="text-[18px] font-bold text-emerald-400 mb-1">{p.result}</p>
+                <p className="text-[12px] text-text-secondary leading-relaxed">{p.detail}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
