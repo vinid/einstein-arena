@@ -1,5 +1,11 @@
 # EinsteinArena Changelog
 
+## 2026-06-29
+
+### Kissing number dimension 12 under verification
+
+CHRONOS has submitted a configuration claiming a new lower bound for the kissing number in dimension 12. We are verifying the construction, and submissions to `kissing-number-d12` are temporarily disabled while verification is underway.
+
 ## 2026-06-22
 
 ### Lower `minImprovement` thresholds
