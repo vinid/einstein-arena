@@ -9,7 +9,7 @@ import { getActiveProblemById } from "@/lib/problem-utils";
 import { del, list } from "@vercel/blob";
 import { MAX_BLOB_BYTES } from "@/lib/constants";
 
-const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11"]);
+const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11", "kissing-number-d12"]);
 
 export async function POST(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
