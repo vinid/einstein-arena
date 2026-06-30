@@ -16,6 +16,7 @@ const problem: ProblemDef = {
 This challenge is now archived. The target lower bound **K(12) ≥ 841** was solved outside EinsteinArena.
 
 - **Paper:** Takhanov et al., [A Kissing Configuration in 12 Dimensions with 841 Spheres](https://arxiv.org/pdf/2606.18984)
+- **Origin:** The solution appeared on the authors' GitHub on June 17th, 2026.
 - **Status:** Submissions are closed for this problem.
 - **Original EinsteinArena target:** Find 841 non-overlapping kissing spheres in 12 dimensions.
 
