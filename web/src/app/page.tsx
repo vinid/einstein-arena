@@ -91,7 +91,7 @@ export default async function Home() {
 
   rows.sort((a, b) => a.title.localeCompare(b.title));
 
-  const solvedProblems = [
+  const solvedOnArenaProblems = [
     {
       slug: "kissing-number-d11",
       title: "Kissing Number in Dimension 11",
@@ -99,8 +99,19 @@ export default async function Home() {
       detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
     },
   ];
-  const solvedProblemSlugs = new Set(solvedProblems.map((p) => p.slug));
-  const openRows = rows.filter((p) => !solvedProblemSlugs.has(p.slug));
+  const solvedOutsideArenaProblems = [
+    {
+      slug: "kissing-number-d12",
+      title: "Kissing Number in Dimension 12",
+      result: "K(12) ≥ 841",
+      detail: "Solved independently by Takhanov et al.; submissions are closed.",
+    },
+  ];
+  const closedProblemSlugs = new Set([
+    ...solvedOnArenaProblems.map((p) => p.slug),
+    ...solvedOutsideArenaProblems.map((p) => p.slug),
+  ]);
+  const openRows = rows.filter((p) => !closedProblemSlugs.has(p.slug));
 
   return (
     <div className="py-4">
@@ -183,7 +194,7 @@ export default async function Home() {
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {solvedProblems.map((p) => (
+            {solvedOnArenaProblems.map((p) => (
               <Link
                 key={p.slug}
                 href={`/problems/${p.slug}`}
@@ -239,6 +250,35 @@ export default async function Home() {
           </div>
         );
       })}
+
+      <div className="px-4 mb-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[15px] font-bold text-text-primary">Solved outside the arena</h2>
+            <span className="text-[11px] font-medium px-2 py-1 rounded-full text-amber-400 bg-amber-400/10 border border-amber-400/20">
+              archived
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {solvedOutsideArenaProblems.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/problems/${p.slug}`}
+                className="block rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3.5 hover:bg-amber-400/10 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h3>
+                  <span className="shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-full text-amber-400 bg-amber-400/10 border border-amber-400/20">
+                    outside
+                  </span>
+                </div>
+                <p className="text-[18px] font-bold text-amber-400 mb-1">{p.result}</p>
+                <p className="text-[12px] text-text-secondary leading-relaxed">{p.detail}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -11,13 +11,21 @@ const problem: ProblemDef = {
   minImprovement: 0,
   evaluationMode: "construction",
   featured: true,
-  description: `## Problem
+  description: `## Status: Solved Outside EinsteinArena
+
+This challenge is now archived. The target lower bound **K(12) ≥ 841** was solved outside EinsteinArena.
+
+- **Paper:** Takhanov et al., [A Kissing Configuration in 12 Dimensions with 841 Spheres](https://arxiv.org/pdf/2606.18984)
+- **Status:** Submissions are closed for this problem.
+- **Original EinsteinArena target:** Find 841 non-overlapping kissing spheres in 12 dimensions.
+
+## Problem
 
 The kissing number problem asks: how many non-overlapping unit spheres can simultaneously touch a central unit sphere in $d$ dimensions?
 
-For $d = 12$, the best known lower bound is **840**, achieved by the Coxeter-Todd lattice $K_{12}$ ([Leech and Sloane, 1971](https://doi.org/10.4153/CJM-1971-081-3)). The best known upper bound is **1355** ([de Laat and Leijenhorst, 2024](https://doi.org/10.1007/s12532-024-00264-w)), leaving a large gap that has stood since 1971.
+For $d = 12$, the best known lower bound was **840**, achieved by the Coxeter-Todd lattice $K_{12}$ ([Leech and Sloane, 1971](https://doi.org/10.4153/CJM-1971-081-3)). The best known upper bound is **1355** ([de Laat and Leijenhorst, 2024](https://doi.org/10.1007/s12532-024-00264-w)).
 
-**Your goal:** Find a configuration of **841** unit spheres that all touch a central unit sphere in 12 dimensions, with no overlaps. This would establish a new world record lower bound for the kissing number in dimension 12.
+**Original goal:** Find a configuration of **841** unit spheres that all touch a central unit sphere in 12 dimensions, with no overlaps. This would establish a new world record lower bound for the kissing number in dimension 12.
 
 ## Setup
 
