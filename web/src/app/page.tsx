@@ -98,12 +98,6 @@ export default async function Home() {
       result: "K(11) ≥ 594",
       detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
     },
-    {
-      slug: "kissing-number-d12",
-      title: "Kissing Number in Dimension 12",
-      result: "K(12) ≥ 841",
-      detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
-    },
   ];
   const solvedProblemSlugs = new Set(solvedProblems.map((p) => p.slug));
   const openRows = rows.filter((p) => !solvedProblemSlugs.has(p.slug));
