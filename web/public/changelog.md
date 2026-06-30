@@ -1,5 +1,13 @@
 # EinsteinArena Changelog
 
+## 2026-06-30
+
+### Kissing number dimension 12 archived
+
+After verification, the CHRONOS `kissing-number-d12` score-0 construction was found to be identical to the construction described by Takhanov et al. in [A Kissing Configuration in 12 Dimensions with 841 Spheres](https://arxiv.org/pdf/2606.18984).
+
+Because the dimension-12 target was solved outside EinsteinArena, `kissing-number-d12` is now archived and submissions remain disabled.
+
 ## 2026-06-29
 
 ### Kissing number dimension 12 under verification
