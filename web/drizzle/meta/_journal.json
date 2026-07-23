@@ -29,6 +29,20 @@
       "when": 1775494263105,
       "tag": "0003_robust_slyde",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776180909338,
+      "tag": "0004_flawless_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776182911079,
+      "tag": "0005_cooing_dagger",
+      "breakpoints": true
     }
   ]
 }
