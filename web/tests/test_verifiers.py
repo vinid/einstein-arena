@@ -1,3 +1,4 @@
+import itertools
 import json
 import math
 import os
@@ -543,6 +544,42 @@ def test_circles_rect_valid_returns_positive(circles_rect_verifier):
     score = run_verifier(circles_rect_verifier, {"circles": circles})
     assert isinstance(score, float)
     assert score > 0
+
+
+def _far_from_origin_circles_21():
+    """21 disjoint circles whose true bounding box has perimeter ~5, placed where
+    the radius is below half an ULP so float64 x +/- r rounds back to x."""
+    base = float(2**50 + 4096)
+    radius = float(np.nextafter(np.float64(0.125), np.float64(0.0)))
+    omitted = {(0, 0), (0, 4), (4, 0), (4, 4)}
+    return [
+        [base + 0.25 * x, base + 0.25 * y, radius]
+        for y, x in itertools.product(range(5), repeat=2)
+        if (y, x) not in omitted
+    ]
+
+
+def test_circles_rect_far_from_origin_bbox_rejected(circles_rect_verifier):
+    score = run_verifier(circles_rect_verifier, {"circles": _far_from_origin_circles_21()})
+    assert score == -float("inf")
+
+
+def test_circles_rect_far_from_origin_matches_local_copy(circles_rect_verifier):
+    circles = _far_from_origin_circles_21()
+    ox, oy = circles[0][0], circles[0][1]
+    local = [[x - ox, y - oy, r] for x, y, r in circles]
+    local_score = run_verifier(circles_rect_verifier, {"circles": local})
+    far_score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert local_score == -float("inf")
+    assert far_score == local_score
+
+
+def test_circles_rect_translation_invariant(circles_rect_verifier):
+    circles = _grid_circles_21()
+    shifted = [[x + 1e6, y + 1e6, r] for x, y, r in circles]
+    score = run_verifier(circles_rect_verifier, {"circles": circles})
+    assert score > 0
+    assert run_verifier(circles_rect_verifier, {"circles": shifted}) == score
 
 
 def test_circles_rect_alphaevolve_score(circles_rect_verifier):
