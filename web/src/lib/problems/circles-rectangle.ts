@@ -36,6 +36,9 @@ Problem 6.36 of [Mathematical exploration and discovery at scale](https://arxiv.
   verifier: `import numpy as np
 import itertools
 
+MAX_COORD = 1e6
+ULP_SAFETY_FACTOR = 1e6
+
 def evaluate(data):
     circles = np.array(data["circles"], dtype=np.float64)
     if circles.shape != (21, 3):
@@ -44,6 +47,19 @@ def evaluate(data):
         return -float("inf")
     radii = circles[:, 2]
     if not (radii > 0).all():
+        return -float("inf")
+    coords = circles[:, :2]
+    # Reject implausible coordinate magnitudes. The problem is translation
+    # invariant, so a legitimate solution never needs to live far from the
+    # origin; this also rules out the float64 precision loss checked below.
+    if np.abs(coords).max() > MAX_COORD:
+        return -float("inf")
+    # At large coordinate magnitude, the float64 gap between representable
+    # numbers (ulp) can exceed the radius, so "coord +/- radius" silently
+    # rounds away the radius and the bounding box below under-reports the
+    # true extent. Require each radius to be resolvable well above that gap.
+    ulp = np.maximum(np.abs(np.spacing(coords[:, 0])), np.abs(np.spacing(coords[:, 1])))
+    if (radii < ULP_SAFETY_FACTOR * ulp).any():
         return -float("inf")
     min_x = np.min(circles[:, 0] - radii)
     max_x = np.max(circles[:, 0] + radii)
