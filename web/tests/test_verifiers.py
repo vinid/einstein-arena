@@ -502,12 +502,13 @@ def circles_rect_verifier():
 
 
 def _grid_circles_21(r=0.08):
+    gap = 1e-6
     circles = []
     cols, rows = 7, 3
     for row in range(rows):
         for col in range(cols):
-            x = r + col * 2 * r
-            y = r + row * 2 * r
+            x = r + col * (2 * r + gap)
+            y = r + row * (2 * r + gap)
             circles.append([x, y, r])
     return circles
 
