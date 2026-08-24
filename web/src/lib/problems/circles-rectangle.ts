@@ -67,11 +67,11 @@ def evaluate(data):
     max_y = np.max(circles[:, 1] + radii)
     width = max_x - min_x
     height = max_y - min_y
-    if width + height > 2 + 1e-9:
+    if width + height > 2:
         return -float("inf")
     for c1, c2 in itertools.combinations(circles, 2):
         dist = np.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2)
-        if dist < c1[2] + c2[2] - 1e-9:
+        if dist < c1[2] + c2[2]:
             return -float("inf")
     return float(np.sum(radii))`,
 };

@@ -44,11 +44,11 @@ def evaluate(data):
         return -float("inf")
     sq3 = np.sqrt(3)
     for x, y in points:
-        if y < -1e-9:
+        if y < 0:
             return -float("inf")
-        if sq3 * x + y > sq3 + 1e-9:
+        if sq3 * x + y > sq3:
             return -float("inf")
-        if y > sq3 * x + 1e-9:
+        if y > sq3 * x:
             return -float("inf")
     def tri_area(p1, p2, p3):
         return abs(p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) / 2

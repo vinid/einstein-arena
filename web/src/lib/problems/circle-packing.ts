@@ -54,7 +54,7 @@ def evaluate(data):
     for i in range(n):
         for j in range(i + 1, n):
             dist = np.sqrt(np.sum((centers[i] - centers[j]) ** 2))
-            if radii[i] + radii[j] > dist + 1e-9:
+            if radii[i] + radii[j] > dist:
                 return -float("inf")
     return float(np.sum(radii))`,
 };
