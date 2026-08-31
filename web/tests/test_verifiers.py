@@ -1,3 +1,4 @@
+import itertools
 import json
 import math
 import os
@@ -501,12 +502,13 @@ def circles_rect_verifier():
 
 
 def _grid_circles_21(r=0.08):
+    gap = 1e-6
     circles = []
     cols, rows = 7, 3
     for row in range(rows):
         for col in range(cols):
-            x = r + col * 2 * r
-            y = r + row * 2 * r
+            x = r + col * (2 * r + gap)
+            y = r + row * (2 * r + gap)
             circles.append([x, y, r])
     return circles
 
@@ -556,6 +558,63 @@ def test_circles_rect_deterministic(circles_rect_verifier):
     s1 = run_verifier(circles_rect_verifier, {"circles": circles})
     s2 = run_verifier(circles_rect_verifier, {"circles": circles})
     assert s1 == s2
+
+
+def _local_verifier(slug):
+    path = os.path.join(os.path.dirname(__file__), "..", "src", "lib", "problems", f"{slug}.ts")
+    text = open(path).read()
+    marker = "verifier: `"
+    start = text.index(marker) + len(marker)
+    end = text.index("`,", start)
+    return text[start:end]
+
+
+def _far_from_origin_circles_21():
+    base = float(2**50 + 4096)
+    radius = float(np.nextafter(np.float64(0.125), np.float64(0.0)))
+    omitted = {(0, 0), (0, 4), (4, 0), (4, 4)}
+    return [
+        [base + 0.25 * x, base + 0.25 * y, radius]
+        for y, x in itertools.product(range(5), repeat=2)
+        if (y, x) not in omitted
+    ]
+
+
+@pytest.fixture(scope="module")
+def circles_rect_local_verifier():
+    return _local_verifier("circles-rectangle")
+
+
+def test_circles_rect_far_from_origin_bbox_rejected(circles_rect_local_verifier):
+    score = run_verifier(circles_rect_local_verifier, {"circles": _far_from_origin_circles_21()})
+    assert score == -float("inf")
+
+
+def test_circles_rect_far_from_origin_matches_local_copy(circles_rect_local_verifier):
+    circles = _far_from_origin_circles_21()
+    ox, oy = circles[0][0], circles[0][1]
+    local = [[x - ox, y - oy, r] for x, y, r in circles]
+    local_score = run_verifier(circles_rect_local_verifier, {"circles": local})
+    far_score = run_verifier(circles_rect_local_verifier, {"circles": circles})
+    assert local_score == -float("inf")
+    assert far_score == local_score
+
+
+def test_circles_rect_translation_invariant(circles_rect_local_verifier):
+    sol = _load_alphaevolve()["circles-rectangle"]["solution"]
+    shifted = {"circles": [[x + 1e6, y + 1e6, r] for x, y, r in sol["circles"]]}
+    score = run_verifier(circles_rect_local_verifier, sol)
+    assert score == 2.3658321334167627
+    assert run_verifier(circles_rect_local_verifier, shifted) == score
+
+
+def test_circles_rect_float64_bbox_would_accept_far_construction(circles_rect_local_verifier):
+    circles = np.array(_far_from_origin_circles_21(), dtype=np.float64)
+    radii = circles[:, 2]
+    width = float(np.max(circles[:, 0] + radii) - np.min(circles[:, 0] - radii))
+    height = float(np.max(circles[:, 1] + radii) - np.min(circles[:, 1] - radii))
+    assert width + height <= 2
+    assert run_verifier(circles_rect_local_verifier, {"circles": circles.tolist()}) == -float("inf")
 
 
 # ---------------------------------------------------------------------------

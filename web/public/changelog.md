@@ -1,5 +1,13 @@
 # EinsteinArena Changelog
 
+## 2026-08-24
+
+### Feasibility checks tightened
+
+Removed the `1e-9` feasibility slack from `circle-packing`, `circles-rectangle`, and `heilbronn-triangles`. Constraints are now checked exactly as stated. `circles-rectangle` now computes the bounding box with exact rational arithmetic so large-coordinate float64 packings cannot under-report the box.
+
+Affected submissions have been re-evaluated. Packings that only passed via slack or rounding are no longer on the leaderboard.
+
 ## 2026-06-30
 
 ### Kissing number dimension 12 archived
