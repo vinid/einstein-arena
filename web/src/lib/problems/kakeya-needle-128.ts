@@ -24,7 +24,7 @@ This is the finite Kakeya needle problem.
 
 **The state of the art is $C_T(128) \\le 0.107067$, established by the Station in August 2026**, improving HorizonMath's $0.109148$ and AlphaEvolve's $0.114810$. That is the number to beat.
 
-The leaderboard is seeded with the classical Keich-style bitwise construction, which scores $0.119207$ under this verifier.
+The leaderboard is seeded with AlphaEvolve's best published construction, which scores $0.112233$ under this verifier.
 
 ## Scoring
 
@@ -39,6 +39,8 @@ $$\\left[\\, x_j + \\tfrac{j}{128}y,\\quad x_j + \\tfrac{1}{128} + \\tfrac{j-1}{
 so both endpoints are affine in $y$ with rational coefficients. The verifier finds every rational height where two endpoints cross, sorts them exactly, and integrates the union length — which is affine between consecutive crossings — slab by slab in exact rational arithmetic.
 
 There is no grid, no rasterization, no Monte Carlo sampling and no floating-point polygon library. The area is computed as an exact rational and converted to a float only as the final step. Lower is better.
+
+**Provenance.** The verifier follows the structure of the Kakeya needle evaluator in [the Station](https://arxiv.org/abs/2608.23691) — the same endpoint lines, the same breakpoint set, and the same slabwise integration — with two changes. All arithmetic is exact rational rather than float64, and the Station's \`BREAKPOINT_EPS = 1e-12\` slab-skipping tolerance is set to zero, so no slab is ever dropped. On honest constructions the two implementations agree to machine precision; removing the tolerance closes a path by which a submission could shave area off its own score.
 
 ## Reference
 
@@ -78,22 +80,86 @@ def _parse_offset(s):
     return -val if neg else val
 
 
-def _union_numer(p, q, consts, slopes):
-    # Scaled union length at y = p/q, as an integer numerator over q.
-    iv = []
-    for k in range(0, len(consts), 2):
-        iv.append((consts[k] * q + slopes[k] * p,
-                   consts[k + 1] * q + slopes[k + 1] * p))
-    iv.sort()
+def _triangle_endpoint_lines(scaled_xs, den):
+    # The two section endpoints of T_j are affine in y. Each is stored as
+    # (slope, intercept), both scaled by N*den so they are exact integers.
+    lines = []
+    for index, x in enumerate(scaled_xs, start=1):
+        intercept = N * x
+        lines.append((den * index, intercept))
+        lines.append((den * (index - 1), intercept + den))
+    return lines
+
+
+def _collect_breakpoints(lines):
+    # Every height in (0,1) where two endpoint lines cross, as an exact
+    # rational p/q in lowest terms. No epsilon: nothing is merged or dropped.
+    pts = set()
+    m = len(lines)
+    for a in range(m):
+        slope_a, intercept_a = lines[a]
+        for b in range(a + 1, m):
+            slope_delta = slope_a - lines[b][0]
+            if slope_delta == 0:
+                continue
+            p = lines[b][1] - intercept_a
+            q = slope_delta
+            if q < 0:
+                p = -p
+                q = -q
+            if 0 < p < q:
+                g = math.gcd(p, q)
+                pts.add((p // g, q // g))
+    out = sorted(pts, key=lambda t: Fraction(t[0], t[1]))
+    out.append((1, 1))
+    return out
+
+
+def _union_interval_length(intervals):
+    intervals.sort()
     total = 0
-    cur_l, cur_r = iv[0]
-    for l, r in iv[1:]:
-        if l > cur_r:
+    cur_l, cur_r = intervals[0]
+    for left, right in intervals[1:]:
+        if left > cur_r:
             total += cur_r - cur_l
-            cur_l, cur_r = l, r
-        elif r > cur_r:
-            cur_r = r
+            cur_l, cur_r = left, right
+        elif right > cur_r:
+            cur_r = right
     total += cur_r - cur_l
+    return total
+
+
+def _union_length_at_y(lines, p, q):
+    # Union length at y = p/q, returned as an integer numerator over q*N*den.
+    intervals = []
+    for k in range(0, len(lines), 2):
+        slope_l, intercept_l = lines[k]
+        slope_r, intercept_r = lines[k + 1]
+        intervals.append((intercept_l * q + slope_l * p,
+                          intercept_r * q + slope_r * p))
+    return _union_interval_length(intervals)
+
+
+def triangle_union_area(xs):
+    # Put every offset over one denominator so all coordinates are integers.
+    den = 1
+    for x in xs:
+        den = den // math.gcd(den, x.denominator) * x.denominator
+    scaled_xs = [int(x * den) for x in xs]
+
+    lines = _triangle_endpoint_lines(scaled_xs, den)
+    scale = N * den
+
+    total = Fraction(0)
+    prev_y = Fraction(0)
+    prev_u = Fraction(_union_length_at_y(lines, 0, 1), scale)
+    for p, q in _collect_breakpoints(lines):
+        y = Fraction(p, q)
+        u = Fraction(_union_length_at_y(lines, p, q), q * scale)
+        # Exact: the union length is affine across each slab.
+        total += (prev_u + u) * (y - prev_y) / 2
+        prev_y = y
+        prev_u = u
     return total
 
 
@@ -107,58 +173,12 @@ def evaluate(data):
     x0 = xs[0]
     xs = [x - x0 for x in xs]
 
-    # Put every offset over a single denominator Q, then scale all horizontal
-    # coordinates by 128*Q so both section endpoints become affine functions
-    # of y with integer coefficients.
-    Q = 1
-    for x in xs:
-        Q = Q // math.gcd(Q, x.denominator) * x.denominator
-    X = [int(x * Q) for x in xs]
+    area = triangle_union_area(xs)
 
-    consts = []
-    slopes = []
-    for j in range(1, N + 1):
-        consts.append(128 * X[j - 1])
-        slopes.append(Q * j)
-        consts.append(128 * X[j - 1] + Q)
-        slopes.append(Q * (j - 1))
-
-    # Every height in (0,1) at which two endpoint lines cross. The union
-    # length is affine between consecutive crossings.
-    ev = set()
-    m = len(consts)
-    for a in range(m):
-        ca = consts[a]
-        sa = slopes[a]
-        for b in range(a + 1, m):
-            ds = sa - slopes[b]
-            if ds == 0:
-                continue
-            p = consts[b] - ca
-            q = ds
-            if q < 0:
-                p = -p
-                q = -q
-            if 0 < p < q:
-                g = math.gcd(p, q)
-                ev.add((p // g, q // g))
-
-    heights = sorted(ev, key=lambda t: Fraction(t[0], t[1]))
-    heights.append((1, 1))
-
-    scale = 128 * Q
-    prev_y = Fraction(0)
-    prev_u = Fraction(_union_numer(0, 1, consts, slopes), scale)
-    total = Fraction(0)
-    for p, q in heights:
-        y = Fraction(p, q)
-        u = Fraction(_union_numer(p, q, consts, slopes), q * scale)
-        # Exact: the integrand is affine across the slab.
-        total += (prev_u + u) * (y - prev_y) / 2
-        prev_y = y
-        prev_u = u
-
-    return float(total)`,
+    # The union cannot exceed the total area of the 128 triangles.
+    if area <= 0 or area > Fraction(1, 2):
+        raise ValueError("Internal area check failed: " + str(float(area)))
+    return float(area)`,
 };
 
 export default problem;

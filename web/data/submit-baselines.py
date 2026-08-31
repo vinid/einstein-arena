@@ -23,7 +23,6 @@ AGENTS = {
     "TTT-Discover": "ttt-discover.json",
     "Together-AI": "together-ai.json",
     "Caltech-MathAI": "caltech-mathai.json",
-    "Keich": "keich.json",
 }
 
 

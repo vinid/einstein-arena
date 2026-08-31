@@ -30,7 +30,7 @@ reported by Butbaia et al. on 23 August 2026, a $3.1\\%$ improvement on the prev
 
 Submit \`matrix\` — exactly 51 rows of exactly 51 entries, every entry the integer $1$ or $-1$. Floating-point entries, relaxed entries in $[-1,1]$, and structured generators are rejected.
 
-The verifier computes the determinant **exactly** by fraction-free Bareiss elimination in integer arithmetic. It does not use floating-point determinants, singular values, condition numbers, or any residual certificate.
+The verifier computes the determinant **exactly**, in integer arithmetic, via \`sympy.Matrix.det_bareis()\` — fraction-free Bareiss elimination. This is the same routine the record authors use in their own [verification code](https://github.com/Math-AI-Caltech/hadamard-maxdet). It does not use floating-point determinants, singular values, condition numbers, or any residual certificate.
 
 The platform stores a floating scalar, so the reported score is the monotone transform
 
@@ -40,9 +40,11 @@ computed from the exact integer. Singular matrices score $0$.
 
 **Score resolution.** $|\\det A|$ has 29 decimal digits, while the stored score is a float64 carrying about 14 significant digits of it. Two matrices whose determinants agree in their leading digits therefore receive the same score, and the leaderboard cannot separate them. Ranking is exact only down to a relative determinant gain of roughly $1.6 \\times 10^{-14}$; the \`minImprovement\` guard needs about $2.3 \\times 10^{-9}$. This is far below any plausible record margin — the improvement reported by Butbaia et al. was $3.1\\%$, some seven orders of magnitude clear of the threshold — but a submission that beat the incumbent only in its trailing digits would not register. Settling such a claim requires comparing the exact integers directly, which the score cannot do.
 
+**Provenance.** Both the verifier and the seeded incumbent come from the record authors, the [Math-AI group at Caltech](https://github.com/Math-AI-Caltech). Their [\`hadamard-maxdet\`](https://github.com/Math-AI-Caltech/hadamard-maxdet) repository publishes each record as the first rows of two circulant blocks plus an assembly rule, and verifies them with \`sympy.Matrix.det_bareis()\` — the same call this verifier makes. The order-51 baseline on this leaderboard is their matrix, reconstructed from that encoding and reproducing their published determinant exactly.
+
 ## Reference
 
-[New Records for the Hadamard Maximal Determinant Problem in Dimensions 51, 107, and 115](https://arxiv.org/abs/2608.22518). See also the [survey of the Hadamard maximal determinant problem](https://arxiv.org/abs/2104.06756).`,
+[New Records for the Hadamard Maximal Determinant Problem in Dimensions 51, 107, and 115](https://arxiv.org/abs/2608.22518), by the Caltech Math-AI group; construction data and verification code at [Math-AI-Caltech/hadamard-maxdet](https://github.com/Math-AI-Caltech/hadamard-maxdet). See also the [survey of the Hadamard maximal determinant problem](https://arxiv.org/abs/2104.06756).`,
   solutionSchema: {
     matrix: "51x51 array of integers, each entry 1 or -1",
   },
@@ -51,35 +53,9 @@ computed from the exact integer. Singular matrices score $0$.
   }),
   verifier: `import math
 
+import sympy as sp
+
 N = 51
-
-
-def _bareiss_det(m):
-    # Fraction-free Bareiss elimination. Every division is exact.
-    n = len(m)
-    sign = 1
-    prev = 1
-    for k in range(n - 1):
-        if m[k][k] == 0:
-            pivot = -1
-            for i in range(k + 1, n):
-                if m[i][k] != 0:
-                    pivot = i
-                    break
-            if pivot < 0:
-                return 0
-            m[k], m[pivot] = m[pivot], m[k]
-            sign = -sign
-        akk = m[k][k]
-        row_k = m[k]
-        for i in range(k + 1, n):
-            row_i = m[i]
-            mik = row_i[k]
-            for j in range(k + 1, n):
-                row_i[j] = (row_i[j] * akk - row_k[j] * mik) // prev
-            row_i[k] = 0
-        prev = akk
-    return sign * m[n - 1][n - 1]
 
 
 def _log10_exact(d):
@@ -105,7 +81,8 @@ def evaluate(data):
             out.append(v)
         m.append(out)
 
-    d = abs(_bareiss_det(m))
+    # Same call the record authors use to verify their own matrices.
+    d = abs(int(sp.Matrix(m).det_bareis()))
     if d == 0:
         return 0.0
     return float(_log10_exact(d))`,
