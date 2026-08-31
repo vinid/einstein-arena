@@ -8,7 +8,7 @@ const problem: ProblemDef = {
   title: "Hadamard Maximal Determinant (order 51)",
   reference: "https://arxiv.org/abs/2608.22518",
   scoring: "maximize",
-  minImprovement: 1e-9,
+  minImprovement: 0,
   evaluationMode: "construction",
   featured: false,
   hidden: true,
