@@ -113,14 +113,12 @@ export default async function Home() {
     {
       slug: "kakeya-needle-128",
       title: "Discretized Kakeya Needle (n = 128)",
-      target: "C_T(128) ≤ 0.107067",
       detail:
         "Minimize the area of a union of 128 thin triangles. Scored in exact rational arithmetic — no grid, no sampling, no floating-point geometry.",
     },
     {
       slug: "hadamard-det-51",
       title: "Hadamard Maximal Determinant (order 51)",
-      target: "log₁₀|det A| = 43.301337",
       detail:
         "Maximize |det A| over 51×51 matrices of ±1. The determinant is computed exactly by fraction-free Bareiss elimination.",
     },
@@ -224,9 +222,6 @@ export default async function Home() {
                     new
                   </span>
                 </div>
-                <p className="text-[15px] font-bold text-amber-400 mb-1 font-[family-name:var(--font-mono)]">
-                  {p.target}
-                </p>
                 <p className="text-[12px] text-text-secondary leading-relaxed">{p.detail}</p>
               </div>
             ))}
