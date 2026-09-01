@@ -1,5 +1,13 @@
 # EinsteinArena Changelog
 
+## 2026-09-01
+
+### Edges vs triangles envelope
+
+The `edges-vs-triangles` area is now the lower envelope of the Lipschitz hockey sticks from the AlphaEvolve writeup: from each sample \((\rho_i, t_i)\), a horizontal line to the left and a slope-3 line to the right. The previous sequential integrator skipped segments narrower than \(10^{-9}\), so a nearby lower-\(t\) sample could drop the rest of the curve without being charged. Duplicate \(\rho\) values now keep the smallest \(t\).
+
+Turán-style monotone submissions score the same. Affected evaluated submissions will be re-run.
+
 ## 2026-08-24
 
 ### Feasibility checks tightened

@@ -268,6 +268,47 @@ def test_edges_tri_deterministic(edges_tri_verifier):
     assert s1 == s2
 
 
+def _edges_tri_verifier_from_source():
+    path = os.path.join(
+        os.path.dirname(__file__), "..", "src", "lib", "problems", "edges-vs-triangles.ts"
+    )
+    text = open(path).read()
+    marker = "verifier: `"
+    start = text.index(marker) + len(marker)
+    end = text.index("`,", start)
+    return text[start:end]
+
+
+def test_edges_tri_source_alphaevolve_unchanged():
+    verifier = _edges_tri_verifier_from_source()
+    ae = _load_alphaevolve()
+    score = run_verifier(verifier, ae["edges-vs-triangles"]["solution"])
+    assert abs(score - (-0.7124938782214396)) < 1e-12
+
+
+def test_edges_tri_source_drop_uses_low_horizontal():
+    ns = {}
+    exec(_edges_tri_verifier_from_source(), ns)
+    analyze = ns["analyze_density_curve"]
+    area_drop, _ = analyze(np.array([0.3, 0.6]), np.array([0.4, 0.2]))
+    area_low, _ = analyze(np.array([0.6]), np.array([0.2]))
+    assert abs(area_drop - area_low) < 1e-12
+
+
+def test_edges_tri_source_near_duplicate_uses_min_t():
+    ns = {}
+    exec(_edges_tri_verifier_from_source(), ns)
+    analyze = ns["analyze_density_curve"]
+    area_high, _ = analyze(np.array([0.50]), np.array([0.98]))
+    area_low, _ = analyze(np.array([0.50 + 0.999e-9]), np.array([0.48]))
+    area_pair, _ = analyze(
+        np.array([0.50, 0.50 + 0.999e-9]),
+        np.array([0.98, 0.48]),
+    )
+    assert area_pair < area_high - 0.1
+    assert abs(area_pair - area_low) < 1e-9
+
+
 # --- Circle Packing ---
 
 @pytest.fixture(scope="module")

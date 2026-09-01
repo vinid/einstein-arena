@@ -20,7 +20,7 @@ This is the Razborov flag-algebra problem on the minimum triangle density as a f
 
 ## Encoding
 
-Each row of the solution is a probability distribution over 20 bins. The verifier computes edge density and triangle density per row using Newton's power-sum identities, then constructs a piecewise curve from $(0,0)$ to $(1,1)$ with slope-3 segments capped by the next data point. The area under this curve approximates $\\int_0^1 C(\\rho)\\,d\\rho$.
+Each row of the solution is a probability distribution over 20 bins. The verifier computes edge density and triangle density per row using Newton's power-sum identities. Each point $(\\rho_i, t_i)$ extends a horizontal line to the left and a line of slope 3 to the right. The area under the lower envelope of these lines is an upper bound on $\\int_0^1 C(\\rho)\\,d\\rho$.
 
 ## Scoring
 
@@ -58,6 +58,7 @@ def sum_pairwise_triple_products_batch(A):
 def analyze_density_curve(edge_densities, triangle_densities, gap_range_min=0.0, gap_range_max=1.0):
     if edge_densities.shape != triangle_densities.shape or edge_densities.ndim != 1:
         return -1.0, -1.0
+    slope = 3.0
     if edge_densities.size > 0:
         sort_indices = np.argsort(edge_densities)
         sorted_x = edge_densities[sort_indices]
@@ -65,10 +66,10 @@ def analyze_density_curve(edge_densities, triangle_densities, gap_range_min=0.0,
         dtype = sorted_x.dtype
         full_x = np.concatenate(([np.array(0.0, dtype=dtype)], sorted_x, [np.array(1.0, dtype=dtype)]))
         full_y = np.concatenate(([np.array(0.0, dtype=dtype)], sorted_y, [np.array(1.0, dtype=dtype)]))
-        unique_full_x, unique_indices_full = np.unique(full_x, return_index=True)
-        if len(unique_full_x) < len(full_x):
-            full_x = full_x[unique_indices_full]
-            full_y = full_y[unique_indices_full]
+        uniq_x, inv = np.unique(full_x, return_inverse=True)
+        min_y = np.full(len(uniq_x), np.inf, dtype=dtype)
+        np.minimum.at(min_y, inv, full_y)
+        full_x, full_y = uniq_x, min_y
     else:
         full_x = np.array([0.0, 1.0])
         full_y = np.array([0.0, 1.0])
@@ -76,32 +77,27 @@ def analyze_density_curve(edge_densities, triangle_densities, gap_range_min=0.0,
         area = 5.0 / 6.0
         max_gap_in_range = 1.0 if gap_range_min <= 0.0 < gap_range_max else 0.0
         return area, max_gap_in_range
+    intercepts = full_y - slope * full_x
+    left_ray = np.minimum.accumulate(intercepts)
+    right_flat = np.minimum.accumulate(full_y[::-1])[::-1]
     total_area = 0.0
-    slope = 3.0
-    epsilon = 1e-9
     for i in range(len(full_x) - 1):
-        xi, yi = full_x[i], full_y[i]
-        x_next, y_next = full_x[i + 1], full_y[i + 1]
-        w = x_next - xi
-        if w < epsilon:
+        x0, x1 = full_x[i], full_x[i + 1]
+        w = x1 - x0
+        if w <= 0:
             continue
-        if yi > y_next + epsilon:
-            segment_area = yi * w
+        cap = min(float(right_flat[i + 1]), 1.0)
+        y_left = slope * x0 + left_ray[i]
+        y_right = slope * x1 + left_ray[i]
+        if y_left >= cap:
+            segment_area = cap * w
+        elif y_right <= cap:
+            segment_area = (y_left + y_right) * w / 2.0
         else:
-            y_calc = yi + slope * w
-            if y_calc <= y_next + epsilon:
-                segment_area = (yi + y_calc) * w / 2.0
-            else:
-                delta_y = max(0.0, y_next - yi)
-                if abs(slope) < epsilon:
-                    segment_area = yi * w
-                else:
-                    w1 = delta_y / slope
-                    w1 = max(0.0, min(w1, w))
-                    w2 = w - w1
-                    area1 = (yi + y_next) * w1 / 2.0
-                    area2 = y_next * w2
-                    segment_area = area1 + area2
+            x_hit = (cap - left_ray[i]) / slope
+            w1 = x_hit - x0
+            w2 = x1 - x_hit
+            segment_area = (y_left + cap) * w1 / 2.0 + cap * w2
         total_area += segment_area
     gaps = np.diff(full_x)
     indices_in_range = np.where((full_x[:-1] >= gap_range_min) & (full_x[:-1] < gap_range_max))[0]
