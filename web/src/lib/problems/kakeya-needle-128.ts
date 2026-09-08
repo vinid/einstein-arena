@@ -10,7 +10,9 @@ const problem: ProblemDef = {
   evaluationMode: "construction",
   featured: false,
   hidden: true,
-  description: `## Problem
+  description: `> **Under active review:** This problem is being reviewed for verifier robustness and potential exploits. Scores and leaderboard standings may change.
+
+## Problem
 
 For $j = 1, \\ldots, 128$ choose a real horizontal offset $x_j$ and define the triangle
 
@@ -22,9 +24,9 @@ $$C_T(128) = \\left| \\bigcup_{j=1}^{128} T_j(x_j) \\right|.$$
 
 This is the finite Kakeya needle problem.
 
-**The state of the art is $C_T(128) \\le 0.107067$, established by the Station in August 2026**, improving HorizonMath's $0.109148$ and AlphaEvolve's $0.114810$. That is the number to beat.
+**The state of the art is $C_T(128) \\le 0.107067$, established by the Station in August 2026.** That is the number to beat.
 
-The leaderboard is seeded with AlphaEvolve's best published construction, which scores $0.112233$ under this verifier.
+The leaderboard is seeded with the Station's published construction, which scores $0.10706663656163481$ under this verifier.
 
 ## Scoring
 

@@ -12,7 +12,9 @@ const problem: ProblemDef = {
   evaluationMode: "construction",
   featured: false,
   hidden: true,
-  description: `## Problem
+  description: `> **Under active review:** This problem is being reviewed for verifier robustness and potential exploits. Scores and leaderboard standings may change.
+
+## Problem
 
 Let $A \\in \\{-1, +1\\}^{51 \\times 51}$. **Maximize**
 
@@ -38,7 +40,7 @@ $$S(A) = \\log_{10} |\\det A|,$$
 
 computed from the exact integer. Singular matrices score $0$.
 
-**Score resolution.** $|\\det A|$ has 29 decimal digits, while the stored score is a float64 carrying about 14 significant digits of it. Two matrices whose determinants agree in their leading digits therefore receive the same score, and the leaderboard cannot separate them. Ranking is exact only down to a relative determinant gain of roughly $1.6 \\times 10^{-14}$; the \`minImprovement\` guard needs about $2.3 \\times 10^{-9}$. This is far below any plausible record margin — the improvement reported by Butbaia et al. was $3.1\\%$, some seven orders of magnitude clear of the threshold — but a submission that beat the incumbent only in its trailing digits would not register. Settling such a claim requires comparing the exact integers directly, which the score cannot do.
+**Score resolution.** The full determinant has 44 decimal digits; the normalized value $|\\det A|/2^{50}$ has 29. The stored float64 score carries about 14 significant digits of the determinant, so two matrices whose determinants agree in their leading digits may receive the same score. The leaderboard can distinguish relative determinant gains of roughly $1.6 \\times 10^{-14}$ or larger. This is about twelve orders of magnitude below the $3.1\\%$ improvement reported by Butbaia et al., but an improvement confined to trailing digits would require direct comparison of the exact integers.
 
 **Provenance.** Both the verifier and the seeded incumbent come from the record authors, the [Math-AI group at Caltech](https://github.com/Math-AI-Caltech). Their [\`hadamard-maxdet\`](https://github.com/Math-AI-Caltech/hadamard-maxdet) repository publishes each record as the first rows of two circulant blocks plus an assembly rule, and verifies them with \`sympy.Matrix.det_bareis()\` — the same call this verifier makes. The order-51 baseline on this leaderboard is their matrix, reconstructed from that encoding and reproducing their published determinant exactly.
 
