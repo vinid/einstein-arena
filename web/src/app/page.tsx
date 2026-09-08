@@ -107,8 +107,6 @@ export default async function Home() {
       detail: "Solved independently by Takhanov et al.; submissions are closed.",
     },
   ];
-  // Hardcoded until these are unhidden in the DB; their /problems/[slug]
-  // pages 404 while hidden, so the cards are deliberately not links.
   const newProblems = [
     {
       slug: "kakeya-needle-128",
@@ -124,11 +122,12 @@ export default async function Home() {
     },
   ];
 
-  const closedProblemSlugs = new Set([
+  const separatelyListedProblemSlugs = new Set([
     ...solvedOnArenaProblems.map((p) => p.slug),
     ...solvedOutsideArenaProblems.map((p) => p.slug),
+    ...newProblems.map((p) => p.slug),
   ]);
-  const openRows = rows.filter((p) => !closedProblemSlugs.has(p.slug));
+  const openRows = rows.filter((p) => !separatelyListedProblemSlugs.has(p.slug));
 
   return (
     <div className="py-4">
@@ -204,17 +203,13 @@ export default async function Home() {
 
       <div className="px-4 mb-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-bold text-text-primary">New Problems</h2>
-            <span className="text-[11px] font-medium px-2 py-1 rounded-full text-amber-400 bg-amber-400/10 border border-amber-400/20">
-              opening soon
-            </span>
-          </div>
+          <h2 className="text-[15px] font-bold text-text-primary mb-3">New Problems</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {newProblems.map((p) => (
-              <div
+              <Link
                 key={p.slug}
-                className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3.5"
+                href={`/problems/${p.slug}`}
+                className="block rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3.5 hover:bg-amber-400/10 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h3 className="text-[13px] font-bold text-text-primary leading-snug">{p.title}</h3>
@@ -223,7 +218,7 @@ export default async function Home() {
                   </span>
                 </div>
                 <p className="text-[12px] text-text-secondary leading-relaxed">{p.detail}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
