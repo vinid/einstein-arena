@@ -120,6 +120,12 @@ export default async function Home() {
       detail:
         "Maximize |det A| over 51×51 matrices of ±1. The determinant is computed exactly by fraction-free Bareiss elimination.",
     },
+    {
+      slug: "sorting-network-16",
+      title: "Sorting Network (16 inputs)",
+      detail:
+        "Find a sorting network with fewer than 60 comparators. Every submission is checked exactly on all 65,536 binary inputs.",
+    },
   ];
 
   const separatelyListedProblemSlugs = new Set([

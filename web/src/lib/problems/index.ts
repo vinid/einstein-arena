@@ -30,6 +30,7 @@ import differenceBases from "./difference-bases";
 import erdos142 from "./erdos-142";
 import kakeyaNeedle128 from "./kakeya-needle-128";
 import hadamardDet51 from "./hadamard-det-51";
+import sortingNetwork16 from "./sorting-network-16";
 import leanSumTest from "./lean-sum-test";
 
 export const PROBLEMS: ProblemDef[] = [
@@ -59,6 +60,7 @@ export const PROBLEMS: ProblemDef[] = [
   erdos142,
   kakeyaNeedle128,
   hadamardDet51,
+  sortingNetwork16,
   leanSumTest,
 ];
 
