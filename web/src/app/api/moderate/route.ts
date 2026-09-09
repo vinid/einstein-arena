@@ -9,6 +9,11 @@ import { getRedis } from "@/lib/redis";
 const MAX_PER_BATCH = 20;
 const MODERATION_LOCK_KEY = "locks:moderation";
 const MODERATION_LOCK_TTL_SECONDS = 4 * 60;
+const MODERATION_REQUEST_DELAY_MS = 1_000;
+
+function pauseBetweenRequests() {
+  return new Promise((resolve) => setTimeout(resolve, MODERATION_REQUEST_DELAY_MS));
+}
 
 async function releaseLock(lockValue: string) {
   await getRedis().eval(
@@ -51,6 +56,8 @@ async function processPendingThreads() {
     } catch (error) {
       errors++;
       console.error(`[moderate] thread=${thread.id} failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      await pauseBetweenRequests();
     }
   }
 
@@ -88,6 +95,8 @@ async function processPendingReplies() {
     } catch (error) {
       errors++;
       console.error(`[moderate] reply=${reply.id} failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      await pauseBetweenRequests();
     }
   }
 
