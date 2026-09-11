@@ -19,11 +19,14 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 BYPASS_HEADERS = {"x-ratelimit-bypass": RL_BYPASS} if RL_BYPASS else {}
 
 AGENTS = {
-    "AlphaEvolve": "alphaevolve.json",
-    "TTT-Discover": "ttt-discover.json",
-    "Together-AI": "together-ai.json",
-    "Caltech-MathAI": "caltech-mathai.json",
-    "Station": "station.json",
+    "AlphaEvolve": ["alphaevolve.json", "ring-loading-alphaevolve.json"],
+    "TTT-Discover": ["ttt-discover.json"],
+    "Together-AI": ["together-ai.json"],
+    "Caltech-MathAI": ["caltech-mathai.json"],
+    "Station": ["station.json"],
+    "Polak-Schrijver": ["polak-schrijver.json"],
+    "Youhua-Li": ["youhua-li.json"],
+    "Ma-Tang": ["ma-tang.json"],
 }
 
 
@@ -112,6 +115,23 @@ def run_verifier(verifier_code, solution_data):
     return ns["evaluate"](solution_data)
 
 
+def load_solution_file(filename):
+    path = os.path.join(SOLUTIONS_DIR, filename)
+    with open(path) as f:
+        return json.load(f)
+
+
+def load_agent_solutions(solution_files):
+    solutions = {}
+    for filename in solution_files:
+        loaded = load_solution_file(filename)
+        overlap = solutions.keys() & loaded.keys()
+        if overlap:
+            raise ValueError(f"Duplicate baseline slugs: {sorted(overlap)}")
+        solutions.update(loaded)
+    return solutions
+
+
 def mark_baselines(agent_names):
     if not ADMIN_SECRET:
         print("\nSkipping baseline marking: ADMIN_SECRET is not set")
@@ -144,17 +164,15 @@ if not agents_to_run:
     print(f"No agent found matching --agent={args.agent}")
     sys.exit(1)
 
-for agent_name, solution_file in agents_to_run.items():
+for agent_name, solution_files in agents_to_run.items():
     token = get_or_register(agent_name, tokens)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", **BYPASS_HEADERS}
 
-    path = os.path.join(SOLUTIONS_DIR, solution_file)
-    with open(path) as f:
-        solutions = json.load(f)
+    solutions = load_agent_solutions(solution_files)
 
     filtered = {k: v for k, v in solutions.items() if not args.slug or k == args.slug}
     if args.slug and not filtered:
-        print(f"  No solution found for --slug={args.slug} in {solution_file}")
+        print(f"  No solution found for --slug={args.slug} in {solution_files}")
         continue
 
     print(f"\n{agent_name} ({len(filtered)} problems) → {BASE}")

@@ -26,6 +26,7 @@ EXPECTED_SCORES = {
         "hexagon-packing": 3.9419123,
         "circles-rectangle": 2.3658321334167627,
         "difference-bases": 2.639027469506608,
+        "ring-loading-15": 1.1190475684692773,
     },
     "TTT-Discover": {
         "erdos-min-overlap": 0.3808753232177187,
@@ -40,12 +41,24 @@ EXPECTED_SCORES = {
         "kissing-number-d11": 0.6279768607340042,
         "prime-number-theorem": 0.994179461377618,
     },
+    "Polak-Schrijver": {
+        "shannon-capacity-c7-5": 367.0,
+    },
+    "Youhua-Li": {
+        "spencer-discrepancy": 7 / np.sqrt(17),
+    },
+    "Ma-Tang": {
+        "sidon-45-set": 4 / 7,
+    },
 }
 
 AGENTS_FILES = {
-    "AlphaEvolve": "alphaevolve.json",
-    "TTT-Discover": "ttt-discover.json",
-    "Together-AI": "together-ai.json",
+    "AlphaEvolve": ["alphaevolve.json", "ring-loading-alphaevolve.json"],
+    "TTT-Discover": ["ttt-discover.json"],
+    "Together-AI": ["together-ai.json"],
+    "Polak-Schrijver": ["polak-schrijver.json"],
+    "Youhua-Li": ["youhua-li.json"],
+    "Ma-Tang": ["ma-tang.json"],
 }
 
 
@@ -62,9 +75,16 @@ def run_verifier(verifier_code, solution_data):
 
 
 def load_baseline(agent_name):
-    path = os.path.join(BASELINES_DIR, AGENTS_FILES[agent_name])
-    with open(path) as f:
-        return json.load(f)
+    solutions = {}
+    for filename in AGENTS_FILES[agent_name]:
+        path = os.path.join(BASELINES_DIR, filename)
+        with open(path) as f:
+            loaded = json.load(f)
+        overlap = solutions.keys() & loaded.keys()
+        if overlap:
+            raise ValueError(f"Duplicate baseline slugs: {sorted(overlap)}")
+        solutions.update(loaded)
+    return solutions
 
 
 def baseline_cases():

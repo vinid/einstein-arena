@@ -126,6 +126,30 @@ export default async function Home() {
       detail:
         "Find a sorting network with fewer than 60 comparators. Every submission is checked exactly on all 65,536 binary inputs.",
     },
+    {
+      slug: "shannon-capacity-c7-5",
+      title: "Shannon Capacity of the 7-Cycle (Fifth Power)",
+      detail:
+        "Find 368 independent words in the fifth strong power of C₇. Every pair is checked exactly; success would improve the global capacity lower bound.",
+    },
+    {
+      slug: "ring-loading-15",
+      title: "Ring Loading Problem (15 pairs)",
+      detail:
+        "Beat AlphaEvolve's 1.119047568 construction. All 32,768 adversarial assignments are evaluated in exact rational arithmetic.",
+    },
+    {
+      slug: "spencer-discrepancy",
+      title: "Spencer Discrepancy Constant",
+      detail:
+        "Beat 7/√17 with a sign matrix of order at most 20. The verifier exhausts every sign vector using exact bit-mask arithmetic.",
+    },
+    {
+      slug: "sidon-45-set",
+      title: "Sidon Subsets of (4,5)-Sets",
+      detail:
+        "Improve the 4/7 construction with at most 18 integers. The local-difference condition and largest Sidon subset are computed exactly.",
+    },
   ];
 
   const separatelyListedProblemSlugs = new Set([

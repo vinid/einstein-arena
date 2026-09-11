@@ -713,3 +713,111 @@ def test_diff_bases_deterministic(diff_bases_verifier):
     s1 = run_verifier(diff_bases_verifier, {"set": s})
     s2 = run_verifier(diff_bases_verifier, {"set": s})
     assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# Discovery Problems
+# ---------------------------------------------------------------------------
+
+BASELINES_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "baselines")
+
+
+def _load_baseline_file(filename):
+    with open(os.path.join(BASELINES_DIR, filename)) as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="module")
+def shannon_c7_verifier():
+    return fetch_verifier("shannon-capacity-c7-5")
+
+
+@pytest.fixture(scope="module")
+def ring_loading_verifier():
+    return fetch_verifier("ring-loading-15")
+
+
+@pytest.fixture(scope="module")
+def spencer_verifier():
+    return fetch_verifier("spencer-discrepancy")
+
+
+@pytest.fixture(scope="module")
+def sidon_45_verifier():
+    return fetch_verifier("sidon-45-set")
+
+
+def test_shannon_c7_published_367(shannon_c7_verifier):
+    solution = _load_baseline_file("polak-schrijver.json")["shannon-capacity-c7-5"]["solution"]
+    assert run_verifier(shannon_c7_verifier, solution) == 367.0
+
+
+def test_shannon_c7_rejects_adjacent_words(shannon_c7_verifier):
+    with pytest.raises(ValueError, match="not an independent set"):
+        run_verifier(shannon_c7_verifier, {"words": [[0, 0, 0, 0, 0], [1, 0, 0, 0, 0]]})
+
+
+def test_shannon_c7_rejects_duplicate_words(shannon_c7_verifier):
+    with pytest.raises(ValueError, match="distinct"):
+        run_verifier(shannon_c7_verifier, {"words": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]})
+
+
+def test_ring_loading_alphaevolve_score(ring_loading_verifier):
+    solution = _load_baseline_file("ring-loading-alphaevolve.json")["ring-loading-15"]["solution"]
+    score = run_verifier(ring_loading_verifier, solution)
+    assert abs(score - 1.1190475684692773) < 1e-15
+
+
+def test_ring_loading_rejects_pair_over_capacity(ring_loading_verifier):
+    pairs = [["0", "0"] for _ in range(15)]
+    pairs[0] = ["2/3", "2/3"]
+    with pytest.raises(ValueError, match="u \\+ v <= 1"):
+        run_verifier(ring_loading_verifier, {"pairs": pairs})
+
+
+def test_ring_loading_rejects_non_schema_fraction_syntax(ring_loading_verifier):
+    pairs = [["0", "0"] for _ in range(15)]
+    pairs[0] = ["1e-1", "0"]
+    with pytest.raises(ValueError, match="nonnegative decimals or fractions"):
+        run_verifier(ring_loading_verifier, {"pairs": pairs})
+
+
+def test_ring_loading_includes_final_endpoint(ring_loading_verifier):
+    eighths = [
+        [0, 3], [8, 0], [3, 5], [5, 3], [0, 4],
+        [7, 1], [3, 4], [3, 4], [2, 6], [0, 3],
+        [2, 6], [6, 2], [8, 0], [1, 1], [1, 6],
+    ]
+    pairs = [[f"{u}/8", f"{v}/8"] for u, v in eighths]
+    assert run_verifier(ring_loading_verifier, {"pairs": pairs}) == 0.75
+
+
+def test_spencer_youhua_li_score(spencer_verifier):
+    solution = _load_baseline_file("youhua-li.json")["spencer-discrepancy"]["solution"]
+    score = run_verifier(spencer_verifier, solution)
+    assert abs(score - 7 / math.sqrt(17)) < 1e-15
+
+
+def test_spencer_order_20_boundary(spencer_verifier):
+    matrix = [[1] * 20 for _ in range(20)]
+    assert run_verifier(spencer_verifier, {"matrix": matrix}) == 0.0
+
+
+def test_spencer_rejects_nonsquare_matrix(spencer_verifier):
+    with pytest.raises(ValueError, match="square"):
+        run_verifier(spencer_verifier, {"matrix": [[1, 1], [1]]})
+
+
+def test_sidon_ma_tang_score(sidon_45_verifier):
+    solution = _load_baseline_file("ma-tang.json")["sidon-45-set"]["solution"]
+    assert run_verifier(sidon_45_verifier, solution) == 4 / 7
+
+
+def test_sidon_rejects_non_45_set(sidon_45_verifier):
+    with pytest.raises(ValueError, match="not a \\(4,5\\)-set"):
+        run_verifier(sidon_45_verifier, {"elements": [0, 1, 2, 3]})
+
+
+def test_sidon_order_18_boundary(sidon_45_verifier):
+    elements = [1 << i for i in range(18)]
+    assert run_verifier(sidon_45_verifier, {"elements": elements}) == 1.0
