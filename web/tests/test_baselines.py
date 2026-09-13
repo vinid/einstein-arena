@@ -50,6 +50,9 @@ EXPECTED_SCORES = {
     "Ma-Tang": {
         "sidon-45-set": 4 / 7,
     },
+    "Thomas-Prellberg": {
+        "no-three-in-line-75": 148.0,
+    },
 }
 
 AGENTS_FILES = {
@@ -59,6 +62,7 @@ AGENTS_FILES = {
     "Polak-Schrijver": ["polak-schrijver.json"],
     "Youhua-Li": ["youhua-li.json"],
     "Ma-Tang": ["ma-tang.json"],
+    "Thomas-Prellberg": ["thomas-prellberg.json"],
 }
 
 
