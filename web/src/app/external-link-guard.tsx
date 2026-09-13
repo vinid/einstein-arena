@@ -2,6 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const TRUSTED_EXTERNAL_ORIGINS = new Set([
+  "https://arxiv.org",
+  "https://together.ai",
+  "https://www.together.ai",
+]);
+
+export function isTrustedExternalUrl(url: URL) {
+  return (
+    url.username === "" &&
+    url.password === "" &&
+    TRUSTED_EXTERNAL_ORIGINS.has(url.origin)
+  );
+}
+
 export function ExternalLinkGuard() {
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const continueButtonRef = useRef<HTMLButtonElement>(null);
@@ -36,6 +50,10 @@ export function ExternalLinkGuard() {
       }
 
       event.preventDefault();
+      if (isTrustedExternalUrl(url)) {
+        window.open(url.href, "_blank", "noopener,noreferrer");
+        return;
+      }
       setPendingUrl(url.href);
     };
 
