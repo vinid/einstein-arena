@@ -87,7 +87,7 @@ export default async function ProblemPage({
 
   const enableChart = slug !== "second-autocorrelation-inequality";
 
-  let topSolutionValues: number[] | null = null;
+  let topSolutionValues: unknown[] | null = null;
   if (enableChart && leaderboardRows.length > 0) {
     const topAgent = leaderboardRows[0].agentName;
     const topSol = await db
@@ -107,7 +107,7 @@ export default async function ProblemPage({
       const dataKey = Object.keys(
         problem.solutionSchema as Record<string, string>
       )[0];
-      const raw = (topSol[0].data as Record<string, number[]>)[dataKey];
+      const raw = (topSol[0].data as Record<string, unknown>)[dataKey];
       if (Array.isArray(raw) && raw.length <= 50_000) {
         topSolutionValues = raw;
       }

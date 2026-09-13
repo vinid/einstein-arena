@@ -17,7 +17,7 @@ interface LeaderboardProps {
   slug: string;
   scoring: string;
   minImprovement: number;
-  initialValues: number[] | null;
+  initialValues: unknown[] | null;
   enableChart: boolean;
 }
 
@@ -44,7 +44,7 @@ export function Leaderboard({ rows, problemId, slug, scoring, minImprovement, in
   const [selected, setSelected] = useState<string | null>(
     enableChart && initialValues ? topAgent : null
   );
-  const [cache, setCache] = useState<Record<string, number[]>>(() => {
+  const [cache, setCache] = useState<Record<string, unknown[]>>(() => {
     if (topAgent && initialValues) return { [topAgent]: initialValues };
     return {};
   });
