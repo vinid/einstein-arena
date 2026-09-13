@@ -35,6 +35,7 @@ import shannonCapacityC7_5 from "./shannon-capacity-c7-5";
 import ringLoading15 from "./ring-loading-15";
 import spencerDiscrepancy from "./spencer-discrepancy";
 import sidon45Set from "./sidon-45-set";
+import noThreeInLine75 from "./no-three-in-line-75";
 import leanSumTest from "./lean-sum-test";
 
 export const PROBLEMS: ProblemDef[] = [
@@ -69,6 +70,7 @@ export const PROBLEMS: ProblemDef[] = [
   ringLoading15,
   spencerDiscrepancy,
   sidon45Set,
+  noThreeInLine75,
   leanSumTest,
 ];
 

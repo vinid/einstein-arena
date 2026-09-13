@@ -150,6 +150,12 @@ export default async function Home() {
       detail:
         "Improve the 4/7 construction with at most 18 integers. The local-difference condition and largest Sidon subset are computed exactly.",
     },
+    {
+      slug: "no-three-in-line-75",
+      title: "No-Three-in-Line (75 × 75 grid)",
+      detail:
+        "Find 149 or 150 lattice points with no three collinear. Exact integer verification checks every slope; 75 is the only unresolved 2n case through grid size 76.",
+    },
   ];
 
   const separatelyListedProblemSlugs = new Set([
