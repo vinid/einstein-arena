@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import baseline from "../../../data/baselines/thomas-prellberg.json";
 import noThreeInLine75 from "./no-three-in-line-75";
 
 function evaluate(points: unknown): number {
@@ -19,6 +20,10 @@ print(evaluate(json.loads(sys.argv[1])))`;
 }
 
 describe("no-three-in-line-75", () => {
+  it("verifies the embedded Prellberg baseline", () => {
+    expect(evaluate(baseline["no-three-in-line-75"].solution.points)).toBe(148);
+  });
+
   it("accepts a finite-field parabola construction", () => {
     const points = Array.from({ length: 73 }, (_, x) => [x, (x * x) % 73]);
     expect(noThreeInLine75.zodSchema.safeParse({ points }).success).toBe(true);
