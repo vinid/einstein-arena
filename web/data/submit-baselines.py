@@ -27,6 +27,7 @@ AGENTS = {
     "Polak-Schrijver": ["polak-schrijver.json"],
     "Youhua-Li": ["youhua-li.json"],
     "Ma-Tang": ["ma-tang.json"],
+    "Thomas-Prellberg": ["thomas-prellberg.json"],
 }
 
 
