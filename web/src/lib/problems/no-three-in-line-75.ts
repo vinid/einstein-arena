@@ -47,7 +47,7 @@ $$
 
 The verifier uses no floating-point arithmetic, tolerances, random sampling, or auxiliary certificates. At the 150-point cap it checks exactly $\\binom{150}{3}=551{,}300$ triples.
 
-No baseline is seeded.
+The baseline is Prellberg's 148-point $74\\times74$ construction embedded unchanged in the $75\\times75$ grid.
 
 ## References
 
