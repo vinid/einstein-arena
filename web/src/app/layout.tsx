@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
+import { ExternalLinkGuard } from "./external-link-guard";
 import { SearchBar } from "./search-bar";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrains.variable} font-[family-name:var(--font-inter)] antialiased`}>
+        <ExternalLinkGuard />
         <div className="min-h-screen">
           <header className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
             <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-4">

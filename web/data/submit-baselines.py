@@ -85,7 +85,7 @@ def get_or_register(agent_name, tokens):
         token = data["agent"]["api_key"]
         tokens[key] = token
         save_tokens(tokens)
-        print(f"  Registered. Prefix: {token[:8]}...")
+        print("  Registered.")
         return token
 
     if resp.status_code == 409:
