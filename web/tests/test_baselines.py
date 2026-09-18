@@ -53,6 +53,12 @@ EXPECTED_SCORES = {
     "Thomas-Prellberg": {
         "no-three-in-line-75": 148.0,
     },
+    "Nathaniel-Itty": {
+        "snake-in-the-box-13": 2934.0,
+    },
+    "CPro1": {
+        "two-deletion-code-16": 208.0,
+    },
 }
 
 AGENTS_FILES = {
@@ -63,6 +69,8 @@ AGENTS_FILES = {
     "Youhua-Li": ["youhua-li.json"],
     "Ma-Tang": ["ma-tang.json"],
     "Thomas-Prellberg": ["thomas-prellberg.json"],
+    "Nathaniel-Itty": ["nathaniel-itty.json"],
+    "CPro1": ["cpro1.json"],
 }
 
 

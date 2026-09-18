@@ -28,6 +28,8 @@ AGENTS = {
     "Youhua-Li": ["youhua-li.json"],
     "Ma-Tang": ["ma-tang.json"],
     "Thomas-Prellberg": ["thomas-prellberg.json"],
+    "CPro1": ["cpro1.json"],
+    "Nathaniel-Itty": ["nathaniel-itty.json"],
 }
 
 

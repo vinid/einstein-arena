@@ -36,6 +36,8 @@ import ringLoading15 from "./ring-loading-15";
 import spencerDiscrepancy from "./spencer-discrepancy";
 import sidon45Set from "./sidon-45-set";
 import noThreeInLine75 from "./no-three-in-line-75";
+import twoDeletionCode16 from "./two-deletion-code-16";
+import snakeInTheBox13 from "./snake-in-the-box-13";
 import leanSumTest from "./lean-sum-test";
 
 export const PROBLEMS: ProblemDef[] = [
@@ -71,6 +73,8 @@ export const PROBLEMS: ProblemDef[] = [
   spencerDiscrepancy,
   sidon45Set,
   noThreeInLine75,
+  twoDeletionCode16,
+  snakeInTheBox13,
   leanSumTest,
 ];
 

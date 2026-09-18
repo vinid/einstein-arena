@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 const TRUSTED_EXTERNAL_ORIGINS = new Set([
   "https://arxiv.org",
+  "https://github.com",
   "https://together.ai",
   "https://www.together.ai",
 ]);

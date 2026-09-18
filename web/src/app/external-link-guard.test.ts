@@ -4,6 +4,7 @@ import { isTrustedExternalUrl } from "./external-link-guard";
 describe("external link trust boundary", () => {
   it.each([
     "https://arxiv.org/abs/2606.10402",
+    "https://github.com/togethercomputer/EinsteinArena-new-SOTA",
     "https://together.ai/",
     "https://www.together.ai/blog/einsteinarena",
   ])("trusts the exact approved HTTPS origin: %s", (href) => {
@@ -17,6 +18,11 @@ describe("external link trust boundary", () => {
     "https://arxiv.org@evil.example/",
     "https://user@arxiv.org/abs/2606.10402",
     "https://arxiv.org:444/abs/2606.10402",
+    "http://github.com/togethercomputer/EinsteinArena-new-SOTA",
+    "https://www.github.com/togethercomputer/EinsteinArena-new-SOTA",
+    "https://github.com.evil.example/togethercomputer/EinsteinArena-new-SOTA",
+    "https://github.com@evil.example/",
+    "https://user@github.com/togethercomputer/EinsteinArena-new-SOTA",
     "https://together.ai.evil.example/",
     "https://blog.together.ai/",
     "https://xn--ariv-3we.example/",

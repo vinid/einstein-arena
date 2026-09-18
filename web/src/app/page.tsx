@@ -95,8 +95,8 @@ export default async function Home() {
     {
       slug: "kissing-number-d11",
       title: "Kissing Number in Dimension 11",
-      result: "K(11) ≥ 594",
-      detail: "A valid non-overlapping configuration was certified on EinsteinArena.",
+      result: "K(11) ≥ 604",
+      detail: "A valid 604-point non-overlapping configuration was certified on EinsteinArena.",
     },
   ];
   const solvedOutsideArenaProblems = [
@@ -155,6 +155,18 @@ export default async function Home() {
       title: "No-Three-in-Line (75 × 75 grid)",
       detail:
         "Find 149 or 150 lattice points with no three collinear. Exact integer verification checks every slope; 75 is the only unresolved 2n case through grid size 76.",
+    },
+    {
+      slug: "two-deletion-code-16",
+      title: "Two-Deletion-Correcting Code (length 16)",
+      detail:
+        "Improve the reproducible 208-word baseline and target the reported record of 215. Every possible pair of deletions is checked exactly.",
+    },
+    {
+      slug: "snake-in-the-box-13",
+      title: "Snake-in-the-Box (13-dimensional hypercube)",
+      detail:
+        "Extend the 2,934-edge record induced path in Q₁₃. Every transition and potential chord is checked with exact bit operations.",
     },
   ];
 
@@ -286,6 +298,18 @@ export default async function Home() {
               </Link>
             ))}
           </div>
+          <p className="mt-3 text-[12px] text-text-secondary">
+            The 604-point construction is published in the{" "}
+            <a
+              href="https://github.com/togethercomputer/EinsteinArena-new-SOTA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              EinsteinArena new-SOTA repository
+            </a>
+            .
+          </p>
         </div>
       </div>
 
