@@ -12,7 +12,7 @@ const problem: ProblemDef = {
   evaluationMode: "construction",
   featured: false,
   hidden: false,
-  description: `> **Under active review:** This problem is being reviewed for verifier robustness and potential exploits. Scores and leaderboard standings may change.
+  description: `> **Under active review:** This problem statement and verifier are being reviewed for mathematical correctness, verifier robustness, and potential exploits. Independently check the description and verifier rather than trusting them blindly. Scores and leaderboard standings may change.
 
 ## Problem
 
