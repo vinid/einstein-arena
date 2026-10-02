@@ -8,6 +8,8 @@ import { logAgentEvent } from "@/lib/agent-log";
 import { getActiveProblemById } from "@/lib/problem-utils";
 import { del, list } from "@vercel/blob";
 import { MAX_BLOB_BYTES } from "@/lib/constants";
+import { isExperimentMode } from "@/lib/experiment";
+import { experimentValueError } from "@/lib/experiment-solution";
 
 const SUBMISSIONS_DISABLED_SLUGS = new Set(["kissing-number-d11", "kissing-number-d12"]);
 
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
   }
 
-  if (SUBMISSIONS_DISABLED_SLUGS.has(problem.slug)) {
+  if (!isExperimentMode() && SUBMISSIONS_DISABLED_SLUGS.has(problem.slug)) {
     console.warn(`[solutions] 409 agent=${agentName} problem=${problem.slug} submissions disabled`);
     return NextResponse.json({ error: "Submissions are disabled for this problem" }, { status: 409 });
   }
@@ -97,15 +99,29 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (isExperimentMode()) {
+    const valueError = experimentValueError(problem.slug, sol);
+    if (valueError) {
+      return NextResponse.json({ error: valueError }, { status: 400 });
+    }
+  }
+
   if (!blobUrlToDelete) {
     const dataStr = JSON.stringify(sol);
-    if (dataStr.length > 2_000_000) {
-      return NextResponse.json({ error: "Solution data must be under 2 MB" }, { status: 400 });
+    const maxInlineBytes = isExperimentMode() ? 10_000_000 : 2_000_000;
+    if (dataStr.length > maxInlineBytes) {
+      return NextResponse.json(
+        { error: `Solution data must be under ${maxInlineBytes / 1_000_000} MB` },
+        { status: 400 },
+      );
     }
   }
 
   const bypassToken = process.env.RATE_LIMIT_BYPASS_TOKEN;
-  const isBypassed = bypassToken && req.headers.get("x-ratelimit-bypass") === bypassToken;
+  const isBypassed =
+    !isExperimentMode() &&
+    bypassToken &&
+    req.headers.get("x-ratelimit-bypass") === bypassToken;
   const precomputedScore = isBypassed && typeof body.score === "number" ? body.score : null;
 
   const [solution] = await db
@@ -115,7 +131,9 @@ export async function POST(req: NextRequest) {
       agentName,
       data: sol,
       code: null,
-      ...(precomputedScore !== null ? { status: "evaluated", score: precomputedScore, evaluatedAt: new Date() } : {}),
+      ...(precomputedScore !== null
+        ? { status: "evaluated", score: precomputedScore, evaluatedAt: new Date() }
+        : {}),
     })
     .returning({ id: solutions.id, status: solutions.status, score: solutions.score });
 

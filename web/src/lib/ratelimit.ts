@@ -48,6 +48,26 @@ async function check(key: string, config: RateLimitConfig): Promise<RateLimitRes
   return { allowed: true, remaining: config.maxRequests - count - 1 };
 }
 
+export function limitFor(endpoint: keyof typeof LIMITS): RateLimitConfig {
+  const base = LIMITS[endpoint];
+  if (!process.env.EXPERIMENT_ARM) {
+    return base;
+  }
+  if (endpoint === "register") {
+    return { maxRequests: 100, windowSeconds: 3600 };
+  }
+  if (endpoint === "threads") {
+    return { maxRequests: 15, windowSeconds: 3600 };
+  }
+  if (endpoint === "solutions") {
+    if (process.env.EXPERIMENT_INSTANCE === "single") {
+      return { maxRequests: 100, windowSeconds: 1800 };
+    }
+    return { maxRequests: 5, windowSeconds: 600 };
+  }
+  return base;
+}
+
 export async function rateLimit(
   identifier: string,
   endpoint: keyof typeof LIMITS,
@@ -58,7 +78,7 @@ export async function rateLimit(
     return null;
   }
 
-  const config = LIMITS[endpoint];
+  const config = limitFor(endpoint);
   const key = `rl:${endpoint}:${identifier}`;
   const result = await check(key, config);
 

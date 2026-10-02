@@ -47,64 +47,96 @@ Problem 6.8 of [Mathematical exploration and discovery at scale](https://arxiv.o
     vectors: z.array(z.array(numOrStr).length(11)).length(594),
   }),
   verifier: `import itertools
-from decimal import Decimal, getcontext
+import math
+from decimal import Decimal, InvalidOperation, getcontext
 
 getcontext().prec = 80
 
+N = 594
+D = 11
+MAX_INTEGER_DIGITS = 80
 ZERO = Decimal(0)
 TWO = Decimal(2)
 FOUR = Decimal(4)
 
 
 def _to_dec(x):
-    return Decimal(str(x))
+    if isinstance(x, bool):
+        raise ValueError("Coordinates must be numbers or decimal strings")
+    if isinstance(x, int):
+        return Decimal(x)
+    if isinstance(x, float):
+        if not math.isfinite(x):
+            raise ValueError("Coordinates must be finite")
+        return Decimal(repr(x))
+    if isinstance(x, str):
+        try:
+            value = Decimal(x)
+        except InvalidOperation:
+            raise ValueError(f"Invalid decimal string: {x!r}")
+        if not value.is_finite():
+            raise ValueError("Coordinates must be finite")
+        return value
+    raise ValueError("Coordinates must be numbers or decimal strings")
 
 
-def _exact_check(vectors):
-    d = len(vectors[0])
-    dec_vecs = [[_to_dec(x) for x in vec] for vec in vectors]
+# Exact certification uses Python integers only, so no rounding or underflow is possible.
+# Coordinates beyond MAX_INTEGER_DIGITS are scored by the overlap loss instead.
+def _integer_vectors(dec_vecs):
+    int_vecs = []
+    for vec in dec_vecs:
+        row = []
+        for x in vec:
+            if x != x.to_integral_value():
+                return None
+            if x != ZERO and x.adjusted() >= MAX_INTEGER_DIGITS:
+                return None
+            row.append(int(x))
+        int_vecs.append(row)
+    return int_vecs
 
-    squared_norms = [sum(x * x for x in vec) for vec in dec_vecs]
-    if min(squared_norms) == ZERO:
+
+def _exact_check(int_vecs):
+    squared_norms = [sum(x * x for x in vec) for vec in int_vecs]
+    if min(squared_norms) == 0:
         return False
     max_sq_norm = max(squared_norms)
-
-    min_sq_dist = None
-    for p, q in itertools.combinations(dec_vecs, 2):
-        sq_dist = sum((a - b) ** 2 for a, b in zip(p, q))
-        if min_sq_dist is None or sq_dist < min_sq_dist:
-            min_sq_dist = sq_dist
-
-    return min_sq_dist >= max_sq_norm
+    for p, q in itertools.combinations(int_vecs, 2):
+        if sum((a - b) * (a - b) for a, b in zip(p, q)) < max_sq_norm:
+            return False
+    return True
 
 
-def _overlap_loss(vectors):
-    d = len(vectors[0])
+# Each vector is divided by its largest |coordinate| before any squaring, so the
+# result is invariant to the vector's scale and the dominant terms cannot underflow.
+def _overlap_loss(dec_vecs):
     scaled = []
-    for vec in vectors:
-        norm_sq = sum((_to_dec(x) ** 2 for x in vec), ZERO)
-        if norm_sq == ZERO:
+    for vec in dec_vecs:
+        largest = max(abs(x) for x in vec)
+        if largest == ZERO:
             raise ValueError("All vectors must be non-zero")
-        norm = norm_sq.sqrt()
-        scaled.append([(_to_dec(x) * TWO) / norm for x in vec])
+        unit = [x / largest for x in vec]
+        norm = sum((x * x for x in unit), ZERO).sqrt()
+        scaled.append([(x * TWO) / norm for x in unit])
 
-    n = len(scaled)
     total = ZERO
-    for i in range(n):
-        for j in range(i + 1, n):
-            sq = sum(((scaled[i][k] - scaled[j][k]) ** 2 for k in range(d)), ZERO)
+    for i in range(N):
+        for j in range(i + 1, N):
+            sq = sum(((scaled[i][k] - scaled[j][k]) ** 2 for k in range(D)), ZERO)
             if sq < FOUR:
-                total += (TWO - sq.sqrt())
+                total += TWO - sq.sqrt()
     return float(total)
 
 
 def evaluate(data: dict) -> float:
     vectors = data["vectors"]
-    if len(vectors) != 594 or len(vectors[0]) != 11:
-        raise ValueError(f"Expected shape (594, 11), got ({len(vectors)}, {len(vectors[0])})")
-    if _exact_check(vectors):
+    if len(vectors) != N or any(len(vec) != D for vec in vectors):
+        raise ValueError(f"Expected {N} vectors of length {D}")
+    dec_vecs = [[_to_dec(x) for x in vec] for vec in vectors]
+    int_vecs = _integer_vectors(dec_vecs)
+    if int_vecs is not None and _exact_check(int_vecs):
         return 0.0
-    return _overlap_loss(vectors)`,
+    return _overlap_loss(dec_vecs)`,
 };
 
 export default problem;
