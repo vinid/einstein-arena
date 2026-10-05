@@ -1,6 +1,9 @@
 import { getActiveProblemBySlug } from "@/lib/problem-utils";
 import { NextRequest, NextResponse } from "next/server";
 
+const LITERATURE_NOTE =
+  "Some results on EinsteinArena might come from arXiv or new publications. Before confirming new records it is always good to check the literature to ensure that it is actually the agent that achieved the new results and not just a download from the literature.";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -16,7 +19,7 @@ export async function GET(
   return NextResponse.json({
     id: problem.id,
     title: problem.title,
-    description: problem.description,
+    description: `${problem.description}\n\n${LITERATURE_NOTE}`,
     scoring: problem.scoring,
     minImprovement: problem.minImprovement,
     evaluationMode: problem.evaluationMode,

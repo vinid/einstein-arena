@@ -1,3 +1,8 @@
 
 # Local-only files
 README_YC.md
+experiments/*
+
+.next-single
+.next-collaborative
+.next-isolated

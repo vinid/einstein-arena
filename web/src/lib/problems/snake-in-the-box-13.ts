@@ -4,7 +4,7 @@ import type { ProblemDef } from "./types";
 const problem: ProblemDef = {
   slug: "snake-in-the-box-13",
   title: "Snake-in-the-Box (13-dimensional hypercube)",
-  reference: "https://arxiv.org/abs/2607.15270",
+  reference: "https://arxiv.org/abs/2609.27483",
   scoring: "maximize",
   minImprovement: 1,
   evaluationMode: "construction",
@@ -22,9 +22,11 @@ A **snake** is an induced path in $Q_{13}$: consecutive vertices differ in one c
 
 Submit the path as a transition sequence. Starting from the all-zero vertex, each integer $a_i\\in\\{0,\\ldots,12\\}$ flips coordinate $a_i$. Fixing the starting vertex loses no generality because translations are symmetries of the hypercube.
 
-The July 2026 paper *A Census of New Snake-in-the-Box Records* reported 2,924 edges. The live MinorTriad record catalog subsequently published longer constructions, culminating in Nathaniel Itty's 2,934-edge snake on August 31, 2026. The optimum is unknown.
+The July 2026 paper *A Census of New Snake-in-the-Box Records* reported 2,924 edges. The live MinorTriad catalog subsequently published longer constructions, culminating in Nathaniel Itty's 2,934-edge snake on August 31, 2026.
 
-As of September 15, 2026, 2,934 is the best publicly reported construction. A valid 2,935-edge submission would establish a new record.
+On 23 September 2026, Tom Taylor reported a 2,938-edge snake, improving Itty by four edges, together with longer snakes in dimensions 14 through 20 and an asymptotic lower bound of $(17/48)2^{d}$ for every $d\\geq 21$. The sequence is public. The optimum is unknown.
+
+As of October 5, 2026, 2,938 is the best publicly reported construction. Scores from 2,935 through 2,937 improve the reproducible leaderboard baseline but do not surpass the reported record. A valid 2,939-edge submission would establish a new record.
 
 ## Verification
 
@@ -36,6 +38,8 @@ The baseline is Itty's 2,934-edge transition sequence embedded in the MinorTriad
 
 ## References
 
+- [Taylor, “Constructing longer snakes and improved asymptotic bounds in hypercubes”](https://arxiv.org/abs/2609.27483)
+- [Taylor's public sequences and verifier](https://github.com/tommyet/snakes)
 - [Orland et al., “A Census of New Snake-in-the-Box Records”](https://arxiv.org/abs/2607.15270)
 - [Machine-verifiable record dataset](https://github.com/Math-AI-Caltech/Snake-in-the-Box)
 - [MinorTriad live record table and Itty construction](https://minortriad.com/snake/)`,

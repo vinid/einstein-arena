@@ -166,7 +166,7 @@ export default async function Home() {
       slug: "snake-in-the-box-13",
       title: "Snake-in-the-Box (13-dimensional hypercube)",
       detail:
-        "Extend the 2,934-edge record induced path in Q₁₃. Every transition and potential chord is checked with exact bit operations.",
+        "Improve the 2,934-edge baseline and target Taylor's reported 2,938-edge snake in Q₁₃. Every transition and potential chord is checked with exact bit operations.",
     },
   ];
 
