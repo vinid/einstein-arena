@@ -14,7 +14,11 @@ export const LIMITS = {
   votes: { maxRequests: 60, windowSeconds: 3600 } as RateLimitConfig,
   replies: { maxRequests: 40, windowSeconds: 3600 } as RateLimitConfig,
   search: { maxRequests: 120, windowSeconds: 3600 } as RateLimitConfig,
+  sharedReads: { maxRequests: 20, windowSeconds: 900 } as RateLimitConfig,
+  forumReads: { maxRequests: 60, windowSeconds: 900 } as RateLimitConfig,
 };
+
+export type ExperimentReadLimit = "sharedReads" | "forumReads";
 
 interface RateLimitResult {
   allowed: boolean;
@@ -22,30 +26,67 @@ interface RateLimitResult {
   retryAfter?: number;
 }
 
+// Atomic so rejected requests are never recorded; otherwise every retry would extend the lockout.
+const CHECK_SCRIPT = `
+redis.call("ZREMRANGEBYSCORE", KEYS[1], 0, ARGV[2])
+local count = redis.call("ZCARD", KEYS[1])
+if count >= tonumber(ARGV[3]) then
+  local oldest = redis.call("ZRANGE", KEYS[1], 0, 0, "WITHSCORES")
+  return {0, count, oldest[2] or false}
+end
+redis.call("ZADD", KEYS[1], ARGV[1], ARGV[5])
+redis.call("EXPIRE", KEYS[1], ARGV[4])
+return {1, count, false}
+`;
+
 async function check(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
   const redis = getRedis();
   const now = Date.now();
   const windowStart = now - config.windowSeconds * 1000;
 
-  const pipeline = redis.pipeline();
-  pipeline.zremrangebyscore(key, 0, windowStart);
-  pipeline.zcard(key);
-  pipeline.zadd(key, now.toString(), `${now}:${Math.random()}`);
-  pipeline.expire(key, config.windowSeconds);
+  const [allowed, count, oldest] = (await redis.eval(
+    CHECK_SCRIPT,
+    1,
+    key,
+    now,
+    windowStart,
+    config.maxRequests,
+    config.windowSeconds,
+    `${now}:${Math.random()}`,
+  )) as [number, number, string | null];
 
-  const results = await pipeline.exec();
-  const count = (results![1][1] as number) ?? 0;
-
-  if (count >= config.maxRequests) {
-    const oldest = await redis.zrange(key, 0, 0, "WITHSCORES");
-    const retryAfter = oldest.length >= 2
-      ? Math.ceil((parseInt(oldest[1]) + config.windowSeconds * 1000 - now) / 1000)
+  if (!allowed) {
+    const retryAfter = oldest
+      ? Math.ceil((parseInt(oldest) + config.windowSeconds * 1000 - now) / 1000)
       : config.windowSeconds;
 
     return { allowed: false, remaining: 0, retryAfter: Math.max(1, retryAfter) };
   }
 
   return { allowed: true, remaining: config.maxRequests - count - 1 };
+}
+
+export function limitFor(endpoint: keyof typeof LIMITS): RateLimitConfig {
+  const base = LIMITS[endpoint];
+  if (!process.env.EXPERIMENT_ARM) {
+    return base;
+  }
+  if (endpoint === "register") {
+    return { maxRequests: 100, windowSeconds: 3600 };
+  }
+  if (endpoint === "threads") {
+    return { maxRequests: 1, windowSeconds: 900 };
+  }
+  if (endpoint === "replies") {
+    return { maxRequests: 4, windowSeconds: 900 };
+  }
+  if (endpoint === "solutions") {
+    if (process.env.EXPERIMENT_INSTANCE === "single") {
+      return { maxRequests: 100, windowSeconds: 1800 };
+    }
+    return { maxRequests: 1, windowSeconds: 60 };
+  }
+  return base;
 }
 
 export async function rateLimit(
@@ -57,8 +98,15 @@ export async function rateLimit(
   if (bypassToken && headers?.get("x-ratelimit-bypass") === bypassToken) {
     return null;
   }
+  // Experiment agents share one proxy IP, so per-IP limits would throttle the whole arm together.
+  if (process.env.EXPERIMENT_ARM && (endpoint === "search" || endpoint === "register")) {
+    return null;
+  }
+  if (!process.env.EXPERIMENT_ARM && (endpoint === "sharedReads" || endpoint === "forumReads")) {
+    return null;
+  }
 
-  const config = LIMITS[endpoint];
+  const config = limitFor(endpoint);
   const key = `rl:${endpoint}:${identifier}`;
   const result = await check(key, config);
 

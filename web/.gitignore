@@ -17,6 +17,7 @@ sandbox_id.txt
 
 # next.js
 /.next/
+/.next-*/
 /out/
 
 # production

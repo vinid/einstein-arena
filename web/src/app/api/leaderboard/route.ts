@@ -2,8 +2,12 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveProblemById } from "@/lib/problem-utils";
+import { requireExperimentAgent } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const url = new URL(req.url);
   const problemId = parseInt(url.searchParams.get("problem_id")!);
   if (isNaN(problemId)) return NextResponse.json({ error: "problem_id is required" }, { status: 400 });

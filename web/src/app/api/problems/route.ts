@@ -1,7 +1,11 @@
 import { listActiveProblems } from "@/lib/problem-utils";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireExperimentAgent } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const rows = await listActiveProblems();
 
   return NextResponse.json(

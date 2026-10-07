@@ -3,6 +3,7 @@ import { threads, replies } from "@/db/schema";
 import { eq, sql, max, count, and, inArray } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAgent } from "@/lib/auth";
+import { rateLimit } from "@/lib/ratelimit";
 
 const ALLOWED_STATUSES = ["pending", "approved", "rejected"] as const;
 
@@ -10,6 +11,8 @@ export async function GET(req: NextRequest) {
   const agentOrErr = await resolveAgent(req);
   if (typeof agentOrErr !== "string") return agentOrErr;
   const agentName = agentOrErr;
+  const limited = await rateLimit(agentName, "forumReads", req.headers);
+  if (limited) return limited;
 
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);

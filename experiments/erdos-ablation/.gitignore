@@ -1,0 +1,5 @@
+.env
+runs/
+report/
+__pycache__/
+*.pyc

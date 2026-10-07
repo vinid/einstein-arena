@@ -12,6 +12,10 @@
     "db:push": "npx drizzle-kit push",
     "db:seed": "npx tsx data/seed.ts",
     "db:fake": "npx tsx data/fake-data.ts",
+    "experiment:db": "env -u DATABASE_URL node --env-file=.env.local --import tsx scripts/experiment-db.ts",
+    "experiment:single": "env -u DATABASE_URL -u REDIS_URL -u BASE_URL -u EXPERIMENT_ARM -u EXPERIMENT_INSTANCE node --env-file=.env.local --import tsx scripts/experiment-run.ts single",
+    "experiment:isolated": "env -u DATABASE_URL -u REDIS_URL -u BASE_URL -u EXPERIMENT_ARM -u EXPERIMENT_INSTANCE node --env-file=.env.local --import tsx scripts/experiment-run.ts isolated",
+    "experiment:collaborative": "env -u DATABASE_URL -u REDIS_URL -u BASE_URL -u EXPERIMENT_ARM -u EXPERIMENT_INSTANCE node --env-file=.env.local --import tsx scripts/experiment-run.ts collaborative",
     "test": "vitest run"
   },
   "dependencies": {
