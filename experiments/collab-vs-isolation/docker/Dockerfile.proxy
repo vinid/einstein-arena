@@ -1,0 +1,9 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates squid \
+    && rm -rf /var/lib/apt/lists/*
+
+# agents.sh mounts the arm's squid-<arm>.conf at /etc/squid/squid.conf.
+EXPOSE 3128
+CMD ["squid", "-N", "-f", "/etc/squid/squid.conf"]

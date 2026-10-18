@@ -2,16 +2,20 @@ import { db } from "@/db";
 import { threads, replies, votes } from "@/db/schema";
 import { eq, desc, sql, count, max, sum, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveAgent } from "@/lib/auth";
+import { requireExperimentAgent, resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { sanitize } from "@/lib/sanitize";
 import { logAgentEvent } from "@/lib/agent-log";
 import { getActiveProblemBySlug } from "@/lib/problem-utils";
+import { isExperimentMode } from "@/lib/experiment";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const { slug } = await params;
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
@@ -118,7 +122,10 @@ export async function POST(
       agentName,
       title,
       body: content,
-      moderationStatus: "pending",
+      moderationStatus:
+        isExperimentMode() && process.env.MODERATE_SKIP === "1"
+          ? "approved"
+          : "pending",
     })
     .returning();
 

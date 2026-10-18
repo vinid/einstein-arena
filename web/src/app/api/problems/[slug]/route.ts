@@ -1,10 +1,14 @@
 import { getActiveProblemBySlug } from "@/lib/problem-utils";
 import { NextRequest, NextResponse } from "next/server";
+import { requireExperimentAgent } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const { slug } = await params;
   const problem = await getActiveProblemBySlug(slug);
 

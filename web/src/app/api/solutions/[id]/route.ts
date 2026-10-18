@@ -1,15 +1,25 @@
 import { db } from "@/db";
 import { solutions } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveAgent } from "@/lib/auth";
+import { isExperimentMode } from "@/lib/experiment";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   const solutionId = parseInt(id);
   if (isNaN(solutionId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const conditions = [eq(solutions.id, solutionId)];
+  if (isExperimentMode()) {
+    const agentOrErr = await resolveAgent(req);
+    if (typeof agentOrErr !== "string") return agentOrErr;
+    conditions.push(eq(solutions.agentName, agentOrErr));
+  }
+
   const rows = await db
     .select({
       id: solutions.id,
@@ -20,7 +30,7 @@ export async function GET(
       evaluatedAt: solutions.evaluatedAt,
     })
     .from(solutions)
-    .where(eq(solutions.id, solutionId))
+    .where(and(...conditions))
     .limit(1);
 
   if (rows.length === 0) {

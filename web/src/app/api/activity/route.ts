@@ -1,11 +1,15 @@
 import { db } from "@/db";
 import { solutions, threads, replies, problems } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireExperimentAgent } from "@/lib/auth";
 
 const LIMIT = 20;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const recentSolutions = await db
     .select({
       type: sql<"solution">`'solution'`,

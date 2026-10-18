@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EinsteinArena ablation</title>
+<style>
+  :root {
+    --iso: #2563eb; --iso-soft: #eff4ff; --col: #e4572e; --col-soft: #fff1ec; --sol: #7c3aed; --sol-soft: #f5f0ff;
+    --ink: #111827; --ink2: #374151; --mute: #6b7280; --faint: #9ca3af;
+    --line: #e5e7eb; --grid: #f1f2f4; --bg: #f6f7f9; --card: #fff; --ok: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 32px 80px; }
+  .num, .big, td.num, .tnum { font-variant-numeric: tabular-nums; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 700; letter-spacing: -.01em; }
+  .meta { color: var(--mute); margin-top: 6px; font-size: 13px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #fff; border: 1px solid var(--line); color: var(--ink2); white-space: nowrap; }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(22,163,74,.5); animation: pulse 1.8s infinite; }
+  .badge.final .dot { background: var(--faint); animation: none; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,.45); } 70% { box-shadow: 0 0 0 8px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(17,24,39,.04); }
+  .card h2 { font-size: 15px; margin: 0; font-weight: 650; }
+  .card .cap { color: var(--mute); font-size: 12.5px; margin: 2px 0 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid2 > .card { margin-bottom: 0; min-width: 0; }
+  .stack { display: grid; gap: 20px; margin-bottom: 20px; }
+
+  .score { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+  .arm { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px 16px; position: relative; overflow: hidden; box-shadow: 0 1px 2px rgba(17,24,39,.04); }
+  .arm::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; }
+  .arm.isolated::before { background: var(--iso); } .arm.collaborative::before { background: var(--col); } .arm.single::before { background: var(--sol); }
+  .arm .name { display: flex; align-items: center; justify-content: space-between; min-height: 24px; font-size: 13px; font-weight: 650; text-transform: capitalize; }
+  .arm.isolated .name { color: var(--iso); } .arm.collaborative .name { color: var(--col); } .arm.single .name { color: var(--sol); }
+  .lead { font-size: 11.5px; font-weight: 650; padding: 3px 9px; border-radius: 999px; text-transform: none; }
+  .arm.isolated .lead { background: var(--iso-soft); } .arm.collaborative .lead { background: var(--col-soft); } .arm.single .lead { background: var(--sol-soft); }
+  .big { font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 8px 0 2px; }
+  .big-cap { color: var(--mute); font-size: 12.5px; margin-bottom: 14px; }
+  .kv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .kv div { min-width: 0; }
+  .kv .k { font-size: 11.5px; color: var(--mute); }
+  .kv .v { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  #progress, #spend { position: relative; }
+  svg { display: block; overflow: visible; }
+  svg text { font: 11.5px Inter, -apple-system, BlinkMacSystemFont, sans-serif; fill: var(--mute); }
+  svg text.lbl { font-weight: 650; font-size: 12.5px; }
+  svg text.val { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  svg circle.pt { cursor: pointer; transition: r .1s; }
+  svg circle.pt:hover { r: 6; }
+  .tip { position: absolute; pointer-events: none; background: #111827; color: #fff; font-size: 12px; line-height: 1.45; padding: 7px 10px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, calc(-100% - 12px)); opacity: 0; transition: opacity .08s; z-index: 5; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+  .tip b { font-variant-numeric: tabular-nums; }
+  .tip .m { color: #9ca3af; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--mute); padding: 0 10px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th.num, td.num { text-align: right; }
+  td.msg { color: var(--mute); font-size: 12.5px; line-height: 1.45; max-width: 520px; }
+  tr.sep td { padding: 0; border-bottom: 1px solid var(--line); }
+  td.top { font-weight: 700; }
+  .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip.isolated { background: var(--iso-soft); color: var(--iso); }
+  .chip.collaborative { background: var(--col-soft); color: var(--col); }
+  .chip.single { background: var(--sol-soft); color: var(--sol); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink2); white-space: nowrap; }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .status.done i { background: var(--faint); }
+
+  .feed { max-height: 560px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+  .post { display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--grid); }
+  .post:last-child { border-bottom: 0; }
+  .post .when { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .post .head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .post .kind { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
+  .post .text { color: var(--ink2); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+  .empty { color: var(--faint); font-style: italic; padding: 8px 0; }
+  @media (max-width: 900px) { .grid2, .score { grid-template-columns: 1fr; } .kv { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">EinsteinArena · isolated vs collaborative</div>
+      <h1 id="title">EinsteinArena ablation</h1>
+      <div class="meta" id="subtitle"></div>
+    </div>
+    <div class="badge" id="badge"><span class="dot"></span><span id="badgetext"></span></div>
+  </header>
+
+  <div class="score" id="stats"></div>
+
+  <div class="card">
+    <h2>Best server-verified score over time</h2>
+    <div class="cap" id="scorecap"></div>
+    <div id="progress"></div>
+  </div>
+
+  <div class="card">
+    <h2>Agents</h2>
+    <div class="cap">Best server-verified score per agent, the best candidate in its workspace, and its latest message.</div>
+    <div id="agents"></div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:20px">
+    <div class="card"><h2>Spend over time</h2><div class="cap">Cumulative USD per agent.</div><div id="spend"></div></div>
+    <div class="card"><h2>Who downloaded whom</h2><div class="cap">Collaborative arm · shared solutions returned to the reader.</div><div id="downloads"></div></div>
+  </div>
+  <div class="grid2" style="margin-bottom:20px">
+    <div class="card"><h2>Who read whom</h2><div class="cap">Collaborative arm · posts that reached the reader's context in full.</div><div id="postreads"></div></div>
+    <div class="card"><h2>Who cited whom</h2><div class="cap">Collaborative arm · posts naming another agent.</div><div id="cites"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Forum</h2>
+    <div class="cap" id="forumcount"></div>
+    <div class="feed" id="feed"></div>
+  </div>
+</div>
+
+<script>
+const EMBEDDED = /*DATA*/null;
+const PROBLEMS = {
+  "two-deletion-code-16": { title: "Two-deletion-correcting code, length 16", score: "codewords" },
+  "kissing-number-d11": { title: "Kissing number in 11 dimensions (594 spheres)", score: "total pairwise overlap" },
+  "kissing-number-d11-605": { title: "Kissing number in 11 dimensions (605 spheres)", score: "total pairwise overlap" },
+  "first-autocorrelation-inequality": { title: "First autocorrelation inequality", score: "autoconvolution constant C" },
+  "difference-bases": { title: "Difference bases", score: "|B|² / v" },
+  "edges-vs-triangles": { title: "Edges vs triangles", score: "score" },
+};
+const ARMS = ["isolated", "collaborative", "single"];
+const COLOR = { isolated: "#2563eb", collaborative: "#e4572e", single: "#7c3aed" };
+const NS = "http://www.w3.org/2000/svg";
+
+// Collaborative-arm agents that are not told about the platform (EXPERIMENT_PLATFORM_SLOTS) are marked "no platform".
+let NO_PLATFORM = new Map();
+const short = (name) => { const m = /^ea-([ic])-.*-(\d+)$/.exec(name); return m ? m[1] + m[2] + (NO_PLATFORM.has(name) ? NO_PLATFORM.get(name) : "") : name; };
+const fmt = (v) => v == null ? "—" : v === 0 ? "0" : Math.abs(v) >= 1 && Math.abs(v) < 10 ? v.toFixed(5) : Math.abs(v) < 1 ? v.toPrecision(4) : v.toFixed(2);
+const usd = (v) => "$" + v.toFixed(2);
+const mins = (m) => `${Math.floor(m)}:${String(Math.round((m % 1) * 60)).padStart(2, "0")}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const bestOf = (xs, higher) => xs.length ? (higher ? Math.max(...xs) : Math.min(...xs)) : null;
+const median = (xs) => { if (!xs.length) return null; const s = xs.slice().sort((a, b) => a - b), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
+
+function el(tag, attrs, parent) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function svgText(parent, x, y, text, anchor = "start", extra = {}) {
+  const t = el("text", { x, y, "text-anchor": anchor, ...extra }, parent);
+  t.textContent = text;
+  return t;
+}
+function niceTicks(lo, hi, n = 5) {
+  const raw = (hi - lo) / n, mag = 10 ** Math.floor(Math.log10(raw)), r = raw / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toPrecision(12));
+  return out;
+}
+function xAxis(svg, W, H, pad, tMax, label) {
+  const step = tMax <= 20 ? 5 : tMax <= 60 ? 10 : 30;
+  for (let m = 0; m <= tMax; m += step) {
+    const x = pad.l + (m / tMax) * (W - pad.l - pad.r);
+    svgText(svg, x, H - pad.b + 18, m, "middle");
+  }
+  el("line", { x1: pad.l, y1: H - pad.b, x2: W - pad.r, y2: H - pad.b, stroke: "#d1d5db" }, svg);
+  svgText(svg, (W + pad.l - pad.r) / 2, H - 2, label, "middle");
+}
+function tooltip(box) {
+  let tip = box.querySelector(".tip");
+  if (!tip) { tip = document.createElement("div"); tip.className = "tip"; box.appendChild(tip); }
+  return {
+    show(x, y, html) { tip.innerHTML = html; tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1; },
+    hide() { tip.style.opacity = 0; },
+  };
+}
+
+function progressChart(D, tMax, tNow) {
+  const box = document.getElementById("progress");
+  box.innerHTML = "";
+  const subs = D.submissions.filter((s) => s.score != null);
+  if (!subs.length) { box.innerHTML = '<div class="empty">No evaluated submissions yet.</div>'; return; }
+  const higher = D.scoring === "maximize";
+  const better = (a, b) => higher ? a > b : a < b;
+  const W = Math.max(box.clientWidth, 640), H = 400, pad = { l: 70, r: 170, t: 22, b: 40 };
+  const svg = el("svg", { width: W, height: H }, box);
+  const tip = tooltip(box);
+
+  const scores = subs.map((s) => s.score);
+  let lo = Math.min(...scores), hi = Math.max(...scores);
+  const log = lo > 0 && hi / lo >= 10;
+  if (lo === hi) { lo -= Math.abs(lo) * 0.001 || 1; hi += Math.abs(hi) * 0.001 || 1; }
+  const tf = (v) => log ? Math.log10(v) : v;
+  const span = tf(hi) - tf(lo);
+  const plotH = H - pad.t - pad.b;
+  const yScale = (v) => pad.t + plotH * 0.04 + (1 - (tf(v) - tf(lo)) / span) * plotH * 0.92;
+  const xScale = (m) => pad.l + (m / tMax) * (W - pad.l - pad.r);
+
+  const ticks = log
+    ? Array.from({ length: 5 }, (_, i) => 10 ** (tf(lo) + (i / 4) * span))
+    : niceTicks(lo, hi);
+  for (const v of ticks) {
+    const y = yScale(v);
+    el("line", { x1: pad.l, y1: y, x2: W - pad.r, y2: y, stroke: "#f1f2f4" }, svg);
+    svgText(svg, pad.l - 10, y + 4, fmt(v), "end", { class: "tnum" });
+  }
+  xAxis(svg, W, H, pad, tMax, "minutes since start");
+  svgText(svg, pad.l - 10, pad.t - 8, higher ? "↑ higher is better" : "↓ lower is better", "end");
+
+  const nowX = xScale(tNow);
+  el("line", { x1: nowX, y1: pad.t, x2: nowX, y2: H - pad.b, stroke: "#9ca3af", "stroke-dasharray": "3 4" }, svg);
+  svgText(svg, nowX, pad.t - 8, EMBEDDED ? "end" : `now · ${mins(tNow)}`, "middle");
+
+  const labels = [];
+  for (const arm of ARMS) {
+    const armSubs = subs.filter((s) => s.arm === arm && !s.harvest).sort((a, b) => a.t - b.t);
+    if (!armSubs.length) continue;
+    let best = null, d = "";
+    const records = new Set();
+    for (const s of armSubs) {
+      const x = xScale((s.t - D.t0) / 60);
+      if (best == null || better(s.score, best)) {
+        d += d ? ` H${x} V${yScale(s.score)}` : `M${x} ${yScale(s.score)}`;
+        best = s.score;
+        records.add(s);
+      }
+    }
+    const endX = xScale((armSubs[armSubs.length - 1].t - D.t0) / 60);
+    el("path", { d: d + ` H${endX}`, fill: "none", stroke: COLOR[arm], "stroke-width": 2.5, "stroke-linejoin": "round" }, svg);
+    labels.push({ arm, best, y: yScale(best), endX });
+
+    for (const s of subs.filter((s) => s.arm === arm).sort((a, b) => records.has(a) - records.has(b))) {
+      const isRecord = records.has(s);
+      const cx = xScale((s.t - D.t0) / 60), cy = yScale(s.score);
+      const c = el("circle", {
+        class: "pt", cx, cy, r: isRecord ? 4.5 : 3.2,
+        fill: s.harvest ? "#fff" : COLOR[arm], "fill-opacity": s.harvest ? 1 : isRecord ? 1 : 0.35,
+        stroke: s.harvest ? COLOR[arm] : isRecord ? "#fff" : "none", "stroke-width": s.harvest ? 1.5 : 1.5,
+      }, svg);
+      c.addEventListener("mouseenter", () => tip.show(cx, cy,
+        `<span style="color:${COLOR[arm]}">●</span> ${short(s.agent)} <span class="m">· ${mins((s.t - D.t0) / 60)}${s.harvest ? " · harvested" : ""}${isRecord ? " · new arm best" : ""}</span><br><b>${s.score}</b>`));
+      c.addEventListener("mouseleave", () => tip.hide());
+    }
+  }
+
+  labels.sort((a, b) => a.y - b.y);
+  const gapY = 36, floor = H - pad.b - 16;
+  for (let i = 1; i < labels.length; i++) labels[i].y = Math.max(labels[i].y, labels[i - 1].y + gapY);
+  const shift = Math.max(0, (labels.length ? labels[labels.length - 1].y : 0) - floor);
+  for (const l of labels) l.y = Math.max(pad.t + 8, l.y - shift);
+  for (const l of labels) {
+    const x = W - pad.r + 16;
+    el("line", { x1: l.endX + 4, y1: yScale(l.best), x2: x - 4, y2: l.y, stroke: COLOR[l.arm], "stroke-opacity": 0.35, "stroke-dasharray": "2 3" }, svg);
+    svgText(svg, x, l.y - 3, l.arm, "start", { class: "lbl", style: `fill:${COLOR[l.arm]}` });
+    svgText(svg, x, l.y + 13, fmt(l.best), "start", { class: "val", style: "fill:#111827" });
+  }
+}
+
+function spendChart(D, tMax) {
+  const box = document.getElementById("spend");
+  box.innerHTML = "";
+  const all = D.agents.flatMap((a) => a.spend.map((p) => p[1]));
+  if (!all.length) { box.innerHTML = '<div class="empty">No usage yet.</div>'; return; }
+  const W = Math.max(box.clientWidth, 360), H = 260, pad = { l: 52, r: 44, t: 10, b: 40 };
+  const svg = el("svg", { width: W, height: H }, box);
+  const tip = tooltip(box);
+  const hi = Math.max(...all, 0.01);
+  const ticks = niceTicks(0, hi, 4);
+  const top = Math.max(hi, ticks[ticks.length - 1]);
+  const yScale = (v) => pad.t + (1 - v / top) * (H - pad.t - pad.b);
+  const xScale = (m) => pad.l + (m / tMax) * (W - pad.l - pad.r);
+  for (const v of ticks) {
+    el("line", { x1: pad.l, y1: yScale(v), x2: W - pad.r, y2: yScale(v), stroke: "#f1f2f4" }, svg);
+    svgText(svg, pad.l - 8, yScale(v) + 4, usd(v), "end");
+  }
+  xAxis(svg, W, H, pad, tMax, "minutes");
+  for (const a of D.agents) {
+    if (!a.spend.length) continue;
+    const d = a.spend.map((p, i) => `${i ? "L" : "M"}${xScale((p[0] - D.t0) / 60)} ${yScale(p[1])}`).join(" ");
+    const path = el("path", { d, fill: "none", stroke: COLOR[a.arm], "stroke-width": 1.6, "stroke-opacity": 0.7 }, svg);
+    const [t, v] = a.spend[a.spend.length - 1];
+    const ex = xScale((t - D.t0) / 60), ey = yScale(v);
+    svgText(svg, ex + 5, ey + 4, short(a.name), "start", { style: `fill:${COLOR[a.arm]};font-size:10.5px` });
+    path.addEventListener("mouseenter", () => { path.setAttribute("stroke-width", 3); tip.show(ex, ey, `${short(a.name)} <b>${usd(v)}</b>`); });
+    path.addEventListener("mouseleave", () => { path.setAttribute("stroke-width", 1.6); tip.hide(); });
+  }
+}
+
+function matrix(id, pairs, names) {
+  const box = document.getElementById(id);
+  box.innerHTML = "";
+  if (!names.length) { box.innerHTML = '<div class="empty">No collaborative agents.</div>'; return; }
+  const counts = {};
+  for (const p of pairs) counts[p.reader + "|" + p.owner] = (counts[p.reader + "|" + p.owner] || 0) + p.n;
+  const top = Math.max(1, ...Object.values(counts));
+  const cell = 40, left = 64, head = 34;
+  const W = left + cell * names.length + 8, H = head + cell * names.length + 26;
+  const svg = el("svg", { width: W, height: H }, box);
+  svgText(svg, left + (cell * names.length) / 2, 11, "author →", "middle", { style: "fill:#9ca3af" });
+  names.forEach((n, j) => svgText(svg, left + j * cell + cell / 2, head - 8, short(n), "middle", { style: "font-weight:600" }));
+  names.forEach((r, i) => {
+    svgText(svg, left - 10, head + i * cell + cell / 2 + 4, short(r), "end", { style: "font-weight:600" });
+    names.forEach((o, j) => {
+      const n = counts[r + "|" + o] || 0;
+      const x = left + j * cell + 2, y = head + i * cell + 2;
+      el("rect", {
+        x, y, width: cell - 4, height: cell - 4, rx: 7,
+        fill: r === o ? "#f3f4f6" : n ? COLOR.collaborative : "#fafafa",
+        "fill-opacity": r === o ? 1 : n ? 0.12 + 0.88 * (n / top) : 1,
+        stroke: r === o || n ? "none" : "#f1f2f4",
+      }, svg);
+      if (n) svgText(svg, x + (cell - 4) / 2, y + (cell - 4) / 2 + 4, n, "middle", { style: `fill:${n / top > 0.5 ? "#fff" : "#111827"};font-weight:600` });
+    });
+  });
+  svgText(svg, left - 10, H - 6, "row = reader", "end", { style: "fill:#9ca3af" });
+}
+
+function render(D) {
+  NO_PLATFORM = new Map(D.agents.filter((a) => a.platform !== true).map((a) => [a.name, a.platform === "publish" ? " (posts only)" : " (no platform)"]));
+  const meta = PROBLEMS[D.problem] || { title: D.problem, score: "score" };
+  const higher = D.scoring === "maximize";
+  const bestScore = (xs) => bestOf(xs, higher);
+  document.getElementById("title").textContent = meta.title;
+  document.getElementById("scorecap").textContent =
+    `${meta.score}, ${higher ? "higher" : "lower"} is better · target ${D.target} · line = arm best so far, ending at the arm's last submission · faint dot = submission · solid dot = new arm best · hollow = harvested`;
+
+  const latest = Math.max(...D.agents.flatMap((a) => a.spend.map((p) => p[0])), ...D.submissions.map((s) => s.t), D.t0 || 0);
+  const elapsed = D.t0 ? (latest - D.t0) / 60 : 0;
+  const tMax = Math.max(15, Math.ceil(elapsed / 5) * 5);
+  const arms = ARMS.filter((arm) => D.agents.some((a) => a.arm === arm));
+  document.getElementById("subtitle").textContent =
+    `Run ${D.run} · ` + arms.map((arm) => `${D.agents.filter((a) => a.arm === arm).length} ${arm}`).join(" vs ") + " agents" +
+    (D.t0 ? ` · started ${new Date(D.t0 * 1000).toISOString().slice(11, 16)} UTC` : "");
+  document.getElementById("badge").className = EMBEDDED ? "badge final" : "badge";
+  document.getElementById("badgetext").textContent = EMBEDDED ? `Final · ${mins(elapsed)} of data` : `Live · ${mins(elapsed)} elapsed`;
+
+  const armBest = {};
+  for (const arm of arms) armBest[arm] = bestScore(D.submissions.filter((s) => s.arm === arm && s.score != null && !s.harvest).map((s) => s.score));
+  const ranked = arms.filter((arm) => armBest[arm] != null).sort((a, b) => higher ? armBest[b] - armBest[a] : armBest[a] - armBest[b]);
+  const leader = ranked.length === arms.length && arms.length > 1 && armBest[ranked[0]] !== armBest[ranked[1]] ? ranked[0] : null;
+  const gap = leader ? Math.abs(armBest[ranked[0]] - armBest[ranked[1]]) : null;
+
+  document.getElementById("stats").innerHTML = arms.map((arm) => {
+    const subs = D.submissions.filter((s) => s.arm === arm && s.score != null);
+    const agents = D.agents.filter((a) => a.arm === arm);
+    const perAgent = agents.map((a) => bestScore(subs.filter((s) => s.agent === a.name && !s.harvest).map((s) => s.score))).filter((v) => v != null);
+    const spent = agents.reduce((acc, a) => acc + (a.spend.length ? a.spend[a.spend.length - 1][1] : 0), 0);
+    const posts = D.posts.filter((p) => p.arm === arm).length;
+    const withHarvest = bestScore(subs.map((s) => s.score));
+    return `<div class="arm ${arm}">
+      <div class="name"><span>${arm}</span>${leader === arm ? `<span class="lead">ahead by ${fmt(gap)}</span>` : ""}</div>
+      <div class="big">${fmt(armBest[arm])}</div>
+      <div class="big-cap">best server-verified score${withHarvest != null && withHarvest !== armBest[arm] ? ` · ${fmt(withHarvest)} with harvest` : ""}</div>
+      <div class="kv">
+        <div><div class="k">median agent</div><div class="v">${fmt(median(perAgent))}</div></div>
+        <div><div class="k">submissions</div><div class="v">${subs.filter((s) => !s.harvest).length}</div></div>
+        <div><div class="k">posts</div><div class="v">${posts}</div></div>
+        <div><div class="k">spend</div><div class="v">${usd(spent)}</div></div>
+      </div></div>`;
+  }).join("");
+
+  progressChart(D, tMax, Math.min(tMax, elapsed));
+  spendChart(D, tMax);
+
+  const showApproach = D.agents.some((a) => a.approach && a.approach !== "—");
+  const body = arms.map((arm, k) => {
+    const agents = D.agents.filter((a) => a.arm === arm);
+    const rows = agents.map((a) => {
+      const mine = D.submissions.filter((s) => s.agent === a.name && s.score != null && !s.harvest);
+      const best = bestScore(mine.map((s) => s.score));
+      const spent = a.spend.length ? a.spend[a.spend.length - 1][1] : 0;
+      const status = a.stopped ? `<span class="status done"><i></i>${esc(a.stopped.replace("_", " "))}</span>` : `<span class="status"><i></i>running</span>`;
+      return `<tr><td><span class="chip ${arm}">${short(a.name)}</span></td>${showApproach ? `<td>${esc(a.approach)}</td>` : ""}
+        <td class="num${best != null && best === armBest[arm] ? " top" : ""}">${fmt(best)}</td>
+        <td class="num">${a.localBest ? fmt(a.localBest.score) : "—"}</td>
+        <td class="num">${mine.length}</td>
+        <td class="num">${D.posts.filter((p) => p.agent === a.name).length}</td>
+        <td class="num">${usd(spent)}</td><td>${status}</td>
+        <td class="msg">${a.lastMessage ? esc(a.lastMessage.slice(0, 260)) : ""}</td></tr>`;
+    }).join("");
+    return (k ? `<tr class="sep"><td colspan="9"></td></tr>` : "") + rows;
+  }).join("");
+  document.getElementById("agents").innerHTML = `<table><tr><th>agent</th>${showApproach ? "<th>approach</th>" : ""}<th class="num">best (server)</th><th class="num">best (workspace)</th>
+    <th class="num">subs</th><th class="num">posts</th><th class="num">spend</th><th>status</th><th>latest message</th></tr>${body}</table>`;
+
+  const collab = D.agents.filter((a) => a.arm === "collaborative").map((a) => a.name);
+  const cites = [];
+  for (const p of D.posts.filter((p) => p.arm === "collaborative")) for (const c of p.cites) cites.push({ reader: p.agent, owner: c, n: 1 });
+  matrix("cites", cites, collab);
+  matrix("downloads", D.reads.filter((r) => collab.includes(r.reader)), collab);
+  matrix("postreads", D.postReads, collab);
+
+  const posts = D.posts.filter((p) => p.arm === "collaborative").slice().reverse();
+  document.getElementById("forumcount").textContent =
+    `Collaborative arm · ${posts.filter((p) => p.kind === "thread").length} threads, ${posts.filter((p) => p.kind === "reply").length} replies · newest first`;
+  document.getElementById("feed").innerHTML = posts.length
+    ? posts.map((p) => `<div class="post"><div class="when">${mins((p.t - D.t0) / 60)}</div><div>
+        <div class="head"><span class="chip collaborative">${short(p.agent)}</span><span class="kind">${p.kind}</span></div>
+        <div class="text">${esc(p.text.slice(0, 900))}</div></div></div>`).join("")
+    : '<div class="empty">No posts yet.</div>';
+}
+
+if (EMBEDDED) {
+  render(EMBEDDED);
+} else {
+  const load = () => fetch("/data.json").then((r) => r.json()).then(render);
+  load();
+  setInterval(load, 10000);
+}
+</script>
+</body>
+</html>

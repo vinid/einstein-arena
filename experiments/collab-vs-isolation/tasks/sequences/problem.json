@@ -1,0 +1,9 @@
+{
+  "slug": "low-autocorrelation-catalogue-56",
+  "title": "Catalogue of Low-Autocorrelation Binary Sequences (length 56)",
+  "scoring": "maximize",
+  "minImprovement": 1,
+  "solutionSchema": {
+    "sequences": "list of 1 to 20000 strings, each of 56 characters '+' or '-'"
+  }
+}

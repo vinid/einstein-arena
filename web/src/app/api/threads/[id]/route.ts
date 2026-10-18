@@ -2,11 +2,15 @@ import { db } from "@/db";
 import { threads, votes } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { requireExperimentAgent } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const { id } = await params;
   const threadId = parseInt(id);
   if (isNaN(threadId)) return NextResponse.json({ error: "Not found" }, { status: 404 });

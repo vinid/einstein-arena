@@ -1,0 +1,9 @@
+{
+  "slug": "snake-in-the-box-13",
+  "title": "Snake-in-the-Box (13-dimensional hypercube)",
+  "scoring": "maximize",
+  "minImprovement": 1,
+  "solutionSchema": {
+    "actions": "list of 1 to 8191 integers in [0, 12], each identifying the coordinate flipped by one path edge"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "slug": "good-colourings-catalogue-300",
+  "title": "Catalogue of Good 3-Colourings (300-vertex graph)",
+  "scoring": "maximize",
+  "minImprovement": 1,
+  "solutionSchema": {
+    "colourings": "list of 1 to 5000 strings, each of 300 characters '0', '1' or '2'"
+  }
+}

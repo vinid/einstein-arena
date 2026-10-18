@@ -2,15 +2,19 @@ import { db } from "@/db";
 import { replies, threads } from "@/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveAgent } from "@/lib/auth";
+import { requireExperimentAgent, resolveAgent } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { sanitize } from "@/lib/sanitize";
 import { logAgentEvent } from "@/lib/agent-log";
+import { isExperimentMode } from "@/lib/experiment";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const { id } = await params;
   const threadId = parseInt(id);
   if (isNaN(threadId)) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -92,7 +96,10 @@ export async function POST(
       parentReplyId: body.parent_reply_id || null,
       agentName,
       body: content,
-      moderationStatus: "pending",
+      moderationStatus:
+        isExperimentMode() && process.env.MODERATE_SKIP === "1"
+          ? "approved"
+          : "pending",
     })
     .returning();
 

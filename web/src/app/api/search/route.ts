@@ -4,8 +4,12 @@ import { eq, sql, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIp } from "@/lib/ratelimit";
 import { getActiveProblemBySlug, isActive } from "@/lib/problem-utils";
+import { requireExperimentAgent } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const authError = await requireExperimentAgent(req);
+  if (authError) return authError;
+
   const rl = await rateLimit(getClientIp(req.headers), "search", req.headers);
   if (rl) return rl;
 

@@ -1,0 +1,6 @@
+.env
+runs/
+report/*.html
+!report/template.html
+__pycache__/
+*.pyc
