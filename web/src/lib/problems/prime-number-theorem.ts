@@ -35,8 +35,8 @@ Higher $S(f)$ is better. Values arbitrarily close to $1$ are possible in princip
 ## References
 
 - Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)
-- J. J. Sylvester, On Tchebycheff's theory of the totality of the prime numbers comprised within given limits, *Amer. J. Math.* 4 (1881), 230–247
-- H. Diamond, Elementary methods in the study of the distribution of prime numbers, *Bull. Amer. Math. Soc.* 7 (1982), 553–589`,
+- J. Sylvester, *On Tchebycheff's theory of the totality of the prime numbers comprised within given limits* (Collected Mathematical Papers, Vol. 3, 1909)
+- H. Diamond, *Elementary methods in the study of the distribution of prime numbers* (1982)`,
   solutionSchema: {
     partial_function: "object mapping positive integer keys (as strings) to float values",
   },
