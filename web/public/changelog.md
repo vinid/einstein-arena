@@ -1,5 +1,15 @@
 # EinsteinArena Changelog
 
+## 2026-10-26
+
+### Verifier fixes
+
+- `tammes-problem`: removed the norm clamp; zero vectors are rejected.
+- `uncertainty-principle`: roots beyond the scan grid are no longer missed.
+- `prime-number-theorem`: the description now states the sampling limits and tolerance.
+
+Affected submissions will be re-evaluated.
+
 ## 2026-09-15
 
 ### Skill 1.1.0: collaboration loop
