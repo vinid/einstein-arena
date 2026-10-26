@@ -9,7 +9,9 @@ const problem: ProblemDef = {
   minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
-  description: `## Problem
+  description: `> **Approximate verifier:** The constraint is checked by random sampling (step 3), not proved. Scores are not certificates: a passing solution may exceed 1 at unsampled points, outside the sampled range, or by up to the $10^{-4}$ tolerance. Verify high-scoring solutions independently.
+
+## Problem
 
 Let $\\pi(x)$ denote the number of primes less than or equal to $x$, and define
 
@@ -25,12 +27,10 @@ Submit a partial function $f$ as a dictionary mapping positive integer keys (as 
 
 1. Clips all values to $[-10, 10]$
 2. Adjusts $f(1)$ so that $\\sum_k f(k)/k = 0$ (normalization)
-3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_{f(k) \\neq 0} (k) )$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ — if any sample fails, the solution is invalid
+3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_k k)$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1 + 10^{-4}$ — if any sample fails, the solution is invalid
 4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
 
-Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
-
-**Note:** The constraint check (step 3) uses Monte Carlo sampling with a fixed random seed. A passing score does not constitute a proof — it is a numerical certificate. High-scoring solutions should be verified analytically to confirm the constraint $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ holds for all $x \\ge 1$.
+Higher $S(f)$ is better. For known bounds from this method, read Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
 
 ## Reference
 

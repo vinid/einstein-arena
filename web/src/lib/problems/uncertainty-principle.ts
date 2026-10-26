@@ -9,7 +9,9 @@ const problem: ProblemDef = {
   minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
-  description: `## Problem
+  description: `> **Approximate verifier:** Sign changes of $g$ are found on a float64 grid, extended until Descartes' rule of signs rules out further roots. Two roots closer together than the grid spacing can be missed. Verify high-scoring solutions independently.
+
+## Problem
 
 Let $C$ be the largest constant for which
 
@@ -19,7 +21,7 @@ for all even $f$ with $f(0), \\hat{f}(0) < 0$. **Establish an upper bound for $C
 
 ## Scoring
 
-The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of at most **25** positive real numbers \`laguerre_double_roots\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\alpha = -1/2$, degrees $0, 2, \\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then numerically evaluates $g(x) / (x \\prod_i (x - z_i)^2)$ at high precision, detects sign changes, refines them with root bracketing, and returns
+The scoring uses the **Laguerre polynomial** linear programming approach from [Cohn and Gonçalves (2017)](https://arxiv.org/abs/1712.04438). Submit a list of at most **25** positive real numbers \`laguerre_double_roots\` — the prescribed double root positions. The server constructs the auxiliary test function $g$ as a linear combination of even-degree generalized Laguerre polynomials ($\\alpha = -1/2$, degrees $0, 2, \\ldots, 4k+2$) normalized so that $g(0)=0$, $g'(0)=1$, with double roots at each $z_i$. It then numerically evaluates $g(x) / (x \\prod_i (x - z_i)^2)$ on a fine grid, detects sign changes, refines them with root bracketing, and returns
 
 $$S = \\frac{r}{2\\pi}$$
 
@@ -36,6 +38,7 @@ Problem 6.11 of [Mathematical exploration and discovery at scale](https://arxiv.
   }),
   verifier: `import json
 import math
+from fractions import Fraction
 import mpmath as mp
 import numpy as np
 from scipy.optimize import brentq
@@ -44,6 +47,8 @@ from scipy.special import eval_genlaguerre
 MP_DPS = 80
 COND_MP_THRESHOLD = 1e15
 GRID_POINTS = 200_000
+GRID_GROWTH = 1.25
+MAX_XMAX = 1e5
 
 
 def laguerre_prime_f64(n, alpha, x):
@@ -124,30 +129,36 @@ def q_val(x, coeffs, degrees, alpha, zs):
     return float(g_on_grid(xs, coeffs, degrees, alpha)[0]) / d
 
 
-def evaluate(solution: dict) -> float:
-    zs = solution["laguerre_double_roots"]
-    if len(zs) == 0:
-        raise ValueError("laguerre_double_roots must be non-empty.")
-    if len(zs) > 25:
-        raise ValueError("At most 25 roots allowed.")
-    if any(z <= 0 for z in zs):
-        raise ValueError("All roots must be positive.")
-    if any(z > 300 for z in zs):
-        raise ValueError("All roots must be <= 300.")
-    zs = [float(z) for z in zs]
-    if len(set(zs)) != len(zs):
-        raise ValueError("Duplicate double-root positions are not allowed.")
+def g_power_coeffs(coeffs, degrees):
+    # Exact monomial coefficients of g, built from the same float coefficients the grid uses.
+    alpha = Fraction(-1, 2)
+    p = [Fraction(0)] * (int(max(degrees)) + 1)
+    for c, n in zip(coeffs, degrees):
+        n = int(n)
+        c = Fraction(float(c))
+        for i in range(n + 1):
+            b = Fraction(1)
+            for j in range(n - i):
+                b *= n + alpha - j
+            b /= math.factorial(n - i)
+            p[i] += c * (-1) ** i * b / math.factorial(i)
+    return p
 
-    degrees, alpha, a_f64, b_f64 = build_system_f64(zs)
-    cond = float(np.linalg.cond(a_f64))
-    if cond > COND_MP_THRESHOLD:
-        mp.mp.dps = MP_DPS
-        coeffs = solve_coeffs_mp(zs, degrees)
-    else:
-        coeffs = np.linalg.solve(a_f64, b_f64)
 
-    xmax = float(max(zs)) * 1.5 + 100.0
-    xs = np.linspace(1e-9, xmax, GRID_POINTS, dtype=np.float64)
+def sign_changes_beyond(p, x0):
+    # Descartes' rule of signs on g(x + x0): zero sign changes means g has no real root beyond x0.
+    s = list(p)
+    n = len(s) - 1
+    shift = Fraction(x0)
+    for i in range(n):
+        for k in range(n - 1, i - 1, -1):
+            s[k] += shift * s[k + 1]
+    nz = [v for v in s if v != 0]
+    return sum(1 for a, b in zip(nz, nz[1:]) if (a > 0) != (b > 0))
+
+
+def largest_sign_change(lo, hi, coeffs, degrees, alpha, zs):
+    xs = np.linspace(lo, hi, GRID_POINTS, dtype=np.float64)
     g = g_on_grid(xs, coeffs, degrees, alpha)
     d = denom_on_grid(xs, zs)
     qv = np.divide(g, d, out=np.full_like(g, np.nan), where=np.abs(d) > 1e-280)
@@ -179,6 +190,46 @@ def evaluate(solution: dict) -> float:
             continue
         if r > 0 and (largest is None or r > largest):
             largest = r
+    return largest
+
+
+def evaluate(solution: dict) -> float:
+    zs = solution["laguerre_double_roots"]
+    if len(zs) == 0:
+        raise ValueError("laguerre_double_roots must be non-empty.")
+    if len(zs) > 25:
+        raise ValueError("At most 25 roots allowed.")
+    if any(z <= 0 for z in zs):
+        raise ValueError("All roots must be positive.")
+    if any(z > 300 for z in zs):
+        raise ValueError("All roots must be <= 300.")
+    zs = [float(z) for z in zs]
+    if len(set(zs)) != len(zs):
+        raise ValueError("Duplicate double-root positions are not allowed.")
+
+    degrees, alpha, a_f64, b_f64 = build_system_f64(zs)
+    cond = float(np.linalg.cond(a_f64))
+    if cond > COND_MP_THRESHOLD:
+        mp.mp.dps = MP_DPS
+        coeffs = solve_coeffs_mp(zs, degrees)
+    else:
+        coeffs = np.linalg.solve(a_f64, b_f64)
+
+    xmax = float(max(zs)) * 1.5 + 100.0
+    largest = largest_sign_change(1e-9, xmax, coeffs, degrees, alpha, zs)
+
+    p = g_power_coeffs(coeffs, degrees)
+    while sign_changes_beyond(p, xmax) > 0:
+        if xmax > MAX_XMAX:
+            raise ValueError("Could not rule out a sign change of g beyond x = " + str(MAX_XMAX) + ".")
+        nxt = xmax * GRID_GROWTH
+        # |g| grows monotonically out here, so a finite endpoint means the whole scan is finite.
+        if not np.isfinite(g_on_grid(np.array([nxt]), coeffs, degrees, alpha)[0]):
+            raise ValueError("g overflows float64 before its last sign change could be ruled out.")
+        r = largest_sign_change(xmax, nxt, coeffs, degrees, alpha, zs)
+        if r is not None and (largest is None or r > largest):
+            largest = r
+        xmax = nxt
 
     if largest is None:
         raise ValueError("No numerical sign-changing roots found.")

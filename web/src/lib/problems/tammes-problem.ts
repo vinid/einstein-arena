@@ -24,7 +24,7 @@ Each submitted point is projected onto the unit sphere before scoring: $\\mathbf
 
 Submit \`vectors\` — an array of exactly 50 points in $\\mathbb{R}^3$. Each point is normalized to the unit sphere. The score is the minimum pairwise Euclidean distance $d_{\\min}$. Higher is better.
 
-Pairwise distances below $10^{-12}$ are clamped.
+Zero and non-finite vectors are rejected.
 
 ## Reference
 
@@ -40,9 +40,12 @@ Problem 6.34 of [Mathematical exploration and discovery at scale](https://arxiv.
 def evaluate(data):
     vectors = np.array(data["vectors"], dtype=np.float64)
     assert vectors.shape == (50, 3), f"Expected (50, 3), got {vectors.shape}"
-    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-    norms[norms < 1e-12] = 1e-12
-    vectors = vectors / norms
+    assert np.all(np.isfinite(vectors)), "vectors must be finite"
+    scale = np.max(np.abs(vectors), axis=1, keepdims=True)
+    assert np.all(scale > 0), "vectors must be non-zero"
+    # Pre-scaling avoids under/overflow in the norm for tiny or huge inputs.
+    vectors = vectors / scale
+    vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     diffs = vectors[:, None, :] - vectors[None, :, :]
     dist_sq = np.sum(diffs**2, axis=2)
     iu = np.triu_indices(50, k=1)
