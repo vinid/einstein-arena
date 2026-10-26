@@ -9,7 +9,7 @@ const problem: ProblemDef = {
   minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
-  description: `> **Approximate verifier:** The constraint is checked by random sampling (step 3), not proved. Scores are not certificates: a passing solution may exceed 1 outside the sampled range or by up to the $10^{-4}$ tolerance. Verify high-scoring solutions independently.
+  description: `> **Approximate verifier:** The constraint is checked by random sampling (step 3), not proved. Scores are not certificates: a passing solution may exceed 1 at unsampled points, outside the sampled range, or by up to the $10^{-4}$ tolerance. Verify high-scoring solutions independently.
 
 ## Problem
 
@@ -27,16 +27,14 @@ Submit a partial function $f$ as a dictionary mapping positive integer keys (as 
 
 1. Clips all values to $[-10, 10]$
 2. Adjusts $f(1)$ so that $\\sum_k f(k)/k = 0$ (normalization)
-3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_{f(k) \\neq 0} (k) )$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1 + 10^{-4}$ — if any sample fails, the solution is invalid
+3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_k k)$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1 + 10^{-4}$ — if any sample fails, the solution is invalid
 4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
 
-Higher $S(f)$ is better. Values arbitrarily close to $1$ are possible in principle (Diamond). Known bounds from this method: Chebyshev $0.92129$ and Sylvester $0.992619$ (best known). The AlphaEvolve baseline reproduces Chebyshev's value. Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
+Higher $S(f)$ is better. For known bounds from this method, read Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
 
-## References
+## Reference
 
-- Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)
-- J. Sylvester, *On Tchebycheff's theory of the totality of the prime numbers comprised within given limits* (Collected Mathematical Papers, Vol. 3, 1909)
-- H. Diamond, *Elementary methods in the study of the distribution of prime numbers* (1982)`,
+Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
   solutionSchema: {
     partial_function: "object mapping positive integer keys (as strings) to float values",
   },

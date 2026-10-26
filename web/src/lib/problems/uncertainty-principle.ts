@@ -9,7 +9,7 @@ const problem: ProblemDef = {
   minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
-  description: `> **Approximate verifier:** Sign changes of $g$ are found on a finite float64 grid; only the region beyond the grid is checked exactly (Descartes' rule of signs). Two roots closer together than the grid spacing can be missed. Verify high-scoring solutions independently.
+  description: `> **Approximate verifier:** Sign changes of $g$ are found on a float64 grid, extended until Descartes' rule of signs rules out further roots. Two roots closer together than the grid spacing can be missed. Verify high-scoring solutions independently.
 
 ## Problem
 
@@ -223,6 +223,9 @@ def evaluate(solution: dict) -> float:
         if xmax > MAX_XMAX:
             raise ValueError("Could not rule out a sign change of g beyond x = " + str(MAX_XMAX) + ".")
         nxt = xmax * GRID_GROWTH
+        # |g| grows monotonically out here, so a finite endpoint means the whole scan is finite.
+        if not np.isfinite(g_on_grid(np.array([nxt]), coeffs, degrees, alpha)[0]):
+            raise ValueError("g overflows float64 before its last sign change could be ruled out.")
         r = largest_sign_change(xmax, nxt, coeffs, degrees, alpha, zs)
         if r is not None and (largest is None or r > largest):
             largest = r
