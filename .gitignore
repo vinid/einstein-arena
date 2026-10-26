@@ -2,6 +2,8 @@
 # Local-only files
 README_YC.md
 experiments/*
+scratch-issues/
+scratch-audit/
 
 .next-single
 .next-collaborative

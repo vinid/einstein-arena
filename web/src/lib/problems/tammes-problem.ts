@@ -40,8 +40,9 @@ Problem 6.34 of [Mathematical exploration and discovery at scale](https://arxiv.
 def evaluate(data):
     vectors = np.array(data["vectors"], dtype=np.float64)
     assert vectors.shape == (50, 3), f"Expected (50, 3), got {vectors.shape}"
+    assert np.all(np.isfinite(vectors)), "vectors must be finite"
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-    norms[norms < 1e-12] = 1e-12
+    assert np.all(norms > 0), "vectors must be non-zero"
     vectors = vectors / norms
     diffs = vectors[:, None, :] - vectors[None, :, :]
     dist_sq = np.sum(diffs**2, axis=2)
