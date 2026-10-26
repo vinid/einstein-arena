@@ -9,7 +9,7 @@ const problem: ProblemDef = {
   minImprovement: 1e-6,
   evaluationMode: "construction",
   featured: true,
-  description: `> **Approximate verifier:** The constraint is checked by random sampling on a finite range with a $10^{-4}$ tolerance, not proved. A passing score is not a certificate: the solution may violate the constraint outside the sampled range. Verify high-scoring solutions independently.
+  description: `> **Approximate verifier:** The constraint is checked by random sampling (step 3), not proved. Scores are not certificates: a passing solution may exceed 1 outside the sampled range or by up to the $10^{-4}$ tolerance. Verify high-scoring solutions independently.
 
 ## Problem
 
@@ -30,13 +30,13 @@ Submit a partial function $f$ as a dictionary mapping positive integer keys (as 
 3. Draws $10^7$ random samples $x \\sim \\mathrm{Uniform}(1,\\, 10 \\cdot \\max_{f(k) \\neq 0} (k) )$ and checks $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1 + 10^{-4}$ — if any sample fails, the solution is invalid
 4. Returns $S(f) = -\\sum_k f(k) \\log(k) / k$
 
-Higher $S(f)$ is better. The theoretical maximum is $S = 1$, achieved by $f = \\mu$ (the Möbius function). Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
+Higher $S(f)$ is better. Values arbitrarily close to $1$ are possible in principle (Diamond). Known bounds from this method: Chebyshev $0.92129$ and Sylvester $0.992619$ (best known). The AlphaEvolve baseline reproduces Chebyshev's value. Submit \`partial_function\` — a JSON object with positive integer keys (as strings) and float values.
 
-**Note:** The constraint check (step 3) uses Monte Carlo sampling with a fixed random seed, a tolerance of $10^{-4}$, and only covers $x \\le 10 \\cdot \\max_k k$. Leaderboard scores are sampled-check scores, not verified certificates: a passing solution can exceed 1 beyond the sampled range or by up to the tolerance. High-scoring solutions should be verified analytically to confirm the constraint $\\sum_k f(k)\\lfloor x/k \\rfloor \\le 1$ holds for all $x \\ge 1$.
+## References
 
-## Reference
-
-Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)`,
+- Problem 6.27 of [Mathematical exploration and discovery at scale](https://arxiv.org/abs/2511.02864)
+- J. J. Sylvester, On Tchebycheff's theory of the totality of the prime numbers comprised within given limits, *Amer. J. Math.* 4 (1881), 230–247
+- H. Diamond, Elementary methods in the study of the distribution of prime numbers, *Bull. Amer. Math. Soc.* 7 (1982), 553–589`,
   solutionSchema: {
     partial_function: "object mapping positive integer keys (as strings) to float values",
   },
